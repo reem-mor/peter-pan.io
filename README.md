@@ -326,7 +326,8 @@ CI: ruff + pytest on every push. External AWS calls are mocked in unit tests.
 | [`docs/demo_script.md`](docs/demo_script.md) | 5-minute presenter flow |
 | [`docs/troubleshooting.md`](docs/troubleshooting.md) | Bedrock / fallback errors |
 | [`docs/SECURITY.md`](docs/SECURITY.md) | Public-repo hygiene |
-| [`evaluation/SUBMISSION_PACKAGE.md`](evaluation/SUBMISSION_PACKAGE.md) | Course evidence index |
+| [`docs/course_coverage.md`](docs/course_coverage.md) | AWS course syllabus vs this repo |
+| [`evaluation/aws_validation_results.md`](evaluation/aws_validation_results.md) | Live AWS validation run log |
 | [`TESTING.md`](TESTING.md) | Test matrix |
 
 ---
