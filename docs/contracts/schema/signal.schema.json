@@ -1,0 +1,110 @@
+{
+  "additionalProperties": false,
+  "description": "Anything that enters the system: Grafana alert, WebUI form, deploy event, complaint.",
+  "properties": {
+    "id": {
+      "pattern": "^sig-[a-z0-9-]{8,}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "grafana",
+        "webui",
+        "github",
+        "slack"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "alert",
+        "manual",
+        "deploy_event",
+        "complaint"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "received_at": {
+      "format": "date-time",
+      "title": "Received At",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "body": {
+      "default": "",
+      "maxLength": 8000,
+      "title": "Body",
+      "type": "string"
+    },
+    "service": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Service"
+    },
+    "environment": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Environment"
+    },
+    "severity_hint": {
+      "anyOf": [
+        {
+          "enum": [
+            "critical",
+            "warning",
+            "info"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Severity Hint"
+    },
+    "labels": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Labels",
+      "type": "object"
+    },
+    "raw": {
+      "additionalProperties": true,
+      "title": "Raw",
+      "type": "object"
+    }
+  },
+  "required": [
+    "id",
+    "source",
+    "kind",
+    "received_at",
+    "title"
+  ],
+  "title": "Signal",
+  "type": "object"
+}
