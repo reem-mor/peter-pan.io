@@ -11,8 +11,9 @@ different system — n8n orchestration over FastAPI microservices (Ingestion, Pr
 Guardrails, Tools API, LangGraph agent) with task-routed models (Bedrock, llama.cpp, Ollama)
 and a Streamlit WebUI. Every tracked file was audited into KEEP / MIGRATE / DELETE / UNSURE
 and the approved table applied on this branch. Everything deleted is recoverable from git
-history (`git show 94193cb:<path>`) and from the `piter-aiops` remote (piter-aiops.git;
-remotes renamed 2026-07-09 — `origin` is now peter-pan.io, the canonical repo).
+history (`git show 94193cb:<path>`) and from https://github.com/reem-mor/piter-aiops —
+a **separate project**, no longer configured as a remote (repo separation 2026-07-09;
+`origin` is peter-pan.io).
 
 ## Kept
 
