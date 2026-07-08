@@ -51,6 +51,14 @@ evidence (screenshots, presentation, evaluation reports — user decision). Root
 contract), `config/mcp.json.example`, `scripts/labs/**` (course material; belongs in the
 course repo).
 
+**Resolved 2026-07-09 (all removed, recoverable from git history):**
+`structured_analysis.py` + test superseded by the frozen `TriageReport` contract in
+[BUILD_PLAN §1](../BUILD_PLAN.md); `config/mcp.json.example` orphaned by the deleted MCP
+layer; `scripts/labs/**` belongs in the course repo (`git show e9d0afd:scripts/labs/...`
+to recover). Also removed: the `agents/.gitkeep` scaffold (maps to no diagram node) and
+the gitignored disk leftovers (`app/static/spa`, `__pycache__`-only dirs, `var/`,
+`scripts/ssm-*.json`).
+
 ## Honest limitations after this cleanup
 
 1. **Migrated Python is not importable** — modules still `import app.*` and carry PITER

@@ -1,6 +1,11 @@
 # PETER PAN — Build Plan
 
-- **Status:** proposed (2026-07-09) — awaiting approval before any Stage A implementation.
+- **Status:** approved (2026-07-09) — Stage A in progress. Two amendments by user decision:
+  within Stage A, **Layer 2 (n8n) is built first** against mock endpoints, Layer 3 services
+  follow; the PITER-era datasets are **rewritten as one coherent service universe** aligned
+  with the demo environment (`shop-web` / `orders-api` / PostgreSQL), replacing the current
+  three-way mismatch (gaming datasets vs generic corpus vs demo services) and reconciling
+  `evaluation/rag_evaluation_cases.json` (ADR 0001 limitation 6).
 - **Source of truth:** [peter-pan-system.mmd](peter-pan-system.mmd) · [peter-pan-n8n-flow.mmd](peter-pan-n8n-flow.mmd).
   Anything not in the diagrams is out of scope. Carryover decisions: [ADR 0001](adr/0001-piter-carryover.md).
 - **Build order (fixed, do not reorder):** Stage A (Layers 2+3, mock-first) → Stage B (Layer 1 UI) → Stage C (Layer 4 real LLM providers).
