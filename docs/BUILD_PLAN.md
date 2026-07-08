@@ -247,10 +247,11 @@ approval-gate REST endpoint; GitHub deploy events (`GH`) enter via the n8n conte
 pydantic in PITER, tool-name mapping, parked frontend vs Streamlit, local `main` revert).
 6. **Diagram vs task wording:** the n8n flow's agent node (5) says "Bedrock Claude Sonnet · tool
 calls" while node T3 calls the LangGraph agent service — i.e., *two* agent brains (n8n AI-Agent
-node and LangGraph service). This plan treats the n8n node 5 as the orchestrating caller and
-LangGraph as *the* triage brain (per system diagram "N8N →|triage brain| LG"); if you intended
-the n8n AI-Agent node to do independent tool-calling with Bedrock, say so and Stage A's node-5
-wiring changes.
+node and LangGraph service). ~~This plan treats the n8n node 5 as the orchestrating caller and
+LangGraph as *the* triage brain.~~ **Resolved 2026-07-09:** the flow diagram's own edges
+(AGT → T1/T2/T3) and the user's first n8n draft both make node 5 a tool-calling AI Agent with
+RAG, Predictor and LangGraph as HTTP tools — built that way in `n8n/peter-flow.json`. LangGraph
+remains the deep-reasoning specialist the agent calls for cross-domain incidents.
 7. `evaluation/rag_evaluation_cases.json` expects two corpus docs that don't exist post-reset
 (ADR limitation 6) — reconciled when the eval harness is built, direction needs a call: restore
 equivalent docs to the corpus, or rewrite the cases.
