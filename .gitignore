@@ -1,6 +1,5 @@
 # =============================================================================
-# PITER AiOps — local artifacts only (secrets, caches, generated output)
-# SPA: build with `cd frontend && npm run build` → app/static/spa/ (gitignored)
+# PETER PAN — local artifacts only (secrets, caches, generated output)
 # =============================================================================
 
 # --- Secrets & credentials (never commit) ---
@@ -40,14 +39,12 @@ build/
 *.egg
 pip-wheel-metadata/
 
-# --- Node / frontend (source in frontend/; production bundle → app/static/spa/) ---
+# --- Node / frontend (parked bonus dashboard) ---
 node_modules/
-frontend/node_modules/
 frontend/.vite/
 frontend/dist/
-app/static/spa/assets/
-app/static/spa/index.html
-scripts/node_modules/
+# stale local SPA build output from the pre-reset layout; safe to delete locally
+app/static/
 scripts/ec2-notification.env
 
 # --- Logs & debug captures ---
@@ -85,5 +82,5 @@ var/
 piter-aiops.tar
 scripts/ssm-*.json
 
-# Playwright artifacts (frontend parked as bonus dashboard)
-frontend/test-results/
+# Test artifacts (any service or frontend)
+**/test-results/

@@ -1,4 +1,4 @@
 # Repo-level dev tooling only. Per-service runtime requirements land in
 # services/*/requirements.txt during Stage A.
 pytest==8.3.4
-ruff
+ruff==0.15.12

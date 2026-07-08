@@ -1,7 +1,7 @@
-# Ruff config for PITER AiOps (standalone-ready).
+# Ruff config for PETER PAN (standalone-ready).
 target-version = "py312"
 line-length = 100
-extend-exclude = ["archive", "**/static", "**/node_modules", "**/.venv", "**/dist", "**/build"]
+extend-exclude = [".claude", ".cursor", "**/node_modules", "**/.venv", "**/dist", "**/build"]
 
 [lint]
 # Correctness-focused: pyflakes + a subset of pycodestyle. Style churn (import order)
@@ -11,4 +11,4 @@ ignore = ["E402"]
 
 [lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"tests/**" = ["F811", "F401"]
+"**/tests/**" = ["F811", "F401"]

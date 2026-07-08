@@ -35,7 +35,7 @@ history (`git show 94193cb:<path>`) and from the `origin` remote (piter-aiops.gi
 | `app/services/{local_rag,kb_corpus,kb_manifest}.py`, `app/validators.py` | `services/rag/` | offline TF-IDF RAG = deterministic Stage-A stub (user decision) |
 | `knowledge_base/{incidents,runbooks,services}/**` | `services/rag/corpus/` | generic seed corpus |
 | `scripts/{generate_alert_stream,generate_demo_data,validate_data}.py` | `predictive/datagen/` | Predictor/Ingestion demo + training fixtures |
-| 16 test modules | `services/*/tests/` | reusable deterministic tests |
+| 15 test modules | `services/*/tests/` | reusable deterministic tests |
 
 ## Deleted (single commit `chore: remove legacy PITER files`)
 
@@ -56,8 +56,22 @@ course repo).
 1. **Migrated Python is not importable** — modules still `import app.*` and carry PITER
    naming/docstrings. Stage A re-packages, renames, and re-greens the tests. `pytest` at repo
    root is expected RED until then; CI is lint-only on purpose.
-2. `escalation_service.py` still loads the lambda by its old `action_groups/` path — rewired in Stage A.
+2. `escalation_service.py` still loads the lambda by its old `action_groups/` path, and
+   `escalation_lambda.py` imports the deleted `lambda_root` module — rewired in Stage A.
 3. `guardrails.py` imports `BedrockError` from the deleted `app/errors.py` — rewired in Stage A.
+4. **Stale path constants** (moves shifted `Path(__file__)`-relative roots; all rewired in
+   Stage A alongside the imports): `kb_corpus.KB_ROOT` still targets repo-root `knowledge_base/`
+   (corpus now at `services/rag/corpus/`); `data_access._SOURCE_DATA` targets `data/source/`
+   (now `services/tools-api/data/`) and `_KB_RUNBOOKS` targets the old runbooks path;
+   `predictive/datagen/*` compute the repo root via `parents[1]`, which now resolves to
+   `predictive/`; the migrated tests' `SOURCE`/`SCRIPTS`/`CORPUS`/`EVAL_PATH` constants have the
+   same one-level shift.
+5. The parked `frontend/` build+deploy wiring targets the deleted layout (vite `outDir`
+   `../app/static/spa`, `EC2_DEPLOY.md` and `VERIFY.md` invoke deleted scripts and `wsgi.py`).
+   Left as-is deliberately — revisit only if the bonus dashboard is revived.
+6. `evaluation/rag_evaluation_cases.json` cases 2–3 expect sources
+   (`business_impact_matrix.md`, `escalation_policy.md`) that do not exist in the migrated
+   corpus — the golden set gets reconciled when the Stage A eval harness is built.
 
 ## Conflicts recorded (not silently resolved)
 
