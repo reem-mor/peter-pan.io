@@ -84,3 +84,6 @@ var/
 # deploy artifacts
 piter-aiops.tar
 scripts/ssm-*.json
+
+# Playwright artifacts (frontend parked as bonus dashboard)
+frontend/test-results/

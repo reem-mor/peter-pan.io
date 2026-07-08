@@ -1,3 +1,7 @@
+# Interim CI for the PETER PAN reset (cleanup/peter-pan-reset).
+# Lint only: the legacy PITER test suites were removed and the migrated
+# modules are not importable until Stage A re-packages them (see
+# docs/adr/0001-piter-carryover.md). Stage A rebuilds per-service test jobs.
 name: CI
 
 on:
@@ -22,42 +26,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-          cache-dependency-path: requirements-dev.txt
       - name: Install ruff
-        run: pip install -r requirements-dev.txt
+        run: pip install ruff
       - name: ruff check
         run: ruff check .
-
-  test:
-    name: Tests (${{ matrix.area }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - area: incident-assistant-rag
-            dir: projects/incident-assistant-rag/backend
-          - area: incident-rag-bedrock
-            dir: projects/incident-rag-bedrock
-          - area: langchain-langgraph-lecture
-            dir: lectures/10_langchain_langgraph
-          - area: hw07-tools-server
-            dir: homework/hw07-openwebui
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: ${{ matrix.dir }}/requirements.txt
-      - name: Install dependencies
-        working-directory: ${{ matrix.dir }}
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run pytest
-        working-directory: ${{ matrix.dir }}
-        env:
-          PYTEST_ADDOPTS: "-q"
-        run: python -m pytest
