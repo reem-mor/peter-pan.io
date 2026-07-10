@@ -1,0 +1,13 @@
+{
+  "doc_id": "redis_cache",
+  "title": "Redis Cache Service Context",
+  "doc_type": "service",
+  "services": "redis-cache",
+  "environments": "production, staging",
+  "severity_applicable": "P1,P2,P3",
+  "tags": "service ownership, cache, redis, infra",
+  "last_updated": "2026-06-20",
+  "author": "Platform Engineering",
+  "version": "1.0",
+  "body": "# Redis Cache Service Context\n\nRedis-cache is the shared caching layer for orders-api (cart/session cache) and shop-web (catalog cache), fronting postgres-primary reads.\n\n## Owner\n\n- Team: Infra SRE\n- Primary escalation: Primary Infra SRE On-Call\n- Secondary escalation: Secondary Infra SRE On-Call\n- Channel: `#infra-sre`\n\n## Dependencies\n\n- Consumed by orders-api and shop-web.\n- Falls back to postgres-primary reads on a cache miss.\n\n## Business Impact\n\nRedis-cache is tier-1. Degradation increases latency and load on postgres-primary rather than causing an outright outage, but sustained misses can cascade into postgres-primary saturation."
+}

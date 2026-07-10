@@ -10,7 +10,7 @@
     },
     "regulatory_exposure": {
       "weight": 0.2,
-      "description": "Regulated markets or compliance reporting exposure"
+      "description": "Compliance frameworks (SOC2, PCI-DSS) with reporting exposure"
     },
     "sla_risk": {
       "weight": 0.15,
@@ -23,7 +23,7 @@
   },
   "thresholds": {
     "P1": {
-      "description": "Customer-facing outage, severe revenue risk, or regulated-market exposure",
+      "description": "Customer-facing outage, severe revenue risk, or compliance-reporting exposure",
       "customer_impact_pct": ">=20",
       "revenue_per_minute_usd": ">=5000",
       "response_minutes": 5,
@@ -53,22 +53,22 @@
   },
   "examples": [
     {
-      "alert": "bet-service nodes unresponsive in GIB-UKGC",
+      "alert": "orders-api error rate 100% following deploy",
       "priority": "P1",
-      "rationale": "100% error rate, high revenue risk, regulated market"
+      "rationale": "100% error rate, high revenue risk, customer-facing outage"
     },
     {
-      "alert": "payments-service latency over 3 seconds",
+      "alert": "payments-api latency over 3 seconds",
       "priority": "P2",
       "rationale": "payment degradation, customer-facing, limited scope"
     },
     {
-      "alert": "Kafka consumer lag elevated",
+      "alert": "postgres-primary replication lag elevated",
       "priority": "P3",
       "rationale": "delayed processing with no current outage"
     },
     {
-      "alert": "memory utilization 82%",
+      "alert": "redis-cache memory utilization 82%",
       "priority": "P4",
       "rationale": "capacity warning, no confirmed impact"
     }

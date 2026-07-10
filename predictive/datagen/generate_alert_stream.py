@@ -1,12 +1,12 @@
 """
-PITER AiOps — alert storm generator for the live demo.
+PETER PAN — alert storm generator for the live demo.
 
 Generates ~400 alerts distributed over 5 minutes (300 seconds) of demo time.
 Most are P3/P4 noise. A single P1 fires at T+175 seconds to trigger the
-"stop and show" PITER workflow with SMS/email escalation.
+"stop and show" incident-response workflow with SMS/email escalation.
 
-Output: data/source/alert_stream.csv with a `seconds_offset` column the Flask
-streaming endpoint uses to emit alerts at the right pace.
+Output: predictive/data/source/alert_stream.csv with a `seconds_offset`
+column a streaming endpoint uses to emit alerts at the right pace.
 """
 
 import argparse
@@ -29,6 +29,7 @@ def configure_output(path: str | Path | None = None) -> Path:
     OUT.mkdir(parents=True, exist_ok=True)
     return OUT
 
+
 # Demo day baseline timestamp (presentation: June 10, 2026, 10:00 AM UTC)
 DEMO_START = datetime(2026, 6, 10, 10, 0, 0, tzinfo=timezone.utc)
 DEMO_DURATION_SECONDS = 300  # 5 minutes
@@ -43,10 +44,10 @@ P1_OFFSET_SECONDS = 175
 P1_ALERT = {
     "alert_id": "ALT-DEMO-P1-001",
     "seconds_offset": P1_OFFSET_SECONDS,
-    "environment": "GIB-UKGC",
-    "service": "bet-service",
+    "environment": "production",
+    "service": "orders-api",
     "severity": "P1",
-    "title": "CRITICAL: bet-service nodes unresponsive — 100% error rate on GIB-UKGC",
+    "title": "CRITICAL: orders-api nodes unresponsive — 100% error rate on production",
     "status": "active",
     "affected_users": 32000,
     "error_rate_pct": 100.0,
@@ -57,17 +58,23 @@ P1_ALERT = {
 # Severity distribution targets (excluding the P1 trigger)
 # ---------------------------------------------------------------
 SEVERITY_MIX = {
-    "P4": 0.70,   # ~279 noise
-    "P3": 0.22,   # ~88
-    "P2": 0.08,   # ~32
+    "P4": 0.70,  # ~279 noise
+    "P3": 0.22,  # ~88
+    "P2": 0.08,  # ~32
 }
 
 # ---------------------------------------------------------------
 # Services & environments
 # ---------------------------------------------------------------
-SERVICES = ["wallet-service", "bet-service", "auth-service",
-            "payments-service", "game-service", "replication"]
-ENVIRONMENTS = ["NJ-DGE", "GIB-UKGC", "MGM", "MIRAGE"]
+SERVICES = [
+    "payments-api",
+    "orders-api",
+    "shop-web",
+    "postgres-primary",
+    "redis-cache",
+    "k8s-ingress",
+]
+ENVIRONMENTS = ["production", "staging"]
 
 # ---------------------------------------------------------------
 # Alert title templates — realistic NOC noise
@@ -117,33 +124,64 @@ P2_TEMPLATES = [
 ]
 
 # ---------------------------------------------------------------
-# Narrative warning shots — P3/P2 alerts on bet-service GIB-UKGC
+# Narrative warning shots — P3/P2 alerts on orders-api production
 # leading up to the P1 trigger. These build dramatic tension.
 # ---------------------------------------------------------------
 WARNING_SHOTS = [
     # T+90s: first weak signal
-    {"seconds_offset": 90, "environment": "GIB-UKGC", "service": "bet-service",
-     "severity": "P3", "title": "bet-service latency p95 increased to 2.4s",
-     "status": "active", "affected_users": 32000, "error_rate_pct": 0.8},
+    {
+        "seconds_offset": 90,
+        "environment": "production",
+        "service": "orders-api",
+        "severity": "P3",
+        "title": "orders-api latency p95 increased to 2.4s",
+        "status": "active",
+        "affected_users": 32000,
+        "error_rate_pct": 0.8,
+    },
     # T+125s: second signal
-    {"seconds_offset": 125, "environment": "GIB-UKGC", "service": "bet-service",
-     "severity": "P3", "title": "Connection pool exhausted briefly on bet-service",
-     "status": "active", "affected_users": 32000, "error_rate_pct": 1.4},
+    {
+        "seconds_offset": 125,
+        "environment": "production",
+        "service": "orders-api",
+        "severity": "P3",
+        "title": "Connection pool exhausted briefly on orders-api",
+        "status": "active",
+        "affected_users": 32000,
+        "error_rate_pct": 1.4,
+    },
     # T+155s: escalating warning
-    {"seconds_offset": 155, "environment": "GIB-UKGC", "service": "bet-service",
-     "severity": "P2", "title": "bet-service 5xx rate above 2% (3.8%)",
-     "status": "active", "affected_users": 32000, "error_rate_pct": 3.8},
+    {
+        "seconds_offset": 155,
+        "environment": "production",
+        "service": "orders-api",
+        "severity": "P2",
+        "title": "orders-api 5xx rate above 2% (3.8%)",
+        "status": "active",
+        "affected_users": 32000,
+        "error_rate_pct": 3.8,
+    },
     # T+170s: last warning before the crash
-    {"seconds_offset": 170, "environment": "GIB-UKGC", "service": "bet-service",
-     "severity": "P2", "title": "bet-service circuit breaker tripped briefly",
-     "status": "active", "affected_users": 32000, "error_rate_pct": 7.2},
+    {
+        "seconds_offset": 170,
+        "environment": "production",
+        "service": "orders-api",
+        "severity": "P2",
+        "title": "orders-api circuit breaker tripped briefly",
+        "status": "active",
+        "affected_users": 32000,
+        "error_rate_pct": 7.2,
+    },
     # T+175s: THE P1 (added separately, not here)
 ]
+
 
 def gen_title(severity, service):
     if severity == "P4":
         tpl = random.choice(P4_TEMPLATES)
-        n = random.choice([45, 52, 58, 65, 70, 75, 78, 82, 85, 200, 350, 500, 750, 1200])
+        n = random.choice(
+            [45, 52, 58, 65, 70, 75, 78, 82, 85, 200, 350, 500, 750, 1200]
+        )
         return tpl.format(service=service, n=n)
     if severity == "P3":
         tpl = random.choice(P3_TEMPLATES)
@@ -155,6 +193,7 @@ def gen_title(severity, service):
         return tpl.format(service=service, n=n)
     return "Unknown alert"
 
+
 def gen_affected_users(severity):
     if severity == "P4":
         return 0  # P4 is operational noise, no user impact
@@ -163,6 +202,7 @@ def gen_affected_users(severity):
     if severity == "P2":
         return random.choice([4500, 8000, 12000, 18000, 28000])
     return 0
+
 
 def gen_error_rate(severity):
     if severity == "P4":
@@ -173,14 +213,17 @@ def gen_error_rate(severity):
         return round(random.uniform(1.8, 4.5), 2)
     return 0.0
 
+
 def gen_status(severity, seconds_offset):
     # Older P4 alerts more likely auto-resolved; P2 stay active
     if severity == "P4":
-        return random.choices(["active", "auto-resolved", "acknowledged"],
-                              weights=[0.3, 0.5, 0.2])[0]
+        return random.choices(
+            ["active", "auto-resolved", "acknowledged"], weights=[0.3, 0.5, 0.2]
+        )[0]
     if severity == "P3":
         return random.choices(["active", "acknowledged"], weights=[0.7, 0.3])[0]
     return "active"
+
 
 def gen_inter_arrival_seconds():
     """Bursty arrivals: exponential with occasional bursts."""
@@ -188,16 +231,20 @@ def gen_inter_arrival_seconds():
         return random.uniform(0.05, 0.15)  # burst (rapid)
     return random.expovariate(1.0 / 0.75)  # mean 0.75s
 
+
 # ---------------------------------------------------------------
 # Generate the stream
 # ---------------------------------------------------------------
+
 
 def generate():
     rows = []
     counter = 1
 
     # Reserve narrative slots so we don't overlap them with random alerts
-    reserved_offsets = {ws["seconds_offset"] for ws in WARNING_SHOTS} | {P1_OFFSET_SECONDS}
+    reserved_offsets = {ws["seconds_offset"] for ws in WARNING_SHOTS} | {
+        P1_OFFSET_SECONDS
+    }
 
     # Generate background alerts with bursty arrival until we fill the window
     t = 0.0
@@ -207,44 +254,54 @@ def generate():
             t += 2.0
             continue
 
-        severity = random.choices(list(SEVERITY_MIX.keys()),
-                                  weights=list(SEVERITY_MIX.values()))[0]
-        # Suppress bet-service GIB-UKGC P2/P3 from random stream BEFORE T+175
+        severity = random.choices(
+            list(SEVERITY_MIX.keys()), weights=list(SEVERITY_MIX.values())
+        )[0]
+        # Suppress orders-api production P2/P3 from random stream BEFORE T+175
         # so narrative warning shots stay distinct
         service = random.choice(SERVICES)
         env = random.choice(ENVIRONMENTS)
-        if t < P1_OFFSET_SECONDS and severity in ("P2", "P3") and service == "bet-service" and env == "GIB-UKGC":
+        if (
+            t < P1_OFFSET_SECONDS
+            and severity in ("P2", "P3")
+            and service == "orders-api"
+            and env == "production"
+        ):
             severity = "P4"  # downgrade to noise
 
-        rows.append({
-            "alert_id": f"ALT-DEMO-{counter:04d}",
-            "seconds_offset": round(t, 2),
-            "environment": env,
-            "service": service,
-            "severity": severity,
-            "title": gen_title(severity, service),
-            "status": gen_status(severity, t),
-            "affected_users": gen_affected_users(severity),
-            "error_rate_pct": gen_error_rate(severity),
-            "is_trigger": "false",
-        })
+        rows.append(
+            {
+                "alert_id": f"ALT-DEMO-{counter:04d}",
+                "seconds_offset": round(t, 2),
+                "environment": env,
+                "service": service,
+                "severity": severity,
+                "title": gen_title(severity, service),
+                "status": gen_status(severity, t),
+                "affected_users": gen_affected_users(severity),
+                "error_rate_pct": gen_error_rate(severity),
+                "is_trigger": "false",
+            }
+        )
         counter += 1
         t += gen_inter_arrival_seconds()
 
     # Inject narrative warning shots
     for ws in WARNING_SHOTS:
-        rows.append({
-            "alert_id": f"ALT-DEMO-WARN-{WARNING_SHOTS.index(ws)+1:02d}",
-            "seconds_offset": ws["seconds_offset"],
-            "environment": ws["environment"],
-            "service": ws["service"],
-            "severity": ws["severity"],
-            "title": ws["title"],
-            "status": ws["status"],
-            "affected_users": ws["affected_users"],
-            "error_rate_pct": ws["error_rate_pct"],
-            "is_trigger": "false",
-        })
+        rows.append(
+            {
+                "alert_id": f"ALT-DEMO-WARN-{WARNING_SHOTS.index(ws)+1:02d}",
+                "seconds_offset": ws["seconds_offset"],
+                "environment": ws["environment"],
+                "service": ws["service"],
+                "severity": ws["severity"],
+                "title": ws["title"],
+                "status": ws["status"],
+                "affected_users": ws["affected_users"],
+                "error_rate_pct": ws["error_rate_pct"],
+                "is_trigger": "false",
+            }
+        )
 
     # Inject the P1 trigger
     rows.append(P1_ALERT)
@@ -259,16 +316,28 @@ def generate():
 
     return rows
 
+
 def write_stream(rows):
     path = OUT / "alert_stream.csv"
-    fieldnames = ["alert_id", "seconds_offset", "timestamp", "environment",
-                  "service", "severity", "title", "status",
-                  "affected_users", "error_rate_pct", "is_trigger"]
+    fieldnames = [
+        "alert_id",
+        "seconds_offset",
+        "timestamp",
+        "environment",
+        "service",
+        "severity",
+        "title",
+        "status",
+        "affected_users",
+        "error_rate_pct",
+        "is_trigger",
+    ]
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
         w.writerows(rows)
     return path
+
 
 def summary(rows):
     by_sev = {}
@@ -285,7 +354,9 @@ def summary(rows):
     p1s = [r for r in rows if r["severity"] == "P1"]
     print("\nP1 trigger:")
     for r in p1s:
-        print(f"  {r['alert_id']} at T+{r['seconds_offset']}s — {r['service']} on {r['environment']}")
+        print(
+            f"  {r['alert_id']} at T+{r['seconds_offset']}s — {r['service']} on {r['environment']}"
+        )
         print(f"    {r['title']}")
 
     warn = [r for r in rows if "WARN" in r["alert_id"]]
@@ -293,8 +364,11 @@ def summary(rows):
     for r in warn:
         print(f"  T+{r['seconds_offset']:>3}s  [{r['severity']}]  {r['title']}")
 
+
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate deterministic PITER AiOps alert stream data")
+    parser = argparse.ArgumentParser(
+        description="Generate deterministic PETER PAN demo alert stream data"
+    )
     parser.add_argument(
         "--output",
         default=str(DEFAULT_OUTPUT),

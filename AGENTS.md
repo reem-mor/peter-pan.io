@@ -17,8 +17,9 @@ WebUI (Layer 1). **Not** the legacy PITER AiOps project — see
 - n8n: re-export the flow to `n8n/peter-flow.json` **on every change**; credentials by name
   only, URLs from env vars — the export must carry no secrets
 - **Never commit** `.env`, SPA bundles, or live AWS/n8n resource IDs
-- `ruff check .` must pass before PRs. Migrated pytest suites are **expected RED** until
-  Stage A re-packaging (ADR 0001 limitation 1); CI is lint-only until then
+- `ruff check .` must pass before PRs. Tests run **per service** from each service's own
+  rootdir (`python scripts/run_all_tests.py` runs them all); CI = lint + a per-service
+  pytest matrix — keep every suite green
 
 ## Scope
 

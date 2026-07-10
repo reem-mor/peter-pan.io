@@ -1,9 +1,10 @@
 """Tests for answer/citation formatting helpers."""
+
 from __future__ import annotations
 
 import json
 
-from app.text_utils import (
+from tools_api.text_utils import (
     extract_reference_metadata,
     format_answer_sections,
     format_citation_preview,
@@ -12,14 +13,14 @@ from app.text_utils import (
 
 def test_format_answer_sections_parses_headings():
     raw = """Summary:
-Postgres CPU is elevated on prod-db-1.
+Postgres CPU is elevated on postgres-primary.
 
 Recommended steps:
 1. Check pg_stat_activity for long queries.
 2. Cancel queries running longer than 5 minutes.
 
 Escalation:
-- Page DBA on-call if CPU stays above 90% for 15 minutes.
+- Page Database Reliability on-call if CPU stays above 90% for 15 minutes.
 
 Why this answer:
 Based on database_connectivity.md."""
@@ -27,7 +28,7 @@ Based on database_connectivity.md."""
     assert "Postgres CPU" in sections["summary"]
     assert len(sections["steps"]) >= 2
     assert sections["steps"][0].startswith("Check pg_stat_activity")
-    assert any("DBA" in item for item in sections["escalation"])
+    assert any("Database Reliability" in item for item in sections["escalation"])
     assert "database_connectivity" in sections["why"]
 
 
@@ -43,7 +44,7 @@ def test_format_citation_preview_parses_json_alert():
         "id": "A-1042",
         "severity": "P1",
         "title": "Checkout 5xx spike",
-        "fired": "2024-07-12T14:00:00Z",
+        "fired": "2026-07-12T14:00:00Z",
         "resolved_after_min": 47,
     }
     preview = format_citation_preview(json.dumps(alert), "alerts_last_3mo.json")
@@ -62,21 +63,21 @@ def test_format_citation_preview_markdown_heading():
 
 def test_format_answer_sections_inline_numbered_and_escalation():
     raw = (
-        "1. Check worker count on checkout-service. 2. Inspect dead-letter queue depth. "
-        "3. Scale workers if lag persists. Escalation: Page payments on-call if DLQ > 1000 "
+        "1. Check worker count on orders-api. 2. Inspect dead-letter queue depth. "
+        "3. Scale workers if lag persists. Escalation: Page App Platform on-call if DLQ > 1000 "
         "for 10 minutes. Why this answer: Based on runbook_queue_lag.md."
     )
     sections = format_answer_sections(raw)
     assert len(sections["steps"]) == 3
     assert "worker count" in sections["steps"][0]
     assert "dead-letter" in sections["steps"][1]
-    assert any("payments" in item.lower() for item in sections["escalation"])
+    assert any("app platform" in item.lower() for item in sections["escalation"])
     assert "runbook_queue_lag" in sections["why"]
 
 
-def test_format_answer_sections_parses_piter_headings():
+def test_format_answer_sections_parses_structured_headings():
     raw = """Priority:
-P2 — Postgres CPU elevated on prod-db-1; revenue path indirectly affected.
+P2 — Postgres CPU elevated on postgres-primary; order path indirectly affected.
 
 Investigation findings:
 Long-running queries detected; replica lag within SLO.
@@ -86,13 +87,13 @@ Triage plan:
 2. Cancel queries running longer than 5 minutes.
 
 Escalation recommendation:
-Page DBA on-call if CPU stays above 90% for 15 minutes.
+Page Database Reliability on-call if CPU stays above 90% for 15 minutes.
 
 Resolution plan:
 Verify CPU normalizes after query cancellation; document in incident ticket.
 
 Business impact:
-Checkout latency risk if DB remains saturated.
+Order-processing latency risk if DB remains saturated.
 
 Sources:
 database_connectivity.md
@@ -100,13 +101,13 @@ database_connectivity.md
 Confidence and uncertainty:
 High confidence — steps match runbook; uncertain if index rebuild needed."""
     sections = format_answer_sections(raw)
-    assert sections.get("piter_sections") is not None
-    piter = sections["piter_sections"]
-    assert "P2" in piter["priority"]
-    assert "Long-running" in piter["investigation"]
-    assert any("pg_stat_activity" in step for step in piter["triage_plan"])
-    assert len(piter["triage_plan"]) >= 2
-    assert any("DBA" in item for item in piter["escalation"])
+    assert sections.get("structured_sections") is not None
+    structured = sections["structured_sections"]
+    assert "P2" in structured["priority"]
+    assert "Long-running" in structured["investigation"]
+    assert any("pg_stat_activity" in step for step in structured["triage_plan"])
+    assert len(structured["triage_plan"]) >= 2
+    assert any("Database Reliability" in item for item in structured["escalation"])
     assert "Postgres CPU" in sections["summary"] or "P2" in sections["summary"]
     assert len(sections["steps"]) >= 2
 

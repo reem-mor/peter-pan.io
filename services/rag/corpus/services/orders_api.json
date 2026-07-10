@@ -1,0 +1,13 @@
+{
+  "doc_id": "orders_api",
+  "title": "Orders API Service Context",
+  "doc_type": "service",
+  "services": "orders-api",
+  "environments": "production, staging",
+  "severity_applicable": "P1,P2,P3",
+  "tags": "service ownership, orders, checkout, tier-0",
+  "last_updated": "2026-06-20",
+  "author": "Platform Engineering",
+  "version": "1.0",
+  "body": "# Orders API Service Context\n\nOrders-api owns order creation, cart-to-order conversion, order status, and checkout orchestration between shop-web and payments-api.\n\n## Owner\n\n- Team: App Platform\n- Primary escalation: Primary App Platform On-Call\n- Secondary escalation: Secondary App Platform On-Call\n- Channel: `#app-platform`\n\n## Dependencies\n\n- postgres-primary for order storage.\n- redis-cache for cart/session cache.\n- payments-api for payment authorization.\n\n## Business Impact\n\nOrders-api is tier-0. Order-creation failures block all checkout revenue immediately."
+}

@@ -1,0 +1,86 @@
+# PETER PAN Core — Stage A local stack (BUILD_PLAN §4: everything in one compose;
+# the EC2 split is a deploy variant, not a code path). No external API calls:
+# LLM seams stay on fixtures, n8n reaches these services via host ports.
+name: peter-pan
+
+x-healthcheck: &healthz
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 5s
+
+x-common-env: &common-env
+  PETER_SERVICES_TOKEN: ${PETER_SERVICES_TOKEN:-}
+
+services:
+  ingestion:
+    build: services/ingestion
+    ports: ["8001:8000"]
+    environment:
+      <<: *common-env
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-}
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  predictor:
+    build: services/predictor
+    ports: ["8002:8000"]
+    environment:
+      <<: *common-env
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  rag:
+    build: services/rag
+    ports: ["8003:8000"]
+    environment:
+      <<: *common-env
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  guardrails:
+    build: services/guardrails
+    ports: ["8004:8000"]
+    environment:
+      <<: *common-env
+      PETER_TOOLS_URL: http://tools-api:8000
+    depends_on:
+      tools-api:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  tools-api:
+    build: services/tools-api
+    ports: ["8005:8000"]
+    environment:
+      <<: *common-env
+      TOOLS_AUDIT_DB: /data/audit.sqlite
+    volumes:
+      - tools-audit:/data
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  langgraph-agent:
+    build: services/langgraph-agent
+    ports: ["8006:8000"]
+    environment:
+      <<: *common-env
+      PETER_RAG_URL: http://rag:8000
+      PETER_TOOLS_URL: http://tools-api:8000
+    depends_on:
+      rag:
+        condition: service_healthy
+      tools-api:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+volumes:
+  tools-audit:

@@ -36,33 +36,6 @@
     }
   },
   "regulatory_overrides": {
-    "UKGC": {
-      "P1": {
-        "additional_notify": [
-          "compliance_officer_role"
-        ],
-        "reporting_window_hours": 1,
-        "report_to": "UKGC Compliance Desk"
-      }
-    },
-    "DGE": {
-      "P1": {
-        "additional_notify": [
-          "compliance_officer_role"
-        ],
-        "reporting_window_hours": 4,
-        "report_to": "NJ-DGE Reporting"
-      }
-    },
-    "MGM": {
-      "P1": {
-        "additional_notify": [
-          "partner_operations_role"
-        ],
-        "reporting_window_hours": 2,
-        "report_to": "MGM Operations"
-      }
-    },
     "PCI-DSS": {
       "P1": {
         "additional_notify": [
@@ -70,6 +43,15 @@
         ],
         "reporting_window_hours": 24,
         "report_to": "PCI incident review"
+      }
+    },
+    "SOC2": {
+      "P1": {
+        "additional_notify": [
+          "compliance_officer_role"
+        ],
+        "reporting_window_hours": 4,
+        "report_to": "SOC2 compliance desk"
       }
     }
   },

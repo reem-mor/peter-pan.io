@@ -1,35 +1,39 @@
-"""Tests for the canonical data layer (app/services/data_access.py).
+"""Tests for the canonical data layer (tools_api/data_access.py)."""
 
-All structured datasets are read from data/source/ only; the legacy
-agent_data/ and top-level demo files have been quarantined to data/archive/.
-"""
 from __future__ import annotations
 
 import json
 
 import pytest
 
-from app.services import data_access as da
-from app.services.data_access import DataAccessError
+from tools_api import data_access as da
+from tools_api.data_access import DataAccessError
 
 
 def test_load_source_deploys_valid():
     rows = da.load_source_deploys()
-    assert len(rows) >= 1
+    assert len(rows) >= 40
     assert da.SOURCE_DEPLOYS_COLUMNS <= set(rows[0].keys())
 
 
 def test_load_service_owners_valid():
     rows = da.load_service_owners()
     names = {r["service"] for r in rows}
-    assert {"bet-service", "auth-service", "wallet-service"} <= names
+    assert {
+        "shop-web",
+        "orders-api",
+        "payments-api",
+        "postgres-primary",
+        "redis-cache",
+        "k8s-ingress",
+    } == names
     assert da.SERVICE_OWNERS_COLUMNS <= set(rows[0].keys())
 
 
 def test_load_business_impact_has_services():
     data = da.load_business_impact()
-    assert "bet-service" in data["services"]
-    assert data["services"]["bet-service"]["p1_cost_per_minute_usd"] == 9800
+    assert "orders-api" in data["services"]
+    assert data["services"]["orders-api"]["p1_cost_per_minute_usd"] == 6200
 
 
 def test_load_priority_matrix_thresholds():
@@ -53,10 +57,15 @@ def test_load_on_call_schedule_valid():
     assert len(rows) >= 1
 
 
+def test_load_runbooks_manifest():
+    manifest = da.load_runbooks_manifest()
+    assert "deployment_rollback.json" in manifest
+
+
 def test_resolve_alert_by_service_and_env():
-    alert = da.resolve_alert(service="bet-service", environment="GIB-UKGC")
+    alert = da.resolve_alert(service="orders-api", environment="production")
     assert alert is not None
-    assert alert["service"] == "bet-service"
+    assert alert["service"] == "orders-api"
 
 
 def test_missing_csv_raises(tmp_path):

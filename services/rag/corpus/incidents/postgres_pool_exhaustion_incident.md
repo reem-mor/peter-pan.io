@@ -1,0 +1,38 @@
+---
+doc_id: "postgres_pool_exhaustion_incident"
+title: "Postgres Primary Connection Pool Exhaustion — INC-20260618-002"
+doc_type: "incident"
+services: "postgres-primary, orders-api, payments-api"
+environments: "production"
+severity_applicable: "P2"
+tags: "historical, postgres-primary, connection pool, database, incident"
+last_updated: "2026-06-18"
+author: "Platform Engineering"
+version: "1.0"
+---
+
+# Postgres Primary Connection Pool Exhaustion — INC-20260618-002
+
+## Summary
+
+P2 in production: postgres-primary connection pool exhaustion caused elevated write latency and intermittent order-creation failures in orders-api.
+
+## Timeline
+
+- 2026-06-18 09:40 UTC: payments-api latency spike begins after an upstream provider slowdown.
+- 2026-06-18 09:44 UTC: orders-api retries against payments-api increase connection hold time on postgres-primary.
+- 2026-06-18 09:51 UTC: postgres-primary connection pool exhaustion alert fires; orders-api write latency p99 exceeds 4s.
+- 2026-06-18 10:05 UTC: on-call reduces orders-api client pool pressure and restarts the saturated postgres-primary connection pool per the database connectivity runbook.
+- 2026-06-18 10:12 UTC: connection pool saturation clears; write latency returns to baseline.
+
+## Root Cause
+
+A retry storm from orders-api against a slow payments-api held database connections open longer than expected, exhausting postgres-primary's connection pool.
+
+## Resolution
+
+Reduced orders-api's retry fan-out, restarted the saturated connection pool, and validated payments-api latency before closing the incident. Added a circuit breaker follow-up item.
+
+## Reuse Guidance
+
+When postgres-primary shows connection pool exhaustion or lock waits correlated with orders-api or payments-api symptoms, follow the database_connectivity runbook and check for a retry storm from a slow downstream dependency before killing sessions.

@@ -1,0 +1,7 @@
+# Tools API — runtime requirements (Stage A, BUILD_PLAN.md §3).
+fastapi==0.139.0
+uvicorn[standard]==0.51.0
+pydantic==2.13.4
+httpx==0.28.1
+pandas==2.2.3
+boto3==1.43.37

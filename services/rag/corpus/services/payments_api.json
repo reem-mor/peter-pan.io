@@ -1,0 +1,13 @@
+{
+  "doc_id": "payments_api",
+  "title": "Payments API Service Context",
+  "doc_type": "service",
+  "services": "payments-api",
+  "environments": "production, staging",
+  "severity_applicable": "P1,P2,P3",
+  "tags": "service ownership, payments, checkout, tier-0",
+  "last_updated": "2026-06-20",
+  "author": "Platform Engineering",
+  "version": "1.0",
+  "body": "# Payments API Service Context\n\nPayments-api owns payment authorization, provider routing, and payment status callbacks for orders-api checkout.\n\n## Owner\n\n- Team: App Platform\n- Primary escalation: Primary App Platform On-Call\n- Secondary escalation: Secondary App Platform On-Call\n- Channel: `#app-platform`\n\n## Dependencies\n\n- postgres-primary for payment records.\n- orders-api for checkout orchestration.\n- External payment provider (outside this corpus).\n\n## Business Impact\n\nPayments-api is tier-0. Payment-authorization failures block checkout completion and cause direct revenue loss."
+}

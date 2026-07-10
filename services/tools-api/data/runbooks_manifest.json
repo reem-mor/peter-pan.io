@@ -1,0 +1,11 @@
+{
+  "note": "Existence-only manifest: runbook *content* lives in the RAG service's corpus (services/rag/corpus/), a separate service reached over HTTP. This list is used solely to validate that a runbook id referenced by service_owners.csv / past_incidents.csv is a known id.",
+  "runbooks": [
+    "frontend_error_spike.json",
+    "deployment_rollback.json",
+    "payment_gateway_timeout.json",
+    "database_connectivity.json",
+    "redis_cache_degradation.json",
+    "ingress_5xx_spike.json"
+  ]
+}

@@ -61,6 +61,9 @@ evaluation/pytest_output.txt
 *.db
 knowledge_base/faiss_index/
 
+# --- Predictor/Ingestion demo fixtures (regenerate via predictive/datagen) ---
+predictive/data/
+
 # Local trash-can for cleanup moves (rm is restricted in agent sessions); empty at will
 .trash/
 

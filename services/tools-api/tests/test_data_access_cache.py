@@ -1,7 +1,8 @@
 """Static dataset cache behavior."""
+
 from __future__ import annotations
 
-from app.services import data_access
+from tools_api import data_access
 
 
 def test_source_loaders_reuse_cache():

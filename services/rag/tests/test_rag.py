@@ -1,46 +1,111 @@
-"""Tests for the offline local RAG retriever and LocalRagClient."""
+"""Tests for the offline TF-IDF retriever and the /query endpoint.
+
+Replaces the deleted app.local_agent.LocalRagClient (the old Flask chat
+client) — grounding/citation behaviour now lives directly behind the FastAPI
+/query route (rag_service.app).
+"""
+
 from __future__ import annotations
 
-from app.local_agent import LocalRagClient
-from app.services.local_rag import LocalRetriever, get_retriever
+from fastapi.testclient import TestClient
+
+from rag_service.app import app
+from rag_service.local_rag import LocalRetriever, get_retriever
+
+client = TestClient(app)
 
 
-def test_retriever_indexes_runbooks():
+def test_retriever_indexes_corpus():
     r = get_retriever()
-    assert r.runbook_dir.name == "knowledge_base"
+    assert r.runbook_dir.name == "corpus"
     assert r.document_count() >= 10
 
 
-def test_search_returns_db_cpu_runbook_for_demo_query():
-    hits = get_retriever().search("Postgres CPU is 95% on prod-db-1 what is the runbook", top_k=3)
+def test_search_returns_database_runbook_for_postgres_query():
+    hits = get_retriever().search(
+        "Postgres connection pool exhausted CPU high on production what is the runbook",
+        top_k=3,
+    )
     assert hits
     assert hits[0].document == "database_connectivity.json"
     assert hits[0].score > 0
 
 
-def test_search_returns_auth_runbook():
-    hits = get_retriever().search("authentication login failures users cannot log in error rate", top_k=3)
-    assert any("auth_service_login_failure" in h.document for h in hits)
-
-
-def test_local_client_answer_is_grounded_and_cited():
-    client = LocalRagClient()
-    ans = client.ask("Postgres CPU is 95% on prod-db-1 — what is the runbook?")
-    assert ans.grounded is True
-    assert ans.mode == "local"
-    assert ans.citations
-    assert ans.matched_runbook == "database_connectivity.json"
-    payload = ans.to_dict()
-    assert payload["citations"][0]["source_label"] == "database_connectivity.json"
-
-
-def test_local_client_refuses_off_topic():
-    client = LocalRagClient()
-    ans = client.ask("What is the best restaurant in Tokyo right now?")
-    assert ans.grounded is False
-    assert "Not in knowledge base" in ans.answer
+def test_search_returns_orders_api_runbook():
+    hits = get_retriever().search(
+        "orders-api error rate spike after deployment checkout failing", top_k=3
+    )
+    assert any("orders_api_error_spike" in h.document for h in hits)
 
 
 def test_retriever_empty_dir(tmp_path):
     empty = LocalRetriever(runbook_dir=tmp_path)
     assert empty.search("anything", top_k=3) == []
+
+
+def test_healthz():
+    resp = client.get("/healthz")
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "ok", "service": "rag"}
+
+
+def test_query_endpoint_returns_grounded_citations():
+    resp = client.post(
+        "/query",
+        json={
+            "query": "Postgres connection pool exhausted on production, what is the runbook?"
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["refused"] is False
+    assert body["citations"]
+    assert body["citations"][0]["source_type"] in {
+        "runbook",
+        "incident_history",
+        "service_doc",
+    }
+    assert body["answer"]
+
+
+def test_query_endpoint_refuses_off_topic():
+    resp = client.post(
+        "/query", json={"query": "What is the best restaurant in Tokyo right now?"}
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["refused"] is True
+    assert body["citations"] == []
+    assert body["answer"] == "insufficient data"
+
+
+def test_query_endpoint_rejects_empty_query():
+    resp = client.post("/query", json={"query": "   "})
+    assert resp.status_code == 422
+
+
+def test_query_endpoint_respects_limit():
+    resp = client.post(
+        "/query",
+        json={
+            "query": "orders-api error rate spike after deployment checkout failing",
+            "limit": 1,
+        },
+    )
+    assert resp.status_code == 200
+    assert len(resp.json()["citations"]) <= 1
+
+
+def test_query_requires_bearer_token_when_configured(monkeypatch):
+    monkeypatch.setenv("PETER_SERVICES_TOKEN", "secret-token")
+    unauthorized = client.post(
+        "/query", json={"query": "Postgres connection pool exhausted on production"}
+    )
+    assert unauthorized.status_code == 401
+
+    authorized = client.post(
+        "/query",
+        json={"query": "Postgres connection pool exhausted on production"},
+        headers={"Authorization": "Bearer secret-token"},
+    )
+    assert authorized.status_code == 200
