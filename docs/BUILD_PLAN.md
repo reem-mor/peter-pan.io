@@ -145,7 +145,7 @@ moves files across service dirs again.
 | 2/7 Guardrails in/out | HTTP nodes → `GRD /check/*` | flow run with failing fixture → rejection/review branch |
 | 3/IF gates | n8n IF nodes on guardrail verdicts | covered by branch fixtures |
 | CTX enrichment (MW/DEP/CMP → merge) | calendar check **stub** (static JSON); GitHub deployments **real API, fake repo**; Slack complaints **stub** (fixture) | merge output validates as `IncidentContext` |
-| 4 Extractor | n8n LLM node → **mock endpoint** (Stage C: Bedrock Haiku) | extraction fixture → expected `Incident` fields |
+| 4 Extractor | n8n LLM node → **mock endpoint** (Stage C: Gemini 2.5 Flash — ADR 0002) | extraction fixture → expected `Incident` fields |
 | 5 Agent | HTTP → `LG /agent/run` | E2E fixture |
 | 6 LLM Chain → TriageReport | Structured Output Parser with `TriageReport` JSON Schema | schema-reject fixture → review queue |
 | 8 Router + team webhooks + Slack + P1 escalation | n8n switch on `category`+`p_level`; team webhooks = **webhook.site/stub URLs**; Slack channel **stubbed** in Stage A | routing table test: 4 fixtures → 4 destinations |
@@ -169,8 +169,9 @@ class LLMClient(Protocol):
 ```
 
 Stage A ships only `FixtureLLMClient` (deterministic canned responses keyed by task + fixture id;
-records prompts for assertion). Stage C adds `BedrockClient` (Sonnet: agent/synthesis, Haiku:
-extract), `LlamaCppClient` (rag_generate), `OllamaClient` (assistant) — selected by env config.
+records prompts for assertion). Stage C adds `BedrockClient` (Sonnet: agent/synthesis),
+`GeminiClient` (2.5 Flash: extract — ADR 0002), `LlamaCppClient` (rag_generate),
+`OllamaClient` (assistant) — selected by env config.
 **No service ever imports a provider SDK directly.**
 
 ### Knowledge & Comms seams (`KNOW`/`HUM`)
@@ -212,7 +213,7 @@ approval-gate REST endpoint; GitHub deploy events (`GH`) enter via the n8n conte
 
 - **Scope boundary (NOT):** new features, flow changes, contract changes. One module per
   service: swap `FixtureLLMClient` for the real client via config.
-- **Order within C:** Bedrock (Haiku extract → Sonnet agent/synthesis) → llama.cpp GGUF for RAG
+- **Order within C:** Gemini Flash extract + Bedrock Sonnet agent/synthesis (ADR 0002) → llama.cpp GGUF for RAG
   → Ollama assistant → Confluence→pgvector ingestion → OpenClaw approvals → real Slack.
 - **Exit gate:** the same Stage A E2E suite green against real providers (fixtures replaced by
   recorded assertions with tolerance); eval harness scores (retrieval hit-rate, TriageReport

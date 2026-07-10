@@ -35,7 +35,8 @@ Credentials, created in the n8n UI (the export carries **no** secrets):
   FixtureLLM service. ⚠️ On creation n8n auto-assigned the real "OpenAi n8n course"
   credential to the three "(Mock Seam)" model nodes — **swap it to the mock credential
   before running anything**. Stage C swaps this same credential to real providers
-  (Bedrock Haiku for extraction, Sonnet for agent/synthesis); the nodes never change.
+  (Gemini 2.5 Flash for extraction, Bedrock Claude Sonnet for agent/synthesis —
+  [ADR 0002](../docs/adr/0002-model-memory-db.md)); the nodes never change.
 
 ## Flow ↔ diagram mapping
 

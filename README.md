@@ -31,7 +31,7 @@ The two Mermaid diagrams are the **source of truth**; anything not in them is ou
 | **1 · Humans** | Streamlit WebUI (incident form, TriageReport viewer, local assistant) | Stage B |
 | **2 · Orchestration** | the n8n **PETER flow** — webhook → guardrails → enrichment → noise gate → extractor → commander agent → TriageReport → guardrails → router/escalation | **built** → [`n8n/peter-flow.json`](n8n/peter-flow.json) · [docs](n8n/README.md) |
 | **3 · Core services** | six FastAPI microservices: Ingestion, Predictive Engine (EWMA floor + classifier), RAG (cited answers only), Guardrails (regex floor + NeMo seam), Tools API + approval gate, LangGraph agent | Stage A — in progress |
-| **4 · AI models** | task-routed: Bedrock (Sonnet agent/synthesis, Haiku extraction), llama.cpp (RAG generation), Ollama (assistant) — all behind one `LLMClient` seam | Stage C; Stage A runs deterministic fixtures |
+| **4 · AI models** | task-routed ([why](docs/model-memory-db-rationale.md) · [ADR 0002](docs/adr/0002-model-memory-db.md)): Gemini 2.5 Flash (extraction), Bedrock Claude Sonnet (agent/synthesis), llama.cpp Mistral 7B (RAG generation), Ollama Llama 3 (assistant) — all behind one `LLMClient` seam | Stage C; Stage A runs deterministic fixtures |
 
 ## Contracts first
 
@@ -51,7 +51,6 @@ from Tools API responses, P-level mapping is deterministic code, escalation is p
 | `docs/` | diagrams (source of truth), [BUILD_PLAN.md](docs/BUILD_PLAN.md), ADRs, frozen contracts |
 | `predictive/` | demo/training data generators (`datagen/`) |
 | `evaluation/` | golden-set seeds; Stage A adds the E2E eval harness |
-| `frontend/` | parked PITER React SPA — bonus dashboard, excluded from the build plan and CI |
 
 ## Build stages
 

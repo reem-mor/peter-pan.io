@@ -24,4 +24,4 @@ WebUI (Layer 1). **Not** the legacy PITER AiOps project — see
 
 Production-minded ops code — observability, grounded/cited RAG, deterministic guardrail
 floors, preview-first escalation. Models propose; unit-tested code and schemas decide.
-`frontend/` is parked and excluded from plan and CI.
+Model/memory/storage choices: [ADR 0002](docs/adr/0002-model-memory-db.md).

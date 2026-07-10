@@ -21,6 +21,8 @@ a **separate project**, no longer configured as a remote (repo separation 2026-0
   `requirements-dev.txt` (trimmed to standalone dev tools), `.claude/`, `.cursor/`, `.github/`.
 - `frontend/` — the PITER React SPA, **parked as a bonus dashboard by explicit user decision**.
   Excluded from the build plan and CI; the diagrams specify a Streamlit WebUI instead.
+  **Resolved 2026-07-10: deleted by user decision** ("new project with new requirements");
+  recoverable from git history (`git show 1cf65f1:frontend/...`).
 - `evaluation/{demo_questions,rag_evaluation_cases,tool_evaluation_cases}.json` — golden-set seeds.
 - To be rewritten before/during Stage A: `README.md` (stub now), `AGENTS.md`, `CLAUDE.md`,
   `.env.example`, `.github/copilot-instructions.md`, `.github/workflows/ci.yml` (lint-only interim).
