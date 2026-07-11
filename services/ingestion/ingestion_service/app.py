@@ -11,6 +11,7 @@ step, with graceful degradation when n8n isn't reachable/configured.
 from __future__ import annotations
 
 import os
+from typing import Any
 
 import httpx
 from fastapi import Depends, FastAPI
@@ -37,7 +38,7 @@ def _build_client() -> httpx.AsyncClient:
     return httpx.AsyncClient(timeout=_FORWARD_TIMEOUT_SECONDS)
 
 
-async def _forward_to_n8n(signal: Signal, url: str) -> int:
+async def _forward_to_n8n(signal: Signal, url: str) -> tuple[int, Any]:
     """POST the validated Signal JSON to the n8n webhook. One retry on
     transport-level failure (timeout, connection error); the last error is
     re-raised for the caller to turn into a degraded (forwarded=false) reply.
@@ -52,7 +53,11 @@ async def _forward_to_n8n(signal: Signal, url: str) -> int:
         for _attempt in range(_FORWARD_ATTEMPTS):
             try:
                 response = await client.post(url, json=payload, headers=headers)
-                return response.status_code
+                try:
+                    response_body: Any = response.json()
+                except ValueError:
+                    response_body = None
+                return response.status_code, response_body
             except httpx.HTTPError as exc:  # noqa: PERF203 — retry loop is intentional
                 last_exc = exc
     assert last_exc is not None  # for type checkers; loop always sets it on failure
@@ -80,7 +85,7 @@ async def create_signal(signal: Signal) -> dict:
         return {"forwarded": False, "reason": "n8n webhook not configured"}
 
     try:
-        status_code = await _forward_to_n8n(signal, n8n_url)
+        status_code, response_body = await _forward_to_n8n(signal, n8n_url)
     except httpx.HTTPError as exc:
         return {
             "forwarded": False,
@@ -88,4 +93,9 @@ async def create_signal(signal: Signal) -> dict:
             "signal_id": signal.id,
         }
 
-    return {"forwarded": True, "signal_id": signal.id, "n8n_status": status_code}
+    return {
+        "forwarded": True,
+        "signal_id": signal.id,
+        "n8n_status": status_code,
+        "n8n_response": response_body,
+    }

@@ -23,7 +23,10 @@ TaskKind = Literal["extract", "agent", "synthesis", "rag_generate", "assistant"]
 
 class ChatMessage(BaseModel):
     role: str
-    content: str
+    content: str | None = None
+    name: str | None = None
+    tool_call_id: str | None = None
+    tool_calls: list[dict[str, Any]] | None = None
 
 
 class ChatCompletionRequest(BaseModel):
@@ -78,7 +81,7 @@ def _responses_messages(payload: ResponsesRequest) -> list[ChatMessage]:
 
 
 def _detect_task(messages: list[ChatMessage]) -> TaskKind:
-    blob = "\n".join(m.content for m in messages).lower()
+    blob = "\n".join(m.content or "" for m in messages).lower()
     extractor_markers = (
         "extract structured incident facts",
         "affected_metric",
@@ -107,8 +110,8 @@ def _fixture_id(messages: list[ChatMessage]) -> str:
 
 
 def _extract_response(messages: list[ChatMessage]) -> str:
-    user = next((m.content for m in reversed(messages) if m.role == "user"), "")
-    service = "orders-api"
+    user = next((m.content or "" for m in reversed(messages) if m.role == "user"), "")
+    service = ""
     normalized = user.lower()
     known_services = {
         "postgres-primary": ("postgres-primary", "postgres"),
@@ -118,10 +121,14 @@ def _extract_response(messages: list[ChatMessage]) -> str:
         "redis-cache": ("redis-cache", "redis"),
         "k8s-ingress": ("k8s-ingress", "ingress"),
     }
-    for canonical, aliases in known_services.items():
-        if any(alias in normalized for alias in aliases):
-            service = canonical
-            break
+    matches = [
+        (normalized.index(alias), canonical)
+        for canonical, aliases in known_services.items()
+        for alias in aliases
+        if alias in normalized
+    ]
+    if matches:
+        service = min(matches)[1]
     environment = (
         "production"
         if "production" in normalized or "prod" in normalized
@@ -156,8 +163,99 @@ def _extract_response(messages: list[ChatMessage]) -> str:
     )
 
 
+def _commander_evidence(messages: list[ChatMessage]) -> dict[str, Any] | None:
+    marker = "Commander findings:"
+    for message in reversed(messages):
+        content = message.content or ""
+        if marker not in content:
+            continue
+        candidate = content.split(marker, 1)[1].lstrip()
+        try:
+            parsed, _end = json.JSONDecoder().raw_decode(candidate)
+        except json.JSONDecodeError:
+            return None
+        return parsed if isinstance(parsed, dict) else None
+    return None
+
+
+def _tool_grounded_report(
+    messages: list[ChatMessage], evidence: dict[str, Any]
+) -> dict[str, Any]:
+    blob = "\n".join(message.content or "" for message in messages)
+    incident_match = re.search(r"\binc-[a-z0-9-]{8,}\b", blob.lower())
+    service_match = re.search(r'"service"\s*:\s*"([^"]+)"', blob)
+    incident_id = incident_match.group(0) if incident_match else "inc-fixture001"
+    service = service_match.group(1) if service_match else "unknown-service"
+
+    predictor = evidence.get("predictor", {})
+    deep = evidence.get("langgraph", {})
+    retrieval = evidence.get("rag", deep)
+    owner_context = evidence.get("service_context", deep)
+    flags: list[str] = []
+
+    severity = int(predictor.get("severity", 0) or 0)
+    p_level = {5: "P1", 4: "P2", 3: "P3", 2: "P4", 1: "P4"}.get(
+        severity, deep.get("p_level", "P3")
+    )
+    category = predictor.get("category") or deep.get("category")
+    if category not in {"infra", "database", "application"}:
+        category = "application"
+        flags.append("predictor_unverified")
+
+    citations = retrieval.get("citations", [])
+    if not isinstance(citations, list) or not citations:
+        citations = [
+            {
+                "source_id": "tool:unavailable",
+                "source_type": "tool_result",
+                "quote": "insufficient data",
+            }
+        ]
+        flags.append("insufficient_citations")
+
+    owner_team = owner_context.get("owner_team") or "unknown"
+    escalation_path = owner_context.get("escalation_path", [])
+    if isinstance(escalation_path, str):
+        escalation_path = [
+            part.strip() for part in escalation_path.split("->") if part.strip()
+        ]
+    if owner_team == "unknown":
+        flags.append("owner_unverified")
+
+    return {
+        "incident_id": incident_id,
+        "category": category,
+        "p_level": p_level,
+        "summary": f"Tool-grounded fixture synthesis for {service}.",
+        "probable_cause": deep.get("probable_cause")
+        or retrieval.get("answer")
+        or "Tool evidence requires human analysis.",
+        "citations": citations,
+        "owner_team": owner_team,
+        "escalation_path": escalation_path if isinstance(escalation_path, list) else [],
+        "recommended_steps": deep.get("recommended_steps")
+        or [
+            f"Review current health metrics for {service}.",
+            "Compare the signal with recent deployment evidence.",
+        ],
+        "confidence": float(predictor.get("confidence") or deep.get("confidence") or 0.5),
+        "guardrail_flags": sorted(set(flags)),
+        "generated_at": "2026-07-10T12:05:00Z",
+        "model_meta": {
+            "provider": "fixture",
+            "model": "peter-stage-a-fixture",
+            "predictor_severity": str(severity or ""),
+            "evidence": ",".join(sorted(evidence)),
+        },
+    }
+
+
 def _synthesis_response(messages: list[ChatMessage]) -> str:
-    blob = "\n".join(message.content for message in messages).lower()
+    evidence = _commander_evidence(messages)
+    if evidence is not None:
+        return json.dumps(_tool_grounded_report(messages, evidence))
+
+    blob = "\n".join(message.content or "" for message in messages).lower()
     incident_match = re.search(r"\binc-[a-z0-9-]{8,}\b", blob)
     incident_id = incident_match.group(0) if incident_match else "inc-fixture001"
 
@@ -230,6 +328,88 @@ def _synthesis_response(messages: list[ChatMessage]) -> str:
     )
 
 
+def _parse_tool_result(message: ChatMessage) -> dict[str, Any]:
+    try:
+        parsed = json.loads(message.content or "{}")
+    except json.JSONDecodeError:
+        return {"ok": False, "raw": message.content or ""}
+    if isinstance(parsed, list) and len(parsed) == 1 and isinstance(parsed[0], dict):
+        return parsed[0]
+    return parsed if isinstance(parsed, dict) else {"value": parsed}
+
+
+def _tool_message_name(messages: list[ChatMessage], message: ChatMessage) -> str:
+    if message.name:
+        return message.name
+    for previous in reversed(messages):
+        for tool_call in previous.tool_calls or []:
+            if tool_call.get("id") == message.tool_call_id:
+                return str(tool_call.get("function", {}).get("name", ""))
+    return ""
+
+
+def _agent_sequence(messages: list[ChatMessage]) -> list[str]:
+    incident_text = "\n".join(
+        message.content or "" for message in messages if message.role == "user"
+    ).lower()
+    complex_incident = any(
+        marker in incident_text
+        for marker in ("cross-domain", "redis-cache", "k8s-ingress")
+    )
+    if complex_incident:
+        return ["Predictor_Tool", "LangGraph_Agent_Tool"]
+    return ["Predictor_Tool", "RAG_Query_Tool", "Service_Context_Tool"]
+
+
+def _next_agent_tool(
+    messages: list[ChatMessage],
+    available_tools: list[str | None],
+) -> tuple[str, dict[str, Any]] | None:
+    completed = [message for message in messages if message.role == "tool"]
+    sequence = [
+        tool_name
+        for tool_name in _agent_sequence(messages)
+        if tool_name in available_tools
+    ]
+    if len(completed) >= len(sequence):
+        return None
+
+    tool_name = sequence[len(completed)]
+    incident_text = next(
+        (message.content or "" for message in reversed(messages) if message.role == "user"),
+        "triage this incident",
+    )
+    if tool_name == "RAG_Query_Tool":
+        arguments = {"query": incident_text[:500]}
+    elif tool_name == "LangGraph_Agent_Tool":
+        arguments = {"question": incident_text[:500]}
+    elif tool_name == "Service_Context_Tool":
+        predictor = _parse_tool_result(completed[0]) if completed else {}
+        severity = int(predictor.get("severity", 3))
+        p_level = {5: "P1", 4: "P2", 3: "P3", 2: "P4", 1: "P4"}.get(
+            severity, "P3"
+        )
+        arguments = {"severity": p_level}
+    else:
+        arguments = {}
+    return tool_name, arguments
+
+
+def _agent_evidence(messages: list[ChatMessage]) -> str:
+    keys = {
+        "Predictor_Tool": "predictor",
+        "RAG_Query_Tool": "rag",
+        "Service_Context_Tool": "service_context",
+        "LangGraph_Agent_Tool": "langgraph",
+    }
+    evidence: dict[str, Any] = {}
+    for message in messages:
+        tool_name = _tool_message_name(messages, message)
+        if message.role == "tool" and tool_name in keys:
+            evidence[keys[tool_name]] = _parse_tool_result(message)
+    return json.dumps(evidence)
+
+
 def _response_for_task(task: TaskKind, messages: list[ChatMessage]) -> str:
     if task == "extract":
         return _extract_response(messages)
@@ -281,9 +461,19 @@ async def chat_completions(
     ]
     if "format_final_json_response" in tool_names:
         task = "synthesis"
-    content = _response_for_task(task, payload.messages)
+    agent_tool = (
+        _next_agent_tool(payload.messages, tool_names)
+        if task == "agent" and tool_names
+        else None
+    )
+    if task == "agent" and any(
+        message.role == "tool" for message in payload.messages
+    ):
+        content = _agent_evidence(payload.messages)
+    else:
+        content = _response_for_task(task, payload.messages)
     requires_codeblock = any(
-        "include the enclosing markdown codeblock" in message.content.lower()
+        "include the enclosing markdown codeblock" in (message.content or "").lower()
         for message in payload.messages
     )
     if task == "synthesis" and requires_codeblock:
@@ -302,6 +492,7 @@ async def chat_completions(
                     else None
                 ),
                 "stream": payload.stream,
+                "next_tool": agent_tool[0] if agent_tool else None,
             }
         )
     )
@@ -310,7 +501,25 @@ async def chat_completions(
         if "format_final_json_response" in tool_names
         else None
     )
-    if structured_tool:
+    if agent_tool:
+        tool_name, arguments = agent_tool
+        message = {
+            "role": "assistant",
+            "content": None,
+            "refusal": None,
+            "tool_calls": [
+                {
+                    "id": f"call_{fixture_id.removeprefix('fix-')}",
+                    "type": "function",
+                    "function": {
+                        "name": tool_name,
+                        "arguments": json.dumps(arguments),
+                    },
+                }
+            ],
+        }
+        finish_reason = "tool_calls"
+    elif structured_tool:
         message: dict[str, Any] = {
             "role": "assistant",
             "content": None,

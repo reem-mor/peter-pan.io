@@ -73,3 +73,15 @@ def test_publish_workflow_uses_authenticated_rest_version():
             {"versionId": "version-456"},
         )
     ]
+
+
+def test_bootstrap_updates_in_place_without_delete_or_archive():
+    source = SCRIPT_PATH.read_text(encoding="utf-8")
+    assert ".delete(" not in source
+    assert "/archive" not in source
+    assert "_purge_named_workflows" not in source
+
+
+def test_bootstrap_does_not_skip_an_active_stale_export():
+    source = SCRIPT_PATH.read_text(encoding="utf-8")
+    assert "Workflow already active; skipping bootstrap" not in source

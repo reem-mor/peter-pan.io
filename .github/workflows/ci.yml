@@ -205,6 +205,7 @@ jobs:
               --entrypoint n8n \
               --ingestion-url http://ingestion:8000 \
               --stubs-url http://integration-stubs:8000 \
+              --tools-url http://tools-api:8000 \
               --poll-timeout 90
 
       - name: Upload E2E evidence

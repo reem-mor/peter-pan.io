@@ -6,11 +6,13 @@ escalation_path only ever come from the mocked Tools API response.
 
 from __future__ import annotations
 
+import asyncio
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 
 from langgraph_agent import app as app_module
+from langgraph_agent import graph as graph_module
 from langgraph_agent.contracts import TriageReport
 
 client = TestClient(app_module.app)
@@ -20,6 +22,94 @@ TOOLS_URL = "https://tools.example.test"
 
 MOCK_OWNER_TEAM = "Database Platform"
 MOCK_ESCALATION_PATH = ["db-oncall", "db-team-lead", "incident-commander"]
+
+
+def test_specialists_start_rag_and_tools_concurrently(monkeypatch):
+    started: list[str] = []
+    all_started = asyncio.Event()
+
+    async def wait_for_peers(name: str) -> dict:
+        started.append(name)
+        if len(started) == 3:
+            all_started.set()
+        await asyncio.wait_for(all_started.wait(), timeout=0.2)
+        return {"ok": True}
+
+    async def fake_rag(client, rag_url, question):
+        return await wait_for_peers("rag")
+
+    async def fake_tool(client, tools_url, tool_name, payload):
+        return await wait_for_peers(tool_name)
+
+    monkeypatch.setattr(graph_module, "_call_rag", fake_rag)
+    monkeypatch.setattr(graph_module, "_call_tool", fake_tool)
+
+    state = {
+        "incident": {
+            "service": "orders-api",
+            "environment": "production",
+            "symptom": "5xx spike",
+        },
+        "question": "what happened?",
+    }
+
+    async def scenario():
+        async with httpx.AsyncClient() as async_client:
+            return await graph_module.specialists_node(
+                state,
+                rag_url=RAG_URL,
+                tools_url=TOOLS_URL,
+                client=async_client,
+            )
+
+    result = asyncio.run(scenario())
+
+    assert set(started) == {"rag", "service_context", "similar_incidents"}
+    assert set(result["specialist_results"]) == {
+        "rag",
+        "service_context",
+        "similar_incidents",
+    }
+
+
+def test_synthesiser_normalizes_string_escalation_chain():
+    state = {
+        "incident": {
+            "id": "inc-escalation01",
+            "service": "redis-cache",
+            "symptom": "latency",
+            "context": {"severity": 4},
+        },
+        "plan_result": {"category": "infra"},
+        "specialist_results": {
+            "rag": {
+                "ok": True,
+                "answer": "Check cache saturation.",
+                "citations": [
+                    {
+                        "source_id": "redis_cache_degradation",
+                        "source_type": "runbook",
+                        "quote": "Inspect cache saturation.",
+                    }
+                ],
+            },
+            "service_context": {
+                "ok": True,
+                "owner_team": "Infra SRE",
+                "escalation_path": (
+                    "Primary Infra SRE On-Call -> Secondary Infra SRE On-Call"
+                ),
+            },
+            "similar_incidents": {"ok": True, "similar_incidents": []},
+        },
+    }
+
+    report = graph_module.synthesise_node(state)["report"]
+
+    assert report["escalation_path"] == [
+        "Primary Infra SRE On-Call",
+        "Secondary Infra SRE On-Call",
+    ]
 
 
 def _healthy_handler(request: httpx.Request) -> httpx.Response:

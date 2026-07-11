@@ -6,7 +6,7 @@
 
 ## Decisions
 
-1. **Models are routed by task profile** (Stage C targets; Stage A stays mock-first behind
+1. **Models are routed by task profile** (optional Stage C targets; Stage A/Layers 2–3 stay mock-first behind
    the OpenAI-compatible fixture seam — nodes/services never change, only credentials):
    - n8n Extractor (node 4): **Gemini 2.5 Flash** — *supersedes* BUILD_PLAN's Bedrock Haiku
      (extraction is high-volume/low-reasoning; Flash has native structured output in n8n).

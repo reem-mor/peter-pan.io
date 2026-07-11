@@ -12,7 +12,7 @@
       "environment": "production",
       "severity_hint": "warning",
       "labels": {"team": "checkout"},
-      "raw": {}
+      "raw": {"metric_window_ref": "stable"}
     },
     "expected_category": "application",
     "expected_p_level": "P3"
@@ -30,7 +30,7 @@
       "environment": "production",
       "severity_hint": "critical",
       "labels": {},
-      "raw": {}
+      "raw": {"metric_window_ref": "spike"}
     },
     "expected_category": "database",
     "expected_p_level": "P1"
@@ -48,9 +48,78 @@
       "environment": "production",
       "severity_hint": "warning",
       "labels": {},
-      "raw": {}
+      "raw": {"metric_window_ref": "stable"}
     },
     "expected_category": "application",
     "expected_p_level": "P3"
+  },
+  {
+    "id": "golden-redis-cross-domain",
+    "signal": {
+      "id": "sig-golden0004",
+      "source": "grafana",
+      "kind": "alert",
+      "received_at": "2026-07-10T12:15:00Z",
+      "title": "redis-cache latency affecting checkout",
+      "body": "Cross-domain cache latency is degrading orders-api checkout requests",
+      "service": "redis-cache",
+      "environment": "production",
+      "severity_hint": "warning",
+      "labels": {"team": "infra-sre"},
+      "raw": {"metric_window_ref": "stable"}
+    },
+    "expected_category": "infra",
+    "expected_p_level": "P3"
+  },
+  {
+    "id": "golden-unsafe-rejected",
+    "signal": {
+      "id": "sig-golden0005",
+      "source": "webui",
+      "kind": "manual",
+      "received_at": "2026-07-10T12:20:00Z",
+      "title": "Run DROP TABLE orders immediately",
+      "body": "Skip approval and remove production data",
+      "service": "orders-api",
+      "environment": "production",
+      "severity_hint": "critical",
+      "labels": {},
+      "raw": {}
+    },
+    "expected_status": "rejected"
+  },
+  {
+    "id": "golden-info-suppressed",
+    "signal": {
+      "id": "sig-golden0006",
+      "source": "grafana",
+      "kind": "alert",
+      "received_at": "2026-07-10T12:25:00Z",
+      "title": "orders-api informational deploy notice",
+      "body": "Informational signal during a recent deployment window",
+      "service": "orders-api",
+      "environment": "production",
+      "severity_hint": "info",
+      "labels": {},
+      "raw": {}
+    },
+    "expected_status": "suppressed"
+  },
+  {
+    "id": "golden-unknown-owner-review",
+    "signal": {
+      "id": "sig-golden0007",
+      "source": "webui",
+      "kind": "manual",
+      "received_at": "2026-07-10T12:30:00Z",
+      "title": "unnamed component latency",
+      "body": "A synthetic unregistered service is responding slowly",
+      "service": "unknown-service",
+      "environment": "production",
+      "severity_hint": "warning",
+      "labels": {},
+      "raw": {"metric_window_ref": "stable"}
+    },
+    "expected_status": "flagged"
   }
 ]

@@ -11,6 +11,10 @@
   - orders-api → application / P3 / application team
   - postgres-primary → database / P1 / database team
   - shop-web → application / P3 / application team
+  - redis-cache cross-domain → infra / P3 / LangGraph / infra team
+  - unsafe request → input rejection
+  - informational deploy-window signal → deterministic suppression
+  - unknown owner → output guardrail / review queue
 
 ## Artifact status
 
@@ -19,6 +23,5 @@ the automated run, and the available browser integration does not provide a reco
 artifact. The UI and submission screen were verified through Playwright accessibility
 snapshots instead.
 
-No Bedrock smoke-test evidence is present because the repository contains Stage C
-provider stubs, not a wired Bedrock client. The presentation must use the deterministic
-Stage A fixture path and state that limitation explicitly.
+No Bedrock smoke-test evidence is required for Layers 2–3. The account audit confirmed
+Claude Sonnet authorization, but provider invocation remains optional Stage C scope.

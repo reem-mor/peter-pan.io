@@ -227,7 +227,7 @@ approval-gate REST endpoint; GitHub deploy events (`GH`) enter via the n8n conte
 |---|---|---|
 | 1 | **Local-demo-env ↔ AWS seam** — k3d/Grafana runs locally, core runs on EC2; webhooks across NAT | Stage A runs *everything* in one local docker compose; the EC2 split is a deploy variant, not a code path. Grafana→Ingestion is plain HTTP with a shared-secret header; demo env can replay recorded alert fixtures if the live link fails. |
 | 2 | **n8n webhook reachability** (EC2 security groups, n8n auth, URL drift) | webhook URL + auth from env only; `run_e2e.py` asserts reachability as its first step; exported flow JSON keeps credentials as placeholders. |
-| 3 | **Bedrock quota/cost** (Stage C) | mock-first design means Bedrock appears only in Stage C behind `LLMClient`; per-task model routing (Haiku for extraction) caps cost; retries with backoff + a hard daily budget env var; demo can always fall back to fixtures. |
+| 3 | **Bedrock quota/cost** (optional Stage C) | Bedrock is not required for Layers 2–3; optional Sonnet reasoning stays behind `LLMClient`, Gemini handles extraction, and the fixture fallback remains available. |
 | 4 | **GGUF memory on the EC2 instance** (Mistral 7B + n8n + 6 services) | quantized Q4 model, llama.cpp server with capped context; RAG generation is optional-per-request — TF-IDF+extractive fallback stays wired; measure RSS in Stage C exit gate before demo day. |
 | 5 | **Scope drift** (reviving the React frontend, adding non-diagram components) | every PR checked against the diagrams; frontend/ excluded from CI and the plan; stage scope-boundary lists are the review checklist; one phase per approval (standing rule). |
 

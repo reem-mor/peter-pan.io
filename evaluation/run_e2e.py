@@ -93,6 +93,21 @@ def _load_golden() -> list[dict[str, Any]]:
     return json.loads(GOLDEN_PATH.read_text(encoding="utf-8"))
 
 
+def _layer3_source_hash() -> str:
+    paths = [
+        *ROOT.glob("services/**/*.py"),
+        *ROOT.glob("packages/**/*.py"),
+        *ROOT.glob("scripts/*.py"),
+    ]
+    digest = hashlib.sha256()
+    for path in sorted(paths):
+        digest.update(path.relative_to(ROOT).as_posix().encode())
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def _validate_cases(cases: list[dict[str, Any]]) -> None:
     _load_contracts()
     seen_ids: set[str] = set()
@@ -103,7 +118,7 @@ def _validate_cases(cases: list[dict[str, Any]]) -> None:
         seen_ids.add(case_id)
         _Signal.model_validate(case.get("signal"))  # type: ignore[union-attr]
         expected_status = case.get("expected_status", "ok")
-        if expected_status not in {"ok", "rejected", "flagged"}:
+        if expected_status not in {"ok", "rejected", "suppressed", "flagged"}:
             raise ValueError(f"{case_id}: unsupported expected_status={expected_status!r}")
         if expected_status == "ok":
             if case.get("expected_category") not in {
@@ -366,10 +381,18 @@ def _validate_n8n_delivery(
     actual_p_level = report.get("p_level")
     guardrail_flags = report.get("guardrail_flags", [])
     provider = report.get("model_meta", {}).get("provider", "")
+    evidence = report.get("model_meta", {}).get("evidence", "")
     is_flagged = len(guardrail_flags) > 0
 
     # Flagged reports are routed to review-queue — this is a documented branch, not a failure.
     if is_flagged:
+        if not is_review:
+            return {
+                "id": case["id"],
+                "status": "mismatch",
+                "channel": channel,
+                "reason": "flagged report was not delivered to the review queue",
+            }
         return {
             "id": case["id"],
             "status": "flagged",
@@ -378,6 +401,7 @@ def _validate_n8n_delivery(
             "category": actual_category,
             "p_level": actual_p_level,
             "provider": provider,
+            "evidence": evidence,
         }
 
     # Verify delivery channel matches expected category
@@ -395,6 +419,7 @@ def _validate_n8n_delivery(
             "category": actual_category,
             "p_level": actual_p_level,
             "provider": provider,
+            "evidence": evidence,
         }
 
     return {
@@ -407,13 +432,40 @@ def _validate_n8n_delivery(
         "actual_p_level": actual_p_level,
         "channel_ok": channel_ok,
         "provider": provider,
+        "evidence": evidence,
     }
+
+
+def _verify_p1_preview(
+    client: httpx.Client,
+    tools_base: str,
+    headers: dict[str, str],
+    incident_id: str,
+    timeout: float = 10.0,
+    poll_interval: float = 0.5,
+) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        response = client.get(f"{tools_base}/audit", headers=headers, timeout=5.0)
+        response.raise_for_status()
+        entries = response.json()
+        if any(
+            entry.get("incident_id") == incident_id
+            and entry.get("p_level") == "P1"
+            and entry.get("preview_requested") is True
+            and entry.get("dispatched") is False
+            for entry in entries
+        ):
+            return True
+        time.sleep(poll_interval)
+    return False
 
 
 def _run_signal_via_n8n(
     client: httpx.Client,
     ingestion_url: str,
     stubs_base: str,
+    tools_base: str,
     token: str,
     case: dict[str, Any],
     poll_timeout: float,
@@ -456,6 +508,17 @@ def _run_signal_via_n8n(
             "reason": ingestion_data.get("reason", "n8n not configured"),
         }
 
+    n8n_response = ingestion_data.get("n8n_response")
+    if isinstance(n8n_response, dict) and n8n_response.get("status") in {
+        "rejected",
+        "suppressed",
+    }:
+        return {
+            "id": case["id"],
+            "status": n8n_response["status"],
+            "reason": n8n_response.get("reason", ""),
+        }
+
     # Poll integration-stubs until n8n delivers a TriageReport.
     expected_category = case.get("expected_category")
     deadline = time.monotonic() + poll_timeout
@@ -474,7 +537,23 @@ def _run_signal_via_n8n(
 
         delivery = _find_triage_delivery(deliveries, expected_category)
         if delivery is not None:
-            return _validate_n8n_delivery(case, delivery)
+            result = _validate_n8n_delivery(case, delivery)
+            if result.get("status") == "ok" and result.get("p_level") == "P1":
+                incident_id = (
+                    delivery.get("payload", {}).get("incident_id")
+                    if isinstance(delivery.get("payload"), dict)
+                    else ""
+                )
+                if not _verify_p1_preview(
+                    client, tools_base, headers, str(incident_id or "")
+                ):
+                    return {
+                        **result,
+                        "status": "escalation_missing",
+                        "reason": "P1 escalation preview audit record was not found",
+                    }
+                result["p1_preview"] = True
+            return result
 
         time.sleep(poll_interval)
 
@@ -493,9 +572,11 @@ def _run_n8n_entrypoint(
     client: httpx.Client,
     ingestion_url: str | None = None,
     stubs_base: str | None = None,
+    tools_base: str | None = None,
 ) -> list[dict[str, Any]]:
     ingestion_url = ingestion_url or f"{base_url.rstrip('/')}:8001"
     stubs_base = stubs_base or _stubs_url(base_url)
+    tools_base = tools_base or f"{base_url.rstrip('/')}:8005"
 
     health_targets = {
         "ingestion": ingestion_url,
@@ -514,6 +595,7 @@ def _run_n8n_entrypoint(
                 client,
                 ingestion_url,
                 stubs_base,
+                tools_base,
                 token,
                 case,
                 poll_timeout=poll_timeout,
@@ -540,7 +622,7 @@ def main(
     parser.add_argument(
         "--entrypoint",
         choices=["layer3", "n8n"],
-        default="layer3",
+        default="n8n",
         help="layer3: direct service calls; n8n: full orchestration via Ingestion + n8n",
     )
     parser.add_argument("--base-url", default="http://localhost", help="Compose host base URL")
@@ -553,6 +635,11 @@ def main(
         "--stubs-url",
         default=None,
         help="Override integration-stubs URL for an internal Compose runner",
+    )
+    parser.add_argument(
+        "--tools-url",
+        default=None,
+        help="Override Tools API URL for P1 preview audit verification",
     )
     parser.add_argument(
         "--token",
@@ -584,6 +671,7 @@ def main(
                 client,
                 ingestion_url=args.ingestion_url,
                 stubs_base=args.stubs_url,
+                tools_base=args.tools_url,
             )
         else:
             results = _run_layer3_entrypoint(cases, args.base_url, args.token, client)
@@ -598,6 +686,7 @@ def main(
         "n8n_flow_sha256": hashlib.sha256(
             (ROOT / "n8n" / "peter-flow.json").read_bytes()
         ).hexdigest(),
+        "layer3_source_sha256": _layer3_source_hash(),
         "results": results,
     }
     out.write_text(json.dumps(evidence, indent=2), encoding="utf-8")

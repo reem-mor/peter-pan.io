@@ -6,6 +6,7 @@ incident inside the specialists node (ADR 0003 dedup rule).
 
 from __future__ import annotations
 
+import asyncio
 import os
 from datetime import datetime, timezone
 from typing import Any, TypedDict
@@ -114,18 +115,20 @@ async def specialists_node(
     environment = str(incident.get("environment") or "")
     rag_question = state.get("question") or symptom or f"triage guidance for {service_name}"
 
-    rag_result = await _call_rag(client, rag_url, rag_question)
-    service_context = await _call_tool(
-        client,
-        tools_url,
-        "service_context",
-        {"service": service_name, "environment": environment},
-    )
-    similar_incidents = await _call_tool(
-        client,
-        tools_url,
-        "similar_incidents",
-        {"service": service_name, "symptom": symptom},
+    rag_result, service_context, similar_incidents = await asyncio.gather(
+        _call_rag(client, rag_url, rag_question),
+        _call_tool(
+            client,
+            tools_url,
+            "service_context",
+            {"service": service_name, "environment": environment},
+        ),
+        _call_tool(
+            client,
+            tools_url,
+            "similar_incidents",
+            {"service": service_name, "symptom": symptom},
+        ),
     )
     return {
         **state,
@@ -149,6 +152,14 @@ def _p_level_from_incident(incident: dict[str, Any]) -> tuple[str, float]:
     if p_level in {"P1", "P2", "P3", "P4"}:
         return str(p_level), _DEFAULT_CONFIDENCE
     return _p_level_from_context(incident.get("context"))
+
+
+def _normalize_escalation_path(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str):
+        return [part.strip() for part in value.split("->") if part.strip()]
+    return []
 
 
 def _summarize_tool_result(tool_name: str, result: dict[str, Any]) -> str:
@@ -196,7 +207,9 @@ def synthesise_node(state: AgentState) -> AgentState:
     service_context = specialist_results.get("service_context", {})
     if service_context.get("ok"):
         owner_team = service_context.get("owner_team", "unknown")
-        escalation_path = list(service_context.get("escalation_path", []))
+        escalation_path = _normalize_escalation_path(
+            service_context.get("escalation_path", [])
+        )
     else:
         owner_team = "unknown"
         escalation_path = []

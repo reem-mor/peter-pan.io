@@ -12,11 +12,11 @@ Below is each decision and why it is the right one, not just a working one.
 
 | n8n node | Job it does | Model chosen | Why this model, not a bigger/smaller one |
 |---|---|---|---|
-| **Information Extractor** (Node 4) | Pull fixed fields from short alert text. No reasoning. | **Gemini 2.5 Flash** | Extraction is high-volume, low-IQ. Flash is fast + cheap and has native structured-output support in n8n. A "pro"/reasoning model here burns money and latency for zero quality gain — this runs on *every* signal. |
-| **Triage Agent** (Node 5) | Decide *which tools to call* and in what order. | **Claude 3.5 Sonnet (Bedrock)** | Tool-calling reliability is the differentiator; a wrong-tool call is the #1 agent failure mode.
-| **Report Writer** (Node 6) | Synthesise tool outputs into a strict-JSON TriageReport, no invention. | **Claude 3.5 Sonnet (Bedrock)** | Synthesis-under-constraints (cite or say "insufficient data") is a reasoning task; a small model drifts and hallucinates owners/runbooks. Sonnet + a Structured Output Parser guarantees schema-valid output. |
-| **RAG generation** (EC2 service) | Turn retrieved runbook chunks into a short grounded insight. | **Mistral 7B GGUF via Llama.cpp** | Guideline *requires* local inference here. A Q4 GGUF runs on a CPU-only EC2 (no GPU cost) and 7B is plenty for "summarise these 3 chunks with citations." |
-| **WebUI assistant** (local) | Conversational SRE Q&A sidebar. | **Ollama · Llama 3 8B** | Guideline requires a local Ollama model. 8B has the best instruction-following of the small local models and runs comfortably on my RTX 3060. |
+| **Information Extractor** (Node 4) | Pull fixed fields from short alert text. No reasoning. | **Stage A FixtureLM; optional Stage C Gemini 2.5 Flash** | Extraction is high-volume, low-reasoning. Flash is a future provider option; Layers 2–3 remain deterministic and provider-independent. |
+| **Triage Agent** (Node 5) | Decide *which tools to call* and in what order. | **Stage A FixtureLM; optional Stage C Claude Sonnet (Bedrock)** | Layers 2–3 are provider-independent. Sonnet is a later tool-calling option, not a prerequisite.
+| **Report Writer** (Node 6) | Synthesise tool outputs into a strict-JSON TriageReport, no invention. | **Stage A FixtureLM; optional Stage C Claude Sonnet (Bedrock)** | The Structured Output Parser, deterministic fallback, and output guardrails enforce the schema regardless of provider. |
+| **RAG generation** (EC2 service) | Turn retrieved runbook chunks into a short grounded insight. | **Stage A extractive TF-IDF; optional Stage C Mistral GGUF via llama.cpp** | The local-model rubric target is deferred without weakening current cited retrieval. |
+| **WebUI assistant** (local) | Conversational SRE Q&A sidebar. | **Stage B fixture; optional Stage C Ollama · Llama 3** | The current UI is testable without a local model; Ollama remains the later local-provider target. |
 
 **The one-sentence version for the teacher:** *"I route by task profile — cheap/fast models for
 extraction, a strong tool-calling model for the agent and synthesis, and local models where the
@@ -29,13 +29,14 @@ including extraction. That is the classic anti-pattern: paying reasoning-model p
 copy-fields-out-of-text task that Flash does identically. Downgrading Node 4 to Flash cuts the
 per-run cost of the most-frequently-hit node by roughly an order of magnitude with no quality loss.
 
-### Why Bedrock over raw OpenAI/Gemini for the reasoning nodes
+### Why Bedrock remains an optional Stage C reasoning provider
 Three reasons, in priority order: (1) **credential surface** — one IAM-scoped Bedrock credential
 instead of scattering OpenAI keys, which fits the "never hardcode secrets, least privilege"
 requirement; (2) **portfolio continuity** — Bedrock experience transfers directly to production incident workflows;
 (3) **enterprise story** — a self-hostable/VPC product shouldn't depend on a consumer API key.
 *(Deviation note for Alex: the guideline names Gemini/GPT-4o for the n8n LM nodes. n8n has a native
-Bedrock Chat node, so this is a one-node swap, declared openly, not a hidden change.)*
+Bedrock Chat node, so this remains a one-node Stage C swap, declared openly, not a hidden
+Layers 2–3 requirement.)*
 
 ---
 

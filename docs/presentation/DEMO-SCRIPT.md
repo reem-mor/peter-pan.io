@@ -68,8 +68,8 @@ Show the verification commands:
 .\.venv\Scripts\python.exe evaluation\run_e2e.py --entrypoint n8n --base-url http://localhost --token $env:PETER_SERVICES_TOKEN
 ```
 
-State the verified result: all three golden signals traversed Ingestion → n8n and reached
-the expected team channel with the expected category and P-level.
+State the verified result: all seven scenarios traversed the expected branch, including
+application/database/infra routing, rejection, suppression, review queue, and P1 preview.
 
 ## 5:25–6:15 · Honest limitations and roadmap
 

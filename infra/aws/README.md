@@ -17,7 +17,7 @@ Estimated cost: **$25–35** for a short build window with stop/start between se
 aws cloudformation deploy \
   --template-file infra/aws/template.yaml \
   --stack-name peter-pan-demo \
-  --parameter-overrides InstanceType=t3.large AllowedIngressCidr=<your-ip>/32 \
+  --parameter-overrides InstanceType=t3.large AllowedIngressCidr=<your-ip>/32 EnableBedrock=false \
   --capabilities CAPABILITY_NAMED_IAM
 ```
 
@@ -36,7 +36,7 @@ aws cloudformation delete-stack --stack-name peter-pan-demo
 
 ## Security notes
 
-- IAM role: SSM plus Bedrock invoke scoped to Anthropic foundation-model ARNs
+- IAM role: SSM by default; optional `EnableBedrock=true` adds Anthropic-only invoke access for Stage C
 - EBS encrypted
 - HTTPS ingress requires an explicit restricted CIDR; `0.0.0.0/0` is rejected
 - Egress is limited to HTTPS and VPC DNS

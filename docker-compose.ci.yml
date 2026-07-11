@@ -225,6 +225,7 @@ services:
       PETER_FIXTURE_LLM_URL: http://fixture-llm:8000/v1
       PETER_FIXTURE_LLM_API_KEY: ${PETER_CI_TOKEN:?Generate PETER_CI_TOKEN for this CI run}
       PETER_EVALUATION_RESULTS_DIR: /results
+      GITHUB_SHA: ${GITHUB_SHA:-}
     command: ["python", "scripts/bootstrap_n8n_local.py"]
     depends_on:
       n8n:

@@ -35,3 +35,6 @@ When the LangGraph agent is active, RAG calls are owned by LangGraph. The n8n co
 
 - Diagrams document Ingestion and Tools API as supporting nodes, not graded replacements.
 - Public AWS demo exposes HTTPS ingress only; service ports 8001–8006 remain private.
+- Frozen Tools API seed schemas define required fields and value types. Pydantic may
+  provide empty-string defaults for optional fields; those defaults are implementation
+  metadata and do not change the accepted wire shape.

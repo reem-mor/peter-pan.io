@@ -71,6 +71,7 @@ REQUIRED_NODE_NAMES: list[str] = [
     "Predictor Tool",
     "RAG Query Tool",
     "LangGraph Agent Tool",
+    "Service Context Tool",
     # triage report
     "Write TriageReport",
     "Writer Model (Mock Seam)",
@@ -106,6 +107,7 @@ EXPECTED_ENV_VAR_URLS: dict[str, str] = {
     "Predictor Tool": "PETER_PREDICTOR_URL",
     "RAG Query Tool": "PETER_RAG_URL",
     "LangGraph Agent Tool": "PETER_LANGGRAPH_URL",
+    "Service Context Tool": "PETER_TOOLS_URL",
     "Send to Review Queue": "PETER_REVIEW_QUEUE_URL",
     "DB Team Webhook": "PETER_DB_TEAM_WEBHOOK",
     "Infra Team Webhook": "PETER_INFRA_TEAM_WEBHOOK",
@@ -242,6 +244,37 @@ class TestCoreConnections:
     def test_p1_true_to_escalation_dispatch(self, connections: dict) -> None:
         assert "Escalation Dispatch (Preview-First)" in _connected_to(connections, "P1?", 0)
 
+    def test_deploy_filter_rejects_future_timestamps(self, nodes_by_name: dict) -> None:
+        code = _params(nodes_by_name["Shape DeployRefs"]).get("jsCode", "")
+        assert "age >= 0" in code
+
+    def test_commander_prompt_prevents_duplicate_rag(self, nodes_by_name: dict) -> None:
+        prompt = (
+            _params(nodes_by_name["Incident Commander"])
+            .get("options", {})
+            .get("systemMessage", "")
+        )
+        assert "do not call RAG directly" in prompt
+
+    def test_fixture_fallback_uses_tool_evidence(self, nodes_by_name: dict) -> None:
+        code = _params(nodes_by_name["Fixture TriageReport Fallback"]).get(
+            "jsCode", ""
+        )
+        assert "evidence.predictor" in code
+        assert "evidence.service_context" in code
+        assert "service.includes('postgres')" not in code
+
+    def test_normalizer_preserves_nested_raw_metric_reference(
+        self, nodes_by_name: dict
+    ) -> None:
+        assignments = (
+            _params(nodes_by_name["Normalize Signal"])
+            .get("assignments", {})
+            .get("assignments", [])
+        )
+        raw_assignment = next(item for item in assignments if item.get("name") == "raw")
+        assert "$json.body?.raw" in raw_assignment.get("value", "")
+
 
 # ---------------------------------------------------------------------------
 # 4. Guardrail branches — error outputs route to fallback responders
@@ -280,12 +313,12 @@ class TestGuardrailBranches:
             "Guardrails Output Check must use onError=continueErrorOutput"
         )
 
-    def test_guardrails_output_error_branch_to_flagged_responder(
+    def test_guardrails_output_error_branch_to_review_queue(
         self, connections: dict
     ) -> None:
         targets = _connected_to(connections, "Guardrails Output Check", 1)
-        assert "Respond Flagged (Guardrails Down)" in targets, (
-            "Error branch of Guardrails Output Check must route to Respond Flagged (Guardrails Down)"
+        assert "Send to Review Queue" in targets, (
+            "Output guardrail transport failures must be queued for human review"
         )
 
     def test_guardrails_output_success_branch_to_output_passed(
@@ -301,6 +334,7 @@ class TestGuardrailBranches:
         assert "service:" in body
         assert "environment:" in body
         assert "Assemble Incident" in body
+        assert "require_tool_evidence: true" in body
 
 
 # ---------------------------------------------------------------------------
@@ -325,6 +359,24 @@ class TestReviewRoute:
         assert "Respond Flagged for Review" in targets, (
             "Send to Review Queue must respond with 'flagged_for_review' to the caller"
         )
+
+    def test_review_queue_failure_returns_503(
+        self, nodes_by_name: dict, connections: dict
+    ) -> None:
+        sender = nodes_by_name["Send to Review Queue"]
+        assert sender.get("onError") == "continueErrorOutput"
+        assert "Respond Flagged (Guardrails Down)" in _connected_to(
+            connections, "Send to Review Queue", 1
+        )
+        params = _params(nodes_by_name["Respond Flagged (Guardrails Down)"])
+        assert params.get("options", {}).get("responseCode") == 503
+
+    def test_review_payload_merges_flags_into_triage_report(
+        self, nodes_by_name: dict
+    ) -> None:
+        body = _params(nodes_by_name["Send to Review Queue"]).get("jsonBody", "")
+        assert "guardrail_flags" in body
+        assert "guardrails_unavailable" in body
 
     def test_respond_flagged_for_review_response_code_202(
         self, nodes_by_name: dict
@@ -568,6 +620,7 @@ class TestBearerAuthOnDeliveryNodes:
             "Predictor Tool",
             "RAG Query Tool",
             "LangGraph Agent Tool",
+            "Service Context Tool",
             "Escalation Dispatch (Preview-First)",
         ]
         for name in service_nodes:

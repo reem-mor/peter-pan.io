@@ -76,6 +76,78 @@ def test_valid_report_with_verified_owner_passes(monkeypatch) -> None:
     assert body["flags"] == []
 
 
+def test_existing_report_flags_fail_closed(monkeypatch) -> None:
+    monkeypatch.setenv("PETER_TOOLS_URL", "http://tools-api.test")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"teams": ["orders-platform"]})
+
+    report = {**_VALID_REPORT, "guardrail_flags": ["predictor_unverified"]}
+    with _tools_api_client(handler) as client:
+        response = client.post("/check/output", json={"report": report})
+
+    assert response.json()["pass"] is False
+    assert "report_flagged" in response.json()["flags"]
+
+
+def test_predictor_severity_mismatch_fails_closed(monkeypatch) -> None:
+    monkeypatch.setenv("PETER_TOOLS_URL", "http://tools-api.test")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"teams": ["orders-platform"]})
+
+    report = {
+        **_VALID_REPORT,
+        "model_meta": {"provider": "fixture-fallback", "predictor_severity": "5"},
+    }
+    with _tools_api_client(handler) as client:
+        response = client.post("/check/output", json={"report": report})
+
+    assert response.json()["pass"] is False
+    assert "priority_mismatch" in response.json()["flags"]
+
+
+def test_required_tool_evidence_fails_when_predictor_metadata_missing(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("PETER_TOOLS_URL", "http://tools-api.test")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"teams": ["orders-platform"]})
+
+    with _tools_api_client(handler) as client:
+        response = client.post(
+            "/check/output",
+            json={"report": _VALID_REPORT, "require_tool_evidence": True},
+        )
+
+    assert response.json()["pass"] is False
+    assert "tool_evidence_unverified" in response.json()["flags"]
+
+
+def test_required_tool_evidence_passes_for_grounded_normal_path(monkeypatch) -> None:
+    monkeypatch.setenv("PETER_TOOLS_URL", "http://tools-api.test")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"teams": ["orders-platform"]})
+
+    report = {
+        **_VALID_REPORT,
+        "model_meta": {
+            "provider": "fixture-fallback",
+            "predictor_severity": "4",
+            "evidence": "predictor,rag,service_context",
+        },
+    }
+    with _tools_api_client(handler) as client:
+        response = client.post(
+            "/check/output",
+            json={"report": report, "require_tool_evidence": True},
+        )
+
+    assert response.json()["pass"] is True
+
+
 def test_invented_owner_fails_closed(monkeypatch) -> None:
     monkeypatch.setenv("PETER_TOOLS_URL", "http://tools-api.test")
 

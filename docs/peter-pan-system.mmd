@@ -28,9 +28,11 @@ flowchart LR
     N8N["n8n Orchestration<br/>the PETER flow"]:::n8n
 
     subgraph AI["AI Models — routed by task"]
-        BR["Amazon Bedrock<br/>Claude Sonnet — agents & synthesis<br/>Gemini 2.5 Flash — extraction"]:::ai
-        LCPP["Llama.cpp on EC2<br/>Mistral 7B GGUF — RAG generation"]:::ai
-        OLL["Ollama local — RTX 3060<br/>Llama 3 — WebUI · Hermes — OpenClaw"]:::ai
+        FIX["Stage A FixtureLM<br/>OpenAI-compatible · deterministic"]:::ai
+        BR["Optional Stage C · Amazon Bedrock<br/>Claude Sonnet — agents & synthesis"]:::ai
+        GEM["Optional Stage C · Gemini 2.5 Flash<br/>information extraction"]:::ai
+        LCPP["Optional Stage C · Llama.cpp on EC2<br/>Mistral 7B GGUF — RAG generation"]:::ai
+        OLL["Optional Stage C · Ollama local<br/>Llama 3 — WebUI · Hermes — OpenClaw"]:::ai
     end
 
     subgraph KNOW["Knowledge & Change"]
@@ -40,7 +42,7 @@ flowchart LR
     end
 
     subgraph HUM["Humans & Comms"]
-        UI["Streamlit WebUI<br/>Ollama assistant + incident form"]:::hum
+        UI["Streamlit WebUI<br/>fixture assistant + incident form<br/>optional Stage C Ollama"]:::hum
         SLK["Slack<br/>incident channels · complaint reader"]:::hum
         OC["OpenClaw + Hermes<br/>Telegram approvals from the phone"]:::hum
     end
@@ -60,7 +62,9 @@ flowchart LR
     N8N -->|TriageReport| SLK
     N8N --> UI
     OC <-->|approve · ack · status| TOOLS
+    N8N --> FIX
     N8N -.-> BR
+    N8N -.-> GEM
     LG -.-> BR
     RAG -.-> LCPP
     UI -.-> OLL

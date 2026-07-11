@@ -126,6 +126,10 @@ def test_responses_api_detects_extractor_despite_json_schema_instructions():
         ("postgres connection pool exhausted in production", "postgres-primary"),
         ("users report checkout latency on shop-web", "shop-web"),
         ("redis-cache eviction rate is elevated", "redis-cache"),
+        (
+            "redis-cache latency\n\nCross-domain cache issue affects orders-api",
+            "redis-cache",
+        ),
     ],
 )
 def test_extract_normalizes_known_demo_services(signal_text, expected_service):
@@ -157,6 +161,50 @@ def test_synthesis_returns_triage_shape():
     content = response.json()["choices"][0]["message"]["content"]
     assert "incident_id" in content
     assert "citations" in content
+
+
+def test_synthesis_prefers_commander_tool_evidence_over_service_guessing():
+    commander_evidence = {
+        "predictor": {"category": "database", "severity": 5, "confidence": 0.93},
+        "rag": {
+            "answer": "Connection pool exhaustion is documented.",
+            "citations": [
+                {
+                    "source_id": "database_connectivity",
+                    "source_type": "runbook",
+                    "quote": "Check active connections.",
+                }
+            ],
+        },
+        "service_context": {
+            "owner_team": "Database Reliability",
+            "escalation_path": ["Primary Database Reliability On-Call"],
+        },
+    }
+    response = client.post(
+        "/v1/chat/completions",
+        json={
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "Write a TriageReport structured output.",
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        'Incident: {"id":"inc-toolground01","service":"orders-api"}\n\n'
+                        f"Commander findings: {json.dumps(commander_evidence)}"
+                    ),
+                },
+            ]
+        },
+    )
+
+    report = json.loads(response.json()["choices"][0]["message"]["content"])
+    assert report["category"] == "database"
+    assert report["p_level"] == "P1"
+    assert report["owner_team"] == "Database Reliability"
+    assert report["model_meta"]["predictor_severity"] == "5"
 
 
 def test_synthesis_populates_parsed_message_for_json_schema_requests():
@@ -330,6 +378,153 @@ def test_all_fixture_task_routes(system_prompt, expected_task):
 
     assert response.status_code == 200
     assert response.json()["peter_meta"]["task"] == expected_task
+
+
+_COMMANDER_TOOLS = [
+    {
+        "type": "function",
+        "function": {"name": name, "parameters": {"type": "object"}},
+    }
+    for name in (
+        "Predictor_Tool",
+        "RAG_Query_Tool",
+        "Service_Context_Tool",
+        "LangGraph_Agent_Tool",
+    )
+]
+
+
+def _commander_request(messages):
+    return client.post(
+        "/v1/chat/completions",
+        json={"messages": messages, "tools": _COMMANDER_TOOLS},
+    ).json()["choices"][0]
+
+
+def _tool_roundtrip(messages, choice, result):
+    call = choice["message"]["tool_calls"][0]
+    return [
+        *messages,
+        choice["message"],
+        {
+            "role": "tool",
+            "name": call["function"]["name"],
+            "tool_call_id": call["id"],
+            "content": json.dumps(result),
+        },
+    ]
+
+
+def test_commander_calls_simple_incident_tools_then_returns_evidence():
+    messages = [
+        {"role": "system", "content": "You are the incident commander. Use tools."},
+        {
+            "role": "user",
+            "content": 'Incident: {"service":"orders-api","symptom":"5xx spike"}',
+        },
+    ]
+
+    predictor = _commander_request(messages)
+    assert predictor["message"]["tool_calls"][0]["function"]["name"] == "Predictor_Tool"
+    messages = _tool_roundtrip(
+        messages,
+        predictor,
+        [{"category": "application", "severity": 3, "confidence": 0.91}],
+    )
+
+    rag = _commander_request(messages)
+    assert rag["message"]["tool_calls"][0]["function"]["name"] == "RAG_Query_Tool"
+    messages = _tool_roundtrip(
+        messages,
+        rag,
+        [{
+            "answer": "Check deployment correlation.",
+            "citations": [
+                {
+                    "source_id": "orders_api_error_spike",
+                    "source_type": "runbook",
+                    "quote": "Check recent deployments.",
+                }
+            ],
+            "refused": False,
+        }],
+    )
+
+    owner = _commander_request(messages)
+    assert owner["message"]["tool_calls"][0]["function"]["name"] == "Service_Context_Tool"
+    messages = _tool_roundtrip(
+        messages,
+        owner,
+        [{
+            "owner_team": "App Platform",
+            "escalation_path": ["Primary App Platform On-Call"],
+        }],
+    )
+
+    final = _commander_request(messages)
+    assert final["finish_reason"] == "stop"
+    evidence = json.loads(final["message"]["content"])
+    assert evidence["predictor"]["severity"] == 3
+    assert evidence["rag"]["citations"][0]["source_id"] == "orders_api_error_spike"
+    assert evidence["service_context"]["owner_team"] == "App Platform"
+
+
+def test_commander_uses_langgraph_without_direct_rag_for_complex_infra():
+    messages = [
+        {"role": "system", "content": "You are the incident commander. Use tools."},
+        {
+            "role": "user",
+            "content": (
+                'Incident: {"service":"redis-cache","symptom":"cross-domain cache '
+                'latency affecting checkout"}'
+            ),
+        },
+    ]
+    predictor = _commander_request(messages)
+    messages = _tool_roundtrip(
+        messages,
+        predictor,
+        [{"category": "infra", "severity": 4, "confidence": 0.9}],
+    )
+
+    deep = _commander_request(messages)
+    assert deep["message"]["tool_calls"][0]["function"]["name"] == "LangGraph_Agent_Tool"
+    messages = _tool_roundtrip(
+        messages,
+        deep,
+        [{
+            "category": "infra",
+            "p_level": "P2",
+            "owner_team": "Infra SRE",
+            "escalation_path": ["Primary Infra SRE On-Call"],
+            "citations": [
+                {
+                    "source_id": "redis_cache_degradation",
+                    "source_type": "runbook",
+                    "quote": "Inspect cache saturation.",
+                }
+            ],
+        }],
+    )
+
+    final = _commander_request(messages)
+    evidence = json.loads(final["message"]["content"])
+    assert "rag" not in evidence
+    assert evidence["langgraph"]["owner_team"] == "Infra SRE"
+
+
+def test_extractor_does_not_invent_unknown_service():
+    response = client.post(
+        "/v1/chat/completions",
+        json={
+            "messages": [
+                {"role": "system", "content": "Extract incident fields."},
+                {"role": "user", "content": "An unnamed component is slow."},
+            ]
+        },
+    )
+    extracted = json.loads(response.json()["choices"][0]["message"]["content"])
+    assert extracted["service"] == ""
 
 
 def test_bearer_token_uses_constant_time_comparison(monkeypatch):

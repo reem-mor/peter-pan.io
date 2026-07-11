@@ -71,6 +71,7 @@ class CheckOutputRequest(BaseModel):
     report: dict[str, Any]
     service: str | None = None
     environment: str | None = "production"
+    require_tool_evidence: bool = False
 
 
 def _validation_reason(exc: ValidationError, label: str) -> str:
@@ -137,6 +138,47 @@ async def check_output(
 
     flags: list[str] = []
     reasons: list[str] = []
+
+    if report.guardrail_flags:
+        flags.append("report_flagged")
+        reasons.append(
+            "TriageReport carries upstream guardrail flags: "
+            + ", ".join(report.guardrail_flags)
+            + "."
+        )
+
+    predictor_severity = report.model_meta.get("predictor_severity", "").strip()
+    evidence = {
+        item.strip()
+        for item in report.model_meta.get("evidence", "").split(",")
+        if item.strip()
+    }
+    if payload.require_tool_evidence:
+        allowed_evidence = {
+            frozenset({"predictor", "rag", "service_context"}),
+            frozenset({"predictor", "langgraph"}),
+        }
+        if not predictor_severity or frozenset(evidence) not in allowed_evidence:
+            flags.append("tool_evidence_unverified")
+            reasons.append(
+                "Required Predictor and mutually exclusive RAG/owner or LangGraph "
+                "tool evidence is missing."
+            )
+
+    if predictor_severity:
+        severity_to_priority = {
+            "5": "P1",
+            "4": "P2",
+            "3": "P3",
+            "2": "P4",
+            "1": "P4",
+        }
+        expected_priority = severity_to_priority.get(predictor_severity)
+        if expected_priority is None or report.p_level != expected_priority:
+            flags.append("priority_mismatch")
+            reasons.append(
+                "p_level does not match the deterministic Predictor severity mapping."
+            )
 
     # citations non-empty is already schema-enforced (min_length=1); this also
     # catches the practically reachable case of citations present but carrying

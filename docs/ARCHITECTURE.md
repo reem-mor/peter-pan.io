@@ -127,8 +127,9 @@ ruff check .
 ```
 
 The compose-backed full E2E (fixtures → Ingestion → n8n → TriageReport) was verified
-against all three golden signals on 2026-07-11. The stack and explicit n8n bootstrap
-profile must be running first.
+against seven scenarios on 2026-07-11: application, database, infra/LangGraph,
+rejection, suppression, review queue, and P1 preview escalation. The stack and explicit
+n8n bootstrap profile must be running first.
 
 ---
 
@@ -139,11 +140,11 @@ profile must be running first.
 | Signal validation + normalisation (Ingestion) | **Implemented** |
 | Regex/rule guardrail floor | **Implemented** |
 | EWMA/z-score anomaly floor (Predictor) | **Implemented** |
-| LangGraph graph topology + deterministic routing | **Implemented** |
+| LangGraph graph topology + parallel RAG/Tools specialists | **Implemented** |
 | Tools API (owners, deploys, similar incidents, escalation preview, audit log) | **Implemented** |
 | n8n 8-node spine + CTX branches | **Implemented** |
 | FixtureLLM seam (OpenAI-compatible, deterministic) | **Implemented** |
-| Structured writer parser failure path | **Implemented** — deterministic contract-valid Stage A fallback |
+| Structured writer parser failure path | **Implemented** — tool-grounded, contract-valid Stage A fallback |
 | Integration stubs (team webhooks, review queue) | **Implemented** |
 | TF-IDF retrieval in RAG | **Implemented** |
 | Contract-identity test | **Implemented** |
@@ -153,7 +154,7 @@ profile must be running first.
 | Streamlit WebUI (`ui/`) | **Implemented skeleton** (Stage B wiring pending) |
 | ≥55-doc corpus + `scripts/seed_kb.py` | **Planned** follow-on rubric work |
 | Prompt Engineering Log (5 surfaces × 5 iterations) | **Planned** (Stage A → C) |
-| Real LLM providers (Gemini, Bedrock, Ollama) | **Planned** (Stage C) |
+| Real LLM providers (Gemini, Bedrock, Ollama) | **Optional/planned** (Stage C; not required for Layers 2–3) |
 | pgvector / Supabase ingestion | **Planned** (Stage C) |
 | AWS EC2 deployment | **Planned** (Stage C / demo) |
 | PyTorch training + dataset (≥200 samples) | **Planned** (Stage C stretch) |

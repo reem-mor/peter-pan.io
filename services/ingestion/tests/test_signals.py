@@ -142,6 +142,7 @@ def test_forwards_to_n8n_when_configured(monkeypatch):
     assert body["forwarded"] is True
     assert body["signal_id"] == "sig-fwdtest01"
     assert body["n8n_status"] == 200
+    assert body["n8n_response"] == {"ok": True}
     assert captured["url"] == "https://n8n.example.test/webhook/peter-pan"
 
     forwarded_body = jsonlib.loads(captured["body"])

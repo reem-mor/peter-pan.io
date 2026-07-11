@@ -20,14 +20,14 @@ or coverage claim is valid until the Stage A integration gate is implemented and
 
 | Check | Result |
 |---|---|
-| `python scripts/run_all_tests.py` | PASS — 531 tests across 8 services, observability, UI, n8n, and evaluation |
+| `python scripts/run_all_tests.py` | PASS — 553 tests across 8 services, observability, UI, n8n, and evaluation |
 | Coverage gates | PASS — every Python deployment unit/UI/evaluation suite enforces ≥80%; measured range 82–99% |
 | `ruff check .` | PASS |
 | Contract schema export + diff | PASS — no drift |
 | Local + CI `docker compose config --quiet` | PASS with required/generated environment values |
 | `cfn-lint infra/aws/template.yaml` | PASS |
-| `evaluation/run_e2e.py --dry-run` | PASS — 3 frozen signals |
-| Compose-backed n8n E2E | PASS — 3/3 signals reached expected category, P-level, and team route |
+| `evaluation/run_e2e.py --dry-run` | PASS — 7 frozen scenarios |
+| Compose-backed n8n E2E | PASS — 7/7 scenarios: app, DB, infra/LangGraph, reject, suppress, review, P1 preview |
 | Streamlit Playwright smoke | PASS — UI loaded; five service health checks and webhook configuration were green |
 
 The local virtual environment is Python 3.14.5 while CI remains pinned to the project
@@ -37,7 +37,12 @@ upstream deprecation warnings on Python 3.14.
 AWS cfn-guard reduced from nine to three findings. The remaining findings are declared
 single-instance demo trade-offs: public-subnet IP assignment, the internet-gateway default
 route, and HTTPS egress. Ingress requires one explicit public IPv4 `/32`;
-Bedrock IAM access is scoped to Anthropic foundation-model ARNs.
+Bedrock IAM access is scoped to Anthropic foundation-model ARNs and disabled by default.
+
+Read-only AWS account audit: the credential chain authenticated, account-side
+CloudFormation validation passed, Claude Sonnet is authorized in `us-east-1`, and no
+PETER PAN stack, EC2 instance, IAM role, or Bedrock Guardrail is currently deployed.
+No model invocation or resource mutation was performed.
 
 ## Understanding lock (confirmed)
 
@@ -77,12 +82,13 @@ Bedrock IAM access is scoped to Anthropic foundation-model ARNs.
 
 - Single-node AWS cannot provide HA.
 - Full llama.cpp 7B exceeds `t3.large` fixture-mode sizing.
-- RAG dedup required when commander and LangGraph both active.
+- The Stage A writer uses a tested tool-grounded fallback when the local structured
+  parser rejects the fixture response.
 
 ## Remaining rubric gaps
 
 - Screenshot and fallback-video artifacts were not produced; browser smoke validation is recorded instead.
-- Bedrock Sonnet was not invoked because real provider wiring remains Stage C scope.
+- Bedrock Sonnet was not invoked because it is optional Stage C scope, not a Layers 2–3 dependency.
 - PyTorch training/accuracy evidence, the 55+ document corpus, and the complete prompt-engineering log remain planned.
 
 These gaps do not invalidate the verified fixture-backed Stage A gate and must not be

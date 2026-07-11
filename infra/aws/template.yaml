@@ -10,6 +10,11 @@ Parameters:
     Type: String
     Default: ""
     Description: Optional SSH key (prefer SSM Session Manager)
+  EnableBedrock:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: Optional Stage C Bedrock invocation permission
   AllowedIngressCidr:
     Type: String
     AllowedPattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/32$"
@@ -24,6 +29,7 @@ Rules:
 
 Conditions:
   HasKey: !Not [!Equals [!Ref KeyName, ""]]
+  BedrockEnabled: !Equals [!Ref EnableBedrock, "true"]
 
 Resources:
   PeterPanVpc:
@@ -84,10 +90,11 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-        - !Ref BedrockInvokePolicy
+        - !If [BedrockEnabled, !Ref BedrockInvokePolicy, !Ref AWS::NoValue]
 
   BedrockInvokePolicy:
     Type: AWS::IAM::ManagedPolicy
+    Condition: BedrockEnabled
     Properties:
       Description: Invoke only Anthropic foundation models for the controlled demo
       PolicyDocument:

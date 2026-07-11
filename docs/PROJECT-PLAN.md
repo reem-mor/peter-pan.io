@@ -14,7 +14,7 @@
 > (our own annotated architecture diagrams — deliverable §7.2).
 
 > **Implementation status (2026-07-11):** this document is the target/rubric crosswalk,
-> not a completion report. Stage A uses deterministic fixture seams, and its three-signal
+> not a completion report. Stage A uses deterministic fixture seams, and its seven-scenario
 > Ingestion → n8n → routed TriageReport gate is verified. PyTorch
 > training, the 55+ document corpus, prompt-log evidence, real model providers, presentation
 > media, and AWS deployment remain planned. Current evidence is tracked in
@@ -50,7 +50,7 @@ requirement to its PETER PAN equivalent, line by line.
 | --- | -------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | D-1 | Real-estate listing intake                   | AIOps incident triage                                                       | Domain swap; all capabilities preserved                                                                                                                |
 | D-2 | Image classifier (room type + condition 1–5) | Time-series classifier (incident category + severity 1–5) on metric windows | Modality swap; same PyTorch dual-head architecture, training loop, dataset, accuracy target, uncertainty handling. Vision fallback documented (§5.3.2) |
-| D-3 | GPT-4o (agent LM) · ChromaDB only            | AWS Bedrock Claude Sonnet alongside Gemini · pgvector alongside ChromaDB    | One-node / one-config swaps, both reversible; rationale in §6 (D5, D6)                                                                                 |
+| D-3 | GPT-4o (agent LM) · ChromaDB only            | Optional Stage C Bedrock/Gemini · pgvector alongside ChromaDB               | One-node / one-config swaps, both reversible; rationale in §6 (D5, D6)                                                                                 |
 
 
 ---
@@ -81,7 +81,7 @@ Every noun in the guideline has exactly one PETER PAN counterpart:
 The intake pipeline maps step-for-step:
 
 1. Validate genuine listing → validate genuine incident signal (Guardrails in)
-2. Extract fields from text → extract incident fields (n8n Extractor, Gemini)
+2. Extract fields from text → extract incident fields (Stage A FixtureLM; optional Stage C Gemini)
 3. Classify images → classify metric windows (Predictor, PyTorch dual head)
 4. Retrieve similar listings → retrieve similar incidents + runbooks (RAG)
 5. Route residential/commercial → route by category + priority (n8n Router)
@@ -119,10 +119,10 @@ The intake pipeline maps step-for-step:
 Four layers, HTTP between them — identical topology to the guideline's Figure 1:
 
 ```
-Layer 1  UI            Streamlit: SRE assistant (Ollama) · incident submission · monitoring tab (ext.)
+Layer 1  UI            Streamlit: SRE assistant (optional Stage C Ollama) · incident submission · monitoring tab (ext.)
 Layer 2  Orchestration  n8n 8-node spine + context-enrichment branches
 Layer 3  Services       6 FastAPI microservices on EC2 (Docker, non-root)
-Layer 4  Models         Gemini Flash · Bedrock Claude Sonnet · llama.cpp GGUF · Ollama — behind one seam
+Layer 4  Models         Optional Stage C: Gemini Flash · Bedrock Claude Sonnet · llama.cpp GGUF · Ollama
 ```
 
 Our own annotated diagrams (guideline deliverable: *"your own version, not a copy of Figure 1"*):
@@ -144,7 +144,7 @@ review-queue extension, `AppTest` gives scriptable UI tests in plain pytest).
 
 | Tab                      | Guideline requirement                                                                                                              | PETER PAN implementation                                                                                                                                                                                                                                 |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Assistant                | Chat → local Ollama (Llama 3/Mistral), grounded real-estate assistant, polite off-topic refusal, no invented prices / legal advice | Chat → local Ollama, grounded **SRE assistant**; refuses off-topic, never invents remediation commands, never proposes destructive actions; same edge-case suite: off-topic, "run this command for me", prompt-override attempts. Prompt surface #5 (§7) |
+| Assistant                | Chat → local Ollama (Llama 3/Mistral), grounded real-estate assistant, polite off-topic refusal, no invented prices / legal advice | Stage B fixture-backed SRE assistant; optional Stage C local Ollama. Refuses off-topic and destructive-action requests. Prompt surface #5 (§7) |
 | Submission               | Description + image URLs + agent name → POST n8n webhook; renders returned report incl. image scores + similar listings            | Incident description + metric-window reference + reporter → POST n8n webhook; renders `TriageReport` incl. predictor category/severity + similar incidents/runbooks                                                                                      |
 | Monitoring *(extension)* | Optional third tab (§10)                                                                                                           | Signals processed, guardrail hit-rate, avg severity, avg flow execution time, last-10 events — fed from the Tools API audit log (§11.4)                                                                                                                  |
 
@@ -163,8 +163,8 @@ Already built as `n8n/peter-flow.json`; the export is refreshed and versioned on
 | 2 Guardrails in        | HTTP → `/check/input`, pass/fail                                                                                        | Same endpoint, same contract                                                                                                                                                                                          |
 | 3 IF                   | fail → rejection + error message                                                                                        | fail → rejection; verdict logged to audit trail                                                                                                                                                                       |
 | — CTX *(our addition)* | —                                                                                                                       | Parallel enrichment: maintenance-window check · recent deploys (GitHub) · complaint correlation (Slack) → merged `IncidentContext`. Rationale: §6 D4                                                                  |
-| 4 Extractor            | Gemini LM node; type/location/price/rooms/certs; facts-only, graceful nulls, typed                                      | Gemini 2.5 Flash; service/environment/symptom/severity-hint/start-time → `Incident` fields. **Prompt surface #1**                                                                                                     |
-| 5 AI Agent             | GPT-4o/Gemini; role "senior property analyst"; tool calls → RAG, Image Analyser, LangGraph                              | Bedrock Claude Sonnet; role **"senior SRE incident commander"**; tools → RAG, **Predictor**, LangGraph (+ Tools API facts). **Prompt surface #2**                                                                     |
+| 4 Extractor            | Gemini LM node; type/location/price/rooms/certs; facts-only, graceful nulls, typed                                      | Stage A FixtureLM; optional Stage C Gemini 2.5 Flash. Extracts service/environment/symptom/start-time. **Prompt surface #1**                                                                                                     |
+| 5 AI Agent             | GPT-4o/Gemini; role "senior property analyst"; tool calls → RAG, Image Analyser, LangGraph                              | Stage A FixtureLM; optional Stage C Bedrock Claude Sonnet. Role **"senior SRE incident commander"**; tools → RAG, **Predictor**, LangGraph (+ Tools API facts). **Prompt surface #2**                                                                     |
 | 6 LLM Chain            | Synthesise 3 sources (fields, image scores, RAG context) into brief; Structured Output Parser JSON schema; no invention | Synthesise extracted fields + predictor scores + RAG context into `TriageReport`; Structured Output Parser carries the `TriageReport` JSON Schema exported from the pydantic contract. *(Appendix prompt surface A1)* |
 | 7 Guardrails out       | No false legal claims / prices / fabricated certs; fail → human review                                                  | No invented owners/escalation paths (**verified against Tools API ground truth**), no destructive steps, no uncited claims; fail → review queue                                                                       |
 | 8 Router               | `property_type` → residential / commercial webhooks                                                                     | `category` → infra / database / application team webhooks **+ P1 escalation branch** — a superset of the graded binary router                                                                                         |
@@ -186,7 +186,7 @@ services communicate over HTTP only, never cross-imports.
 | ------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Endpoint      | `POST /query` `{description}`                                                   | Same                                                                                                                                               |
 | Output        | `{similar_listings, insight}`                                                   | `{similar_incidents, runbook_refs, insight}` — same shape + runbook refs                                                                           |
-| Pipeline      | sentence-transformer embed → ChromaDB top-3 → LangChain prompt → llama.cpp GGUF | Same pipeline; store: ChromaDB for parity, **pgvector as the managed-store extension** (§11.3)                                                     |
+| Pipeline      | sentence-transformer embed → ChromaDB top-3 → LangChain prompt → llama.cpp GGUF | Stage A TF-IDF + extractive cited answers; optional Stage C embeddings, pgvector, and llama.cpp generation |
 | Corpus        | ≥20 synthetic listings pre-seeded                                               | **≥55 synthetic incidents/runbooks/service docs** via `scripts/seed_kb.py` (Stage A)                                                               |
 | Citation rule | Prompt-instructed: cite source listing, no fabrication                          | Prompt-instructed **and code-enforced**: uncited answers are refused; `TriageReport.citations` is schema-required non-empty. **Prompt surface #3** |
 
@@ -219,7 +219,7 @@ own training loop, >75 % test accuracy, graceful uncertainty. All preserved:
 |             | Guideline                                                           | PETER PAN                                                                                                                                                                                                                                                                                                                                |
 | ----------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Endpoints   | `POST /check/input` · `POST /check/output`                          | Same                                                                                                                                                                                                                                                                                                                                     |
-| Output      | `{pass, reason, safe_text}`                                         | `{valid, reason, safe_text}` — `safe_text` added on the output check for exact parity                                                                                                                                                                                                                                                    |
+| Output      | `{pass, reason, safe_text}`                                         | Stage A `{pass, flags, reason}` with deterministic fail-closed checks |
 | Input rail  | Genuine listing, expected language, reject spam/offensive/off-topic | Genuine incident signal; rejects spam, off-topic, offensive content, prompt injection                                                                                                                                                                                                                                                    |
 | Output rail | No false legal claims / invented prices / fabricated certifications | No invented owner teams or escalation paths — **verified against the Tools API, a deterministic ground truth** — no destructive commands, no uncited claims                                                                                                                                                                              |
 | Engine      | NeMo Guardrails, YAML/Colang                                        | **Two-tier**: deterministic regex/rule floor (always on, unit-tested, fail-closed) + NeMo rails above it. The guideline offers "NeMo *or* custom rule engine"; we build both because an LLM should never be the only thing between a bad output and production (§6 D1). **Prompt surface #4** (topic-detection + output-auditor prompts) |
@@ -232,8 +232,8 @@ own training loop, >75 % test accuracy, graceful uncertainty. All preserved:
 
 |               | Guideline                                                              | PETER PAN                                                                                                                                                                                                    |
 | ------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Endpoint      | `POST /agent/run` `{query}` → `{answer, tools_used, reasoning_steps}`  | Same, verbatim                                                                                                                                                                                               |
-| Graph         | Planner → tool executor (RAG + Image tools) → Synthesiser, stateful    | Planner → Tools → Synthesiser; tools = RAG + Predictor **+ Tools API** (owners, recent deployments, similar incidents, escalation preview) so the agent reasons over deterministic facts, not just retrieval |
+| Endpoint      | `POST /agent/run` `{query}` → `{answer, tools_used, reasoning_steps}`  | `POST /agent/run` `{incident, question?}` → canonical `TriageReport` |
+| Graph         | Planner → tool executor (RAG + Image tools) → Synthesiser, stateful    | Planner → parallel RAG + Tools API specialists → Synthesiser; n8n owns the separate Predictor call |
 | Example query | "What renovation brings this to condition 5?"                          | "What remediation returns this service to healthy? Which components need attention first?"                                                                                                                   |
 | Benchmark     | Tool descriptions iterated ≥5×, same 10 benchmark queries each version | `evaluation/tool_evaluation_cases.json` (already in repo) is the frozen 10-query benchmark; test sets are never mutated mid-run. *(Appendix prompt surface A2)*                                              |
 
@@ -265,10 +265,10 @@ One protocol seam, defined before any real provider is wired
 
 | Task                              | Guideline                      | PETER PAN                                                                            | Why                                                                                                             |
 | --------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| n8n extraction (node 4)           | Gemini                         | **Gemini 2.5 Flash** — kept                                                          | Fast, cheap, strong structured extraction, native n8n LM node                                                   |
-| n8n agent + synthesis (nodes 5–6) | GPT-4o or Gemini               | **AWS Bedrock Claude Sonnet**                                                        | §6 D5                                                                                                           |
-| RAG generation                    | llama.cpp + GGUF on EBS        | Same — kept                                                                          | Data-local inference, zero egress cost, rubric line preserved                                                   |
-| WebUI assistant                   | Local Ollama (Llama 3/Mistral) | Same — kept                                                                          | Local-first privacy; no API cost for a chat surface                                                             |
+| n8n extraction (node 4)           | Gemini                         | Stage A FixtureLM; optional Stage C **Gemini 2.5 Flash**                             | Fast, cheap, strong structured extraction, native n8n LM node                                                   |
+| n8n agent + synthesis (nodes 5–6) | GPT-4o or Gemini               | Stage A FixtureLM; optional Stage C **AWS Bedrock Claude Sonnet**                    | §6 D5                                                                                                           |
+| RAG generation                    | llama.cpp + GGUF on EBS        | Stage A extractive retrieval; optional Stage C llama.cpp GGUF                        | Current cited retrieval is deterministic; local generation remains a later provider swap                       |
+| WebUI assistant                   | Local Ollama (Llama 3/Mistral) | Stage B fixture; optional Stage C Ollama                                              | Local-first privacy; no API cost for a chat surface                                                             |
 | Development / CI                  | —                              | **FixtureLLMClient**: deterministic canned responses, records prompts for assertions | The whole pipeline is testable with **zero external API calls** — CI never depends on a vendor being up (§6 D2) |
 
 
@@ -306,6 +306,7 @@ the alert") rather than model intuition. It also exercises exactly the graded n8
 HTTP branches merged mid-flow.
 
 **D5 — Bedrock Claude Sonnet instead of GPT-4o for the agent/synthesis nodes.**
+This is an optional Stage C provider decision, not a dependency of the Layers 2–3 exit gate.
 *Why:* (a) the system already runs on AWS — Bedrock access is IAM-scoped, keeps inference inside
 the same cloud account, and eliminates a second API-key secret to manage; (b) strong tool-use and
 structured-output behaviour, which is what nodes 5–6 grade; (c) per-task routing (Flash for

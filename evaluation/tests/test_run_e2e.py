@@ -415,6 +415,18 @@ def test_n8n_flagged_branch(tmp_path, monkeypatch):
     assert result == 0
 
 
+def test_flagged_report_on_team_channel_is_mismatch():
+    flagged_report = dict(_VALID_TRIAGE_REPORT_APP, guardrail_flags=["owner_mismatch"])
+
+    result = run_e2e._validate_n8n_delivery(
+        {**_GOLDEN_CASE_APP, "expected_status": "flagged"},
+        {"channel": "team:application", "payload": flagged_report},
+    )
+
+    assert result["status"] == "mismatch"
+    assert "review queue" in result["reason"]
+
+
 # ---------------------------------------------------------------------------
 # 9. Invalid frozen Signal is rejected before any HTTP call
 # ---------------------------------------------------------------------------
@@ -489,6 +501,16 @@ def test_n8n_db_delivery_channel(tmp_path, monkeypatch):
         ("GET", "http://localhost:8020/deliveries"): _json_resp([
             {"channel": "team:database", "payload": _VALID_TRIAGE_REPORT_DB}
         ]),
+        ("GET", "http://localhost:8005/audit"): _json_resp(
+            [
+                {
+                    "incident_id": "inc-golden0002",
+                    "p_level": "P1",
+                    "preview_requested": True,
+                    "dispatched": False,
+                }
+            ]
+        ),
     }
     transport = _make_transport(routes)
     result = run_e2e.main(
@@ -496,6 +518,10 @@ def test_n8n_db_delivery_channel(tmp_path, monkeypatch):
         _client_factory=_client_factory(transport),
     )
     assert result == 0
+    evidence = json.loads(
+        (tmp_path / "results" / "e2e_latest.json").read_text(encoding="utf-8")
+    )
+    assert evidence["results"][0]["p1_preview"] is True
 
 
 # ---------------------------------------------------------------------------

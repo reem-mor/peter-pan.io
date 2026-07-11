@@ -16,13 +16,14 @@ flowchart TB
     IFS{"Known noise?<br/>e.g. alert inside deploy window"}:::branch
     SUP["Suppressed<br/>logged · nobody paged"]:::rej
 
-    EXT["4 · Information Extractor<br/>Gemini 2.5 Flash<br/>service · metric · started · impact"]:::ai
-    AGT["5 · AI Agent — incident commander<br/>Bedrock Claude Sonnet · tool calls"]:::ai
+    EXT["4 · Information Extractor<br/>Stage A FixtureLM · optional Stage C Gemini Flash<br/>service · metric · started · impact"]:::ai
+    AGT["5 · AI Agent — incident commander<br/>Stage A FixtureLM · optional Stage C Bedrock Sonnet<br/>tool calls"]:::ai
     T1["RAG Service<br/>POST /query"]:::svc
     T2["Incident Predictor<br/>POST /analyse"]:::svc
     T3["LangGraph Agent<br/>POST /agent/run"]:::svc
+    T4["Tools API<br/>POST /tools/service_context"]:::svc
     MRG2["Merge tool results"]:::ai
-    CH["6 · LLM Chain → TriageReport<br/>Structured Output Parser · JSON schema"]:::ai
+    CH["6 · LLM Chain → TriageReport<br/>Structured Output Parser · tool-grounded fixture fallback"]:::ai
     GOUT["7 · Guardrails — Output<br/>/check/output · no invented owners · no destructive steps"]:::guard
     IF2{"pass?"}:::branch
     REV["Human review queue<br/>flagged in WebUI"]:::rej
@@ -43,9 +44,11 @@ flowchart TB
     AGT --> T1
     AGT --> T2
     AGT --> T3
+    AGT --> T4
     T1 --> MRG2
     T2 --> MRG2
     T3 --> MRG2
+    T4 --> MRG2
     MRG2 --> CH --> GOUT --> IF2
     IF2 -->|fail| REV
     IF2 -->|pass| RT

@@ -54,7 +54,7 @@
             { "id": "sig-env", "name": "environment", "value": "={{ $json.body?.environment ?? 'production' }}", "type": "string" },
             { "id": "sig-sev", "name": "severity_hint", "value": "={{ $json.body?.severity_hint ?? '' }}", "type": "string" },
             { "id": "sig-labels", "name": "labels", "value": "={{ $json.body?.labels ?? {} }}", "type": "object" },
-            { "id": "sig-raw", "name": "raw", "value": "={{ $json.body ?? {} }}", "type": "object" }
+            { "id": "sig-raw", "name": "raw", "value": "={{ $json.body?.raw ?? {} }}", "type": "object" }
           ]
         }
       }
@@ -171,7 +171,7 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "const nowMs = Date.now();\nconst windowMs = 2 * 60 * 60 * 1000;\nconst payload = $input.first().json || {};\nconst rows = Array.isArray(payload.deployments) ? payload.deployments : [];\nconst recent = rows.filter(d => { const t = Date.parse(d.deployed_at || ''); return !isNaN(t) && (nowMs - t) <= windowMs; }).map(d => ({ repo: d.repo || ($env.PETER_GITHUB_REPO || 'unknown/repo'), sha: d.sha, deployed_at: d.deployed_at, service: d.service || 'unknown' }));\nreturn [{ json: { recent_deploys: recent } }];"
+        "jsCode": "const nowMs = Date.now();\nconst windowMs = 2 * 60 * 60 * 1000;\nconst payload = $input.first().json || {};\nconst rows = Array.isArray(payload.deployments) ? payload.deployments : [];\nconst recent = rows.filter(d => { const t = Date.parse(d.deployed_at || ''); const age = nowMs - t; return !isNaN(t) && age >= 0 && age <= windowMs; }).map(d => ({ repo: d.repo || ($env.PETER_GITHUB_REPO || 'unknown/repo'), sha: d.sha, deployed_at: d.deployed_at, service: d.service || 'unknown' }));\nreturn [{ json: { recent_deploys: recent } }];"
       }
     },
     {
@@ -291,7 +291,7 @@
         "promptType": "define",
         "text": "=Triage this operational incident using your tools.\n\nIncident: {{ JSON.stringify($json) }}\n\nCall the tools, then summarise your findings with citations.",
         "options": {
-          "systemMessage": "You are a senior incident commander for a production SRE team. Investigate with your tools, then hand findings to the report writer. Always call the Predictor Tool first for objective severity and category. Call the RAG Query Tool for the matching runbook and similar past incidents. Call the LangGraph Agent Tool only for complex cross-domain incidents. Ground every conclusion in tool output and keep the citations (source_id, source_type, quote) that tools return. Never invent owners, escalation paths, runbook IDs, or root causes — owner and escalation information may only come from tool results."
+          "systemMessage": "You are a senior incident commander for a production SRE team. Always call Predictor Tool first. For a normal single-domain incident, then call RAG Query Tool and Service Context Tool; do not call LangGraph. For a complex cross-domain incident, call LangGraph Agent Tool after Predictor and do not call RAG directly because LangGraph owns retrieval. Return one JSON object containing the exact tool results under predictor, rag, service_context, or langgraph. Never invent severity, category, owners, escalation paths, citations, runbook IDs, or root causes."
         }
       }
     },
@@ -358,6 +358,24 @@
       }
     },
     {
+      "id": "2b166ef1-8dde-4c0e-a4a2-9a17bd7f2c01",
+      "name": "Service Context Tool",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [3328, 992],
+      "parameters": {
+        "toolDescription": "Returns the deterministic owner_team and escalation_path for the incident service. Call for normal single-domain incidents after Predictor and RAG.",
+        "method": "POST",
+        "url": "={{ $env.PETER_TOOLS_URL }}/tools/service_context",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { service: $('Assemble Incident').item.json.service, environment: $('Assemble Incident').item.json.environment, severity: $fromAI('severity', 'P-level from Predictor Tool, such as P1 or P3', 'string') } }}",
+        "options": { "timeout": 15000 }
+      }
+    },
+    {
       "id": "ee9656ca-af59-4de4-b253-e491af88c220",
       "name": "Write TriageReport",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
@@ -406,7 +424,7 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "const incident = $('Assemble Incident').first().json;\nconst service = String(incident.service || 'unknown').toLowerCase();\nlet category = 'application';\nlet pLevel = 'P3';\nlet owner = 'App Platform';\nlet escalation = ['Primary App Platform On-Call', 'Secondary App Platform On-Call'];\nlet sourceId = service === 'shop-web' ? 'shop_web' : 'orders_api_error_spike';\nlet sourceType = service === 'shop-web' ? 'service_doc' : 'runbook';\nif (service.includes('postgres')) {\n  category = 'database';\n  pLevel = 'P1';\n  owner = 'Database Reliability';\n  escalation = ['Primary Database Reliability On-Call', 'Secondary Database Reliability On-Call'];\n  sourceId = 'database_connectivity';\n  sourceType = 'runbook';\n} else if (service.includes('redis') || service.includes('ingress') || service.includes('k8s')) {\n  category = 'infra';\n  pLevel = 'P2';\n  owner = 'Infra SRE';\n  escalation = ['Primary Infra SRE On-Call', 'Secondary Infra SRE On-Call'];\n  sourceId = service.includes('redis') ? 'redis_cache_degradation' : 'ingress_5xx';\n  sourceType = 'runbook';\n}\nreturn [{ json: {\n  incident_id: incident.id,\n  category,\n  p_level: pLevel,\n  summary: `Deterministic fixture fallback: ${service} requires evidence-based triage.`,\n  probable_cause: 'Recent-change correlation requires verification.',\n  citations: [{ source_id: sourceId, source_type: sourceType, quote: 'Review the cited service guidance and recent-change evidence.' }],\n  owner_team: owner,\n  escalation_path: escalation,\n  recommended_steps: [`Review recent changes and health metrics for ${service}.`, 'Compare current signals against the documented baseline.'],\n  confidence: 0.75,\n  guardrail_flags: [],\n  generated_at: new Date().toISOString(),\n  model_meta: { provider: 'fixture-fallback', stage: 'A' }\n} }];"
+        "jsCode": "const incident = $('Assemble Incident').first().json;\nconst service = String(incident.service || 'unknown');\nlet evidence = {};\ntry { evidence = JSON.parse($('Incident Commander').first().json.output || '{}'); } catch (_) {}\nconst predictor = evidence.predictor || {};\nconst deep = evidence.langgraph || {};\nconst retrieval = evidence.rag || deep;\nconst ownerContext = evidence.service_context || deep;\nconst flags = [];\nconst severity = Number(predictor.severity);\nconst severityMap = { 5: 'P1', 4: 'P2', 3: 'P3', 2: 'P4', 1: 'P4' };\nlet pLevel = severityMap[severity] || deep.p_level || 'P3';\nif (!severityMap[severity] && !deep.p_level) flags.push('predictor_unverified');\nlet category = predictor.category || deep.category;\nif (!['infra', 'database', 'application'].includes(category)) {\n  category = 'application';\n  flags.push('predictor_unverified');\n}\nlet citations = Array.isArray(retrieval.citations) ? retrieval.citations : [];\nif (!citations.length) {\n  citations = [{ source_id: 'tool:unavailable', source_type: 'tool_result', quote: 'insufficient data' }];\n  flags.push('insufficient_citations');\n}\nconst owner = ownerContext.owner_team || 'unknown';\nconst escalation = Array.isArray(ownerContext.escalation_path) ? ownerContext.escalation_path : [];\nif (owner === 'unknown') flags.push('owner_unverified');\nconst recommendations = Array.isArray(deep.recommended_steps) && deep.recommended_steps.length\n  ? deep.recommended_steps\n  : [`Review current health metrics for ${service}.`, 'Compare the signal with recent deployment evidence.'];\nreturn [{ json: {\n  incident_id: incident.id,\n  category,\n  p_level: pLevel,\n  summary: `Tool-grounded fixture fallback: ${service} classified as ${category}.`,\n  probable_cause: deep.probable_cause || retrieval.answer || 'Tool evidence requires human analysis.',\n  citations,\n  owner_team: owner,\n  escalation_path: escalation,\n  recommended_steps: recommendations.slice(0, 8),\n  confidence: Number(predictor.confidence || deep.confidence || 0.5),\n  guardrail_flags: [...new Set(flags)],\n  generated_at: new Date().toISOString(),\n  model_meta: { provider: 'fixture-fallback', stage: 'A', predictor_severity: String(severity || ''), evidence: Object.keys(evidence).sort().join(',') }\n} }];"
       }
     },
     {
@@ -434,7 +452,7 @@
         "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { report: $json, service: $('Assemble Incident').item.json.service, environment: $('Assemble Incident').item.json.environment } }}",
+        "jsonBody": "={{ { report: $json, service: $('Assemble Incident').item.json.service, environment: $('Assemble Incident').item.json.environment, require_tool_evidence: true } }}",
         "options": { "timeout": 10000 }
       },
       "onError": "continueErrorOutput"
@@ -447,8 +465,8 @@
       "position": [4208, 912],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { status: \"flagged_for_review\", reason: \"output guardrails service unavailable\" } }}",
-        "options": { "responseCode": 202 }
+        "responseBody": "={{ { status: \"review_queue_unavailable\", reason: \"output could not be queued for human review\" } }}",
+        "options": { "responseCode": 503 }
       }
     },
     {
@@ -490,10 +508,10 @@
         "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { report: $('Finalize TriageReport').item.json, flags: $json.flags ?? [] } }}",
+        "jsonBody": "={{ { report: { ...$('Finalize TriageReport').item.json, guardrail_flags: [...new Set([...( $('Finalize TriageReport').item.json.guardrail_flags ?? [] ), ...( $json.flags ?? ['guardrails_unavailable'] )])] }, flags: $json.flags ?? ['guardrails_unavailable'] } }}",
         "options": { "timeout": 10000 }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueErrorOutput"
     },
     {
       "id": "6bc43b6e-ee60-4f1a-881b-b595f7a02b46",
@@ -503,7 +521,7 @@
       "position": [4656, 1152],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { status: 'flagged_for_review', report: $('Finalize TriageReport').item.json } }}",
+        "responseBody": "={{ { status: 'flagged_for_review', report: { ...$('Finalize TriageReport').item.json, guardrail_flags: [...new Set([...( $('Finalize TriageReport').item.json.guardrail_flags ?? [] ), ...( $('Guardrails Output Check').item.json.flags ?? ['guardrails_unavailable'] )])] } } }}",
         "options": { "responseCode": 202 }
       }
     },
@@ -681,15 +699,16 @@
     "Predictor Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },
     "RAG Query Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },
     "LangGraph Agent Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },
+    "Service Context Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },
     "Write TriageReport": { "main": [[{ "node": "Finalize TriageReport", "type": "main", "index": 0 }], [{ "node": "Fixture TriageReport Fallback", "type": "main", "index": 0 }]] },
     "Writer Model (Mock Seam)": { "ai_languageModel": [[{ "node": "Write TriageReport", "type": "ai_languageModel", "index": 0 }]] },
     "TriageReport Parser": { "ai_outputParser": [[{ "node": "Write TriageReport", "type": "ai_outputParser", "index": 0 }]] },
     "Fixture TriageReport Fallback": { "main": [[{ "node": "Finalize TriageReport", "type": "main", "index": 0 }]] },
     "Finalize TriageReport": { "main": [[{ "node": "Guardrails Output Check", "type": "main", "index": 0 }]] },
-    "Guardrails Output Check": { "main": [[{ "node": "Output Passed?", "type": "main", "index": 0 }], [{ "node": "Respond Flagged (Guardrails Down)", "type": "main", "index": 0 }]] },
+    "Guardrails Output Check": { "main": [[{ "node": "Output Passed?", "type": "main", "index": 0 }], [{ "node": "Send to Review Queue", "type": "main", "index": 0 }]] },
     "Output Passed?": { "main": [[{ "node": "Prepare Routing", "type": "main", "index": 0 }], [{ "node": "Send to Review Queue", "type": "main", "index": 0 }]] },
     "Prepare Routing": { "main": [[{ "node": "Route by Category", "type": "main", "index": 0 }, { "node": "P1?", "type": "main", "index": 0 }, { "node": "Slack Incident Channel Stub", "type": "main", "index": 0 }]] },
-    "Send to Review Queue": { "main": [[{ "node": "Respond Flagged for Review", "type": "main", "index": 0 }]] },
+    "Send to Review Queue": { "main": [[{ "node": "Respond Flagged for Review", "type": "main", "index": 0 }], [{ "node": "Respond Flagged (Guardrails Down)", "type": "main", "index": 0 }]] },
     "Route by Category": { "main": [[{ "node": "DB Team Webhook", "type": "main", "index": 0 }], [{ "node": "Infra Team Webhook", "type": "main", "index": 0 }], [{ "node": "App Team Webhook", "type": "main", "index": 0 }], [{ "node": "Manual Triage Webhook", "type": "main", "index": 0 }]] },
     "DB Team Webhook": { "main": [[{ "node": "Respond TriageReport", "type": "main", "index": 0 }]] },
     "Infra Team Webhook": { "main": [[{ "node": "Respond TriageReport", "type": "main", "index": 0 }]] },

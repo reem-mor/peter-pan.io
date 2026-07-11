@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -16,7 +15,6 @@ import httpx
 ROOT = Path(__file__).resolve().parent.parent
 WORKFLOW_PATH = ROOT / "n8n" / "peter-flow.json"
 WORKFLOW_NAME = "PETER PAN — PETER Flow (Stage A)"
-COMPOSE_SERVICE = "n8n"
 
 N8N_BASE_URL = os.environ.get("N8N_BASE_URL", "http://127.0.0.1:5678").rstrip("/")
 OWNER_EMAIL = os.environ.get("N8N_OWNER_EMAIL", "admin@local.peter")
@@ -30,7 +28,6 @@ FIXTURE_LLM_API_KEY = os.environ.get(
 FIXTURE_LLM_INTERNAL_URL = os.environ.get(
     "PETER_FIXTURE_LLM_URL", "http://fixture-llm:8000/v1"
 )
-USE_CLI_IMPORT = os.environ.get("N8N_BOOTSTRAP_CLI_IMPORT", "0") == "1"
 
 
 def _wait_for_n8n(client: httpx.Client, timeout_s: int = 120) -> None:
@@ -81,74 +78,13 @@ def _credential_id(client: httpx.Client, name: str, create_payload: dict[str, An
     listing.raise_for_status()
     for item in listing.json().get("data", []):
         if item.get("name") == name:
+            updated = client.patch(f"/rest/credentials/{item['id']}", json=create_payload)
+            updated.raise_for_status()
             return item["id"]
 
     created = client.post("/rest/credentials", json=create_payload)
     created.raise_for_status()
     return created.json()["data"]["id"]
-
-
-def _delete_workflow(client: httpx.Client, workflow_id: str) -> None:
-    deactivated = client.post(f"/rest/workflows/{workflow_id}/deactivate")
-    if deactivated.status_code not in {200, 400, 404}:
-        raise RuntimeError(
-            f"workflow deactivate failed: {deactivated.status_code} {deactivated.text}"
-        )
-    archived = client.post(f"/rest/workflows/{workflow_id}/archive")
-    if archived.status_code >= 400 and "already archived" not in archived.text.lower():
-        raise RuntimeError(
-            f"workflow archive failed: {archived.status_code} {archived.text}"
-        )
-    deleted = client.delete(f"/rest/workflows/{workflow_id}")
-    if deleted.status_code not in {200, 204, 404}:
-        raise RuntimeError(
-            f"workflow delete failed: {deleted.status_code} {deleted.text}"
-        )
-
-
-def _import_workflow_cli() -> None:
-    result = subprocess.run(
-        [
-            "docker",
-            "compose",
-            "exec",
-            "-T",
-            COMPOSE_SERVICE,
-            "n8n",
-            "import:workflow",
-            "--input=/import/peter-flow.json",
-        ],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    if result.stderr.strip():
-        print(result.stderr.strip())
-
-
-def _import_workflow_api(client: httpx.Client) -> None:
-    payload = json.loads(WORKFLOW_PATH.read_text(encoding="utf-8"))
-    body = {
-        "name": payload["name"],
-        "nodes": payload["nodes"],
-        "connections": payload["connections"],
-        "settings": payload.get("settings", {}),
-        "active": False,
-    }
-    created = client.post("/rest/workflows", json=body)
-    if created.status_code not in {200, 201}:
-        raise RuntimeError(f"workflow import failed: {created.status_code} {created.text}")
-
-
-def _purge_named_workflows(client: httpx.Client) -> None:
-    listing = client.get("/rest/workflows")
-    listing.raise_for_status()
-    for summary in listing.json().get("data", []):
-        if summary.get("name") != WORKFLOW_NAME:
-            continue
-        print("Replacing existing PETER workflow ...")
-        _delete_workflow(client, summary["id"])
 
 
 def _find_workflow(client: httpx.Client) -> dict[str, Any] | None:
@@ -192,10 +128,16 @@ def _patch_and_activate(
     webhook_auth_id: str,
 ) -> str:
     workflow = _find_workflow(client)
-    if workflow is None:
-        raise RuntimeError(f"workflow '{WORKFLOW_NAME}' not found after import")
+    if workflow and workflow.get("active"):
+        deactivated = client.post(f"/rest/workflows/{workflow['id']}/deactivate")
+        if deactivated.status_code not in {200, 400}:
+            raise RuntimeError(
+                "workflow deactivate failed: "
+                f"{deactivated.status_code} {deactivated.text}"
+            )
 
-    nodes = workflow.get("nodes", [])
+    tracked = json.loads(WORKFLOW_PATH.read_text(encoding="utf-8"))
+    nodes = tracked["nodes"]
     for node in nodes:
         params = node.get("parameters", {})
         if params.get("genericAuthType") == "httpBearerAuth":
@@ -220,24 +162,25 @@ def _patch_and_activate(
                 }
             }
 
-    workflow_id = workflow["id"]
-    patch = client.patch(
-        f"/rest/workflows/{workflow_id}",
-        json={
-            "name": workflow["name"],
-            "nodes": nodes,
-            "connections": workflow["connections"],
-            "settings": workflow.get("settings", {}),
-        },
-    )
-    if patch.status_code >= 400:
+    body = {
+        "name": tracked["name"],
+        "nodes": nodes,
+        "connections": tracked["connections"],
+        "settings": tracked.get("settings", {}),
+    }
+    if workflow is None:
+        saved = client.post("/rest/workflows", json={**body, "active": False})
+    else:
+        saved = client.patch(f"/rest/workflows/{workflow['id']}", json=body)
+    if saved.status_code >= 400:
         raise RuntimeError(
-            f"workflow patch failed: {patch.status_code} {patch.text}"
+            f"workflow sync failed: {saved.status_code} {saved.text}"
         )
 
     updated = _find_workflow(client)
-    if updated is None or not updated.get("versionId"):
-        raise RuntimeError("workflow version missing after credential patch")
+    if updated is None or not updated.get("id") or not updated.get("versionId"):
+        raise RuntimeError("workflow version missing after tracked export sync")
+    workflow_id = updated["id"]
     _publish_workflow(
         client,
         workflow_id=workflow_id,
@@ -264,17 +207,6 @@ def main() -> int:
         _wait_for_n8n(client)
         print("Ensuring owner + session ...")
         _ensure_owner(client)
-
-        existing = _find_workflow(client)
-        if existing and existing.get("active"):
-            print("Workflow already active; skipping bootstrap")
-            return 0
-
-        if existing or any(
-            w.get("name") == WORKFLOW_NAME
-            for w in client.get("/rest/workflows").json().get("data", [])
-        ):
-            _purge_named_workflows(client)
 
         print("Creating credentials ...")
         bearer_id = _credential_id(
@@ -308,17 +240,7 @@ def main() -> int:
             },
         )
 
-        print("Importing workflow ...")
-        if USE_CLI_IMPORT:
-            try:
-                _import_workflow_cli()
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                print("CLI import unavailable; falling back to REST import")
-                _import_workflow_api(client)
-        else:
-            _import_workflow_api(client)
-
-        print("Activating workflow ...")
+        print("Synchronizing tracked workflow export ...")
         _patch_and_activate(
             client,
             bearer_id,
