@@ -55,7 +55,7 @@ TriageReport (returned to caller / rendered in UI)
 
 | Path | Owner | Notes |
 |---|---|---|
-| `services/` | Layer 3 — eight self-contained FastAPI units | No cross-imports; HTTP-only comms |
+| `services/` | Layer 3 — nine self-contained FastAPI units | No cross-imports; HTTP-only comms |
 | `ui/` | Layer 1 — Streamlit WebUI | Stage B |
 | `n8n/` | Layer 2 — n8n flow export | Re-export on every flow change |
 | `docs/contracts/` | Shared contracts | Frozen; ADR required to change |
@@ -76,12 +76,13 @@ TriageReport (returned to caller / rendered in UI)
 | `services/predictor/` | `predictor_service` | `POST /analyse` | EWMA floor implemented; PyTorch classifier **stubbed** |
 | `services/rag/` | `rag_service` | `POST /query` | TF-IDF retrieval implemented; llama.cpp generation **stubbed** |
 | `services/guardrails/` | `guardrails_service` | `POST /check/input`, `POST /check/output` | Regex floor implemented; NeMo **stubbed** |
+| `services/image-analyzer/` | `image_analyzer_service` | `POST /analyze` | Stage A supporting seam — ResNet scaffold; not invoked by the current n8n flow |
 | `services/tools-api/` | `tools_api` | `POST /escalations`, `GET /audit`, tool routes | Implemented (preview-first, SQLite audit) |
 | `services/langgraph-agent/` | `langgraph_agent` | `POST /agent/run` | Deterministic graph topology implemented; no provider call in Stage A |
 | `services/fixture-llm/` | `fixture_llm` | OpenAI-compatible `/v1/chat/completions` | Stage A seam — deterministic canned responses |
 | `services/integration-stubs/` | `integration_stubs` | Team webhooks, review-queue receiver | Stage A seam — stub endpoints |
 
-All eight service units expose `GET /healthz`.
+All nine service units expose `GET /healthz`.
 
 ---
 

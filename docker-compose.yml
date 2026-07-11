@@ -59,6 +59,15 @@ services:
       <<: *healthz
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
 
+  image-analyzer:
+    build: services/image-analyzer
+    ports: ["127.0.0.1:8007:8000"]
+    environment:
+      <<: *common-env
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
   tools-api:
     build: services/tools-api
     ports: ["127.0.0.1:8005:8000"]
@@ -79,8 +88,11 @@ services:
       <<: *common-env
       PETER_RAG_URL: http://rag:8000
       PETER_TOOLS_URL: http://tools-api:8000
+      PETER_IMAGE_ANALYZER_URL: http://image-analyzer:8000
     depends_on:
       rag:
+        condition: service_healthy
+      image-analyzer:
         condition: service_healthy
       tools-api:
         condition: service_healthy
@@ -135,6 +147,7 @@ services:
       PETER_PREDICTOR_URL: http://predictor:8000
       PETER_RAG_URL: http://rag:8000
       PETER_LANGGRAPH_URL: http://langgraph-agent:8000
+      PETER_IMAGE_ANALYZER_URL: http://image-analyzer:8000
       PETER_TOOLS_URL: http://tools-api:8000
       PETER_REVIEW_QUEUE_URL: http://integration-stubs:8000/review-queue
       PETER_DB_TEAM_WEBHOOK: http://integration-stubs:8000/teams/database
@@ -156,6 +169,8 @@ services:
       rag:
         condition: service_healthy
       langgraph-agent:
+        condition: service_healthy
+      image-analyzer:
         condition: service_healthy
       tools-api:
         condition: service_healthy

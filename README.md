@@ -15,7 +15,7 @@ Architecture reference (runtime flow, service status, health commands): **[docs/
 |---|---|---|
 | 1 UI | Streamlit WebUI (`ui/`) | Stage B skeleton |
 | 2 Orchestration | n8n PETER flow (`n8n/peter-flow.json`) | Full local golden-set E2E verified |
-| 3 Core | Six FastAPI services + two supporting seams | Stage A fixture-backed implementation |
+| 3 Core | Six core FastAPI services + three supporting seams | Stage A fixture-backed implementation |
 | 4 Models | Task-routed `LLMClient` (`docs/llm_client/`) | Fixture adapters + Stage C stubs |
 
 **Graded four primary services:** RAG, Predictor, Guardrails, LangGraph agent. Ingestion and Tools API are supporting infrastructure ([ADR 0003](docs/adr/0003-system-boundaries.md)).
@@ -44,7 +44,7 @@ contract-valid fixture fallback when the local OpenAI-compatible parser path fai
 
 | Path | Purpose |
 |---|---|
-| `services/` | 8 self-contained deployment units (6 core + fixture-llm + integration-stubs) |
+| `services/` | 9 self-contained deployment units (6 core + image-analyzer + fixture-llm + integration-stubs) |
 | `ui/` | Streamlit WebUI (Stage B) |
 | `n8n/` | Versioned workflow export |
 | `evaluation/` | Golden sets + E2E harness |

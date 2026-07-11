@@ -26,6 +26,7 @@ flowchart LR
     end
 
     N8N["n8n Orchestration<br/>the PETER flow"]:::n8n
+    IMG["Image Analyzer Seam<br/>ResNet scaffold · not flow-integrated"]:::seam
 
     subgraph AI["AI Models — routed by task"]
         FIX["Stage A FixtureLM<br/>OpenAI-compatible · deterministic"]:::ai
@@ -73,6 +74,7 @@ flowchart LR
     classDef demo fill:#14262e,stroke:#3ec1a7,color:#d6f2ec
     classDef core fill:#1a2438,stroke:#6c8cff,color:#dde5fb
     classDef n8n fill:#30251a,stroke:#e8a13c,color:#f7e8d0
+    classDef seam fill:#24242d,stroke:#8a8fa3,color:#e1e3ea
     classDef ai fill:#2b1f33,stroke:#b07ce8,color:#ecdffa
     classDef know fill:#2e2a1a,stroke:#d3c04a,color:#f4eecb
     classDef hum fill:#1d2e22,stroke:#63c76f,color:#dcf3e0

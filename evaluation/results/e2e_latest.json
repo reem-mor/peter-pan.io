@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-11T03:30:55.831803+00:00",
+  "generated_at": "2026-07-11T05:25:31.830220+00:00",
   "entrypoint": "n8n",
   "git_sha": "",
-  "golden_signals_sha256": "f3c8a55483bcf197559170c6b4d841314a330b5daf0484903701be59e9ff2276",
+  "golden_signals_sha256": "5b13fc82c0b16bc8be87fb8cc7517af9bd7f9d66fade54ba3b1496ece1c32b3f",
   "n8n_flow_sha256": "2e51f08c6759f9d9d2373aa76873a7834aa7f4727e42e0076e8cbd27ed6acdce",
-  "layer3_source_sha256": "1d0e61ac1e68bfb0157f2cad26ddb780ce14c8e5e3250b120b454c6c1217ed2b",
+  "layer3_source_sha256": "08e748fc08c94e9d4d586d3d83a1b7ca8ee1f2cd15c054aee05b011d012d18aa",
   "results": [
     {
       "id": "golden-orders-api-errors",
@@ -58,6 +58,7 @@
       "status": "flagged",
       "channel": "review",
       "flags": [
+        "insufficient_citations",
         "owner_unverified",
         "report_flagged"
       ],

@@ -53,6 +53,7 @@ jobs:
           - predictor
           - rag
           - guardrails
+          - image-analyzer
           - tools-api
           - langgraph-agent
           - fixture-llm
@@ -223,6 +224,7 @@ jobs:
           echo "=== n8n ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=100 n8n || true
           echo "=== langgraph-agent ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=60 langgraph-agent || true
           echo "=== guardrails ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=40 guardrails || true
+          echo "=== image-analyzer ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=40 image-analyzer || true
           echo "=== integration-stubs ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=40 integration-stubs || true
           echo "=== fixture-llm ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=40 fixture-llm || true
           echo "=== deliveries at failure ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci exec -T integration-stubs python -c "import json,os,urllib.request; request=urllib.request.Request('http://localhost:8000/deliveries', headers={'Authorization':'Bearer '+os.environ['PETER_SERVICES_TOKEN']}); print(json.dumps(json.load(urllib.request.urlopen(request)), indent=2))" || true

@@ -11,7 +11,9 @@ COPY data/ data/
 COPY schemas/ schemas/
 
 RUN useradd --create-home --uid 10001 appuser \
-    && chown -R appuser:appuser /app
+    && chown -R appuser:appuser /app \
+    && mkdir -p /data \
+    && chown appuser:appuser /data
 USER appuser
 
 ENV TOOLS_DATA_DIR=/app/data \

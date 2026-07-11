@@ -1,0 +1,25 @@
+# EC2 override — publish service ports for external validation.
+# Security model: the AWS Security Group is the gate (dev IP /32 only — never
+# 0.0.0.0/0; see scripts/provision_ec2.sh). n8n runs on-instance, so service
+# calls stay on the compose network and need no inbound rules.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.ec2.yml up -d
+services:
+  ingestion:
+    ports: !override ["8001:8000"]
+  predictor:
+    ports: !override ["8002:8000"]
+  rag:
+    ports: !override ["8003:8000"]
+  guardrails:
+    ports: !override ["8004:8000"]
+  tools-api:
+    ports: !override ["8005:8000"]
+  langgraph-agent:
+    ports: !override ["8006:8000"]
+  integration-stubs:
+    ports: !override ["8020:8000"]
+  n8n:
+    ports: !override ["5678:5678"]
+  # fixture-llm stays loopback-only: it is an internal seam, never external.
+  fixture-llm:
+    ports: !override ["127.0.0.1:8010:8000"]
