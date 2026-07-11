@@ -55,6 +55,7 @@ def test_empty_window_defaults_to_normal():
         ("database deadlock and lock waits", "db_lock_contention"),
         ("postgres replication lag increasing", "replication_lag"),
         ("HTTP 5xx error rate spike", "error_rate_spike"),
+        ("checkout p95 latency 8.4s against a 1.2s baseline", "error_rate_spike"),
     ],
 )
 def test_explicit_metric_context_selects_incident_class(context, expected):

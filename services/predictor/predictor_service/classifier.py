@@ -36,7 +36,7 @@ _CONTEXT_MARKERS: tuple[tuple[str, tuple[str, ...]], ...] = (
         "db_lock_contention",
         ("deadlock", "lock wait", "lock contention", "pool exhausted"),
     ),
-    ("error_rate_spike", ("error rate", "5xx", "exception rate")),
+    ("error_rate_spike", ("error rate", "5xx", "exception rate", "p95 latency")),
     ("cpu_saturation", ("cpu saturation", "high cpu", "run queue", "load average")),
     ("memory_leak", ("memory leak", "heap growth", "heap growing", "oom")),
 )
