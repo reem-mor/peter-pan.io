@@ -1,4 +1,4 @@
-"""Migrated from the legacy ``app.guardrails`` regex floor test (ADR 0001).
+"""Regression tests for the migrated deterministic regex floor.
 
 Re-greened against ``guardrails_service.rules``: ``BedrockError`` -> ``GuardrailViolation``,
 ``app.validators.validate_question`` (RAG-service concern, not migrated here) -> direct

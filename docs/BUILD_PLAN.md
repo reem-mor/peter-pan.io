@@ -2,12 +2,13 @@
 
 - **Status:** approved (2026-07-09) — Stage A in progress. Two amendments by user decision:
   within Stage A, **Layer 2 (n8n) is built first** against mock endpoints, Layer 3 services
-  follow; the PITER-era datasets are **rewritten as one coherent service universe** aligned
+  follow; datasets are **one coherent service universe** aligned
   with the demo environment (`shop-web` / `orders-api` / PostgreSQL), replacing the current
   three-way mismatch (gaming datasets vs generic corpus vs demo services) and reconciling
-  `evaluation/rag_evaluation_cases.json` (ADR 0001 limitation 6).
+  `evaluation/rag_evaluation_cases.json` (stale carryover — cases 2–3 reference corpus docs
+  not in the current repo; reconciled when the eval harness is built).
 - **Source of truth:** [peter-pan-system.mmd](peter-pan-system.mmd) · [peter-pan-n8n-flow.mmd](peter-pan-n8n-flow.mmd).
-  Anything not in the diagrams is out of scope. Carryover decisions: [ADR 0001](adr/0001-piter-carryover.md).
+  Anything not in the diagrams is out of scope. Architecture reference: [ARCHITECTURE.md](ARCHITECTURE.md). Architecture decisions: [ADR 0002](adr/0002-model-memory-db.md), [ADR 0003](adr/0003-system-boundaries.md).
 - **Build order (fixed, do not reorder):** Stage A (Layers 2+3, mock-first) → Stage B (Layer 1 UI) → Stage C (Layer 4 real LLM providers).
 
 ---
@@ -132,7 +133,7 @@ moves files across service dirs again.
 |---|---|---|---|---|---|
 | Ingestion API (`ING`) | accept signals, validate, normalize, forward | FastAPI `POST /signals` → `Signal`; `GET /healthz` | none (entry point) | **real** (it's just validation + forward to n8n webhook) | pytest: schema accept/reject table; contract round-trip |
 | Predictive Engine (`PRED`) | anomaly detection on metric windows; draft-incident creation | FastAPI `POST /analyse` (metric window → score + draft `Incident`) | Prometheus query API (Stage A: fixture windows) | EWMA floor **real** (deterministic, unit-tested); PyTorch classifier **stubbed** (fixed weights fixture) | pytest: EWMA known-series table; classifier interface smoke |
-| RAG Service (`RAG`) | cited answers over the corpus | FastAPI `POST /query` (question → answer + `Citation[]`) | corpus; LLM client (generation) | retrieval **real** via migrated TF-IDF stub (ADR 0001); generation via **mock LLM client**; refuses uncited answers (real logic) | migrated tests re-greened + golden-set retrieval eval (hit-rate) |
+| RAG Service (`RAG`) | cited answers over the corpus | FastAPI `POST /query` (question → answer + `Citation[]`) | corpus; LLM client (generation) | retrieval **real** via TF-IDF stub; generation via **mock LLM client**; refuses uncited answers (real logic) | migrated tests re-greened + golden-set retrieval eval (hit-rate) |
 | Guardrails (`GRD`) | input/output checks | FastAPI `POST /check/input`, `POST /check/output` | Tools API (owner verification on output) | regex floor **real** (migrated); NeMo **stubbed** behind same interface; no-invented-owners check **real** | migrated test_guardrails re-greened + output-check table (invented owner, destructive step, uncited claim) |
 | Tools API + approval gate (`TOOLS`) | owners · deploys · similar incidents · escalation · audit log | FastAPI, one route per tool matching `schemas/*.json`; `POST /escalations` preview-first; `GET /audit` | datasets in `data/`; escalation bridge | four tools **real** (migrated code, paths rewired); dispatch **stubbed** (preview-only; audit log to SQLite file) | 10 migrated test modules re-greened + approval-gate state tests |
 | LangGraph agent (`LG`) | Planner → Specialists → Synthesiser triage brain | FastAPI `POST /agent/run` (`Incident` → `TriageReport`) | RAG, Tools API (HTTP); LLM client | graph topology **real** (LangGraph, deterministic routing); every LLM node via **mock client** | graph-path tests: P1 vs P3 fixtures walk expected node sequences; output always validates as `TriageReport` |
@@ -188,7 +189,7 @@ approval-gate REST endpoint; GitHub deploy events (`GH`) enter via the n8n conte
 - **Scope boundary (explicitly NOT in Stage A):** Streamlit UI, any real LLM call, Bedrock/
   llama.cpp/Ollama wiring, Confluence sync, pgvector/Supabase, OpenClaw/Telegram, real Slack,
   the k3d demo environment (separate work item), the parked React frontend.
-- **Inherited backlog (ADR 0001 limitations):** rewire `app.*` imports + path constants in all
+- **Inherited backlog:** rewire `app.*` imports + path constants in all
   migrated modules; replace `lambda_root`/`BedrockError` dependencies; per-service packaging
   (§2); re-green all 15 migrated test modules; reconcile `evaluation/rag_evaluation_cases.json`
   cases 2–3 with the actual corpus; restore per-service CI test jobs.
@@ -244,8 +245,7 @@ approval-gate REST endpoint; GitHub deploy events (`GH`) enter via the n8n conte
 
 ## 7 · Conflicts (listed, not silently resolved)
 
-1–5. Carried from [ADR 0001](adr/0001-piter-carryover.md) (diagrams' original location, no
-pydantic in PITER, tool-name mapping, parked frontend vs Streamlit, local `main` revert).
+1–5. Resolved during the repository reset (diagram location, contract seeding, tool-name mapping, Streamlit UI choice, branch baseline).
 6. **Diagram vs task wording:** the n8n flow's agent node (5) says "Bedrock Claude Sonnet · tool
 calls" while node T3 calls the LangGraph agent service — i.e., *two* agent brains (n8n AI-Agent
 node and LangGraph service). ~~This plan treats the n8n node 5 as the orchestrating caller and
@@ -253,6 +253,4 @@ LangGraph as *the* triage brain.~~ **Resolved 2026-07-09:** the flow diagram's o
 (AGT → T1/T2/T3) and the user's first n8n draft both make node 5 a tool-calling AI Agent with
 RAG, Predictor and LangGraph as HTTP tools — built that way in `n8n/peter-flow.json`. LangGraph
 remains the deep-reasoning specialist the agent calls for cross-domain incidents.
-7. `evaluation/rag_evaluation_cases.json` expects two corpus docs that don't exist post-reset
-(ADR limitation 6) — reconciled when the eval harness is built, direction needs a call: restore
-equivalent docs to the corpus, or rewrite the cases.
+7. `evaluation/rag_evaluation_cases.json` expects two corpus docs that don't exist (stale carryover) — reconciled when the eval harness is built, direction needs a call: restore equivalent docs to the corpus, or rewrite the cases.

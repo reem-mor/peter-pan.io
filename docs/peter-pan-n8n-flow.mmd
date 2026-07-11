@@ -16,7 +16,7 @@ flowchart TB
     IFS{"Known noise?<br/>e.g. alert inside deploy window"}:::branch
     SUP["Suppressed<br/>logged · nobody paged"]:::rej
 
-    EXT["4 · Information Extractor<br/>Bedrock Claude Haiku<br/>service · metric · started · impact"]:::ai
+    EXT["4 · Information Extractor<br/>Gemini 2.5 Flash<br/>service · metric · started · impact"]:::ai
     AGT["5 · AI Agent — incident commander<br/>Bedrock Claude Sonnet · tool calls"]:::ai
     T1["RAG Service<br/>POST /query"]:::svc
     T2["Incident Predictor<br/>POST /analyse"]:::svc

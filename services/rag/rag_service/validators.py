@@ -1,7 +1,7 @@
 """Pure question validation for the RAG /query endpoint.
 
-Operator/destructive-action guardrails moved to the guardrails service
-(ADR 0001) — this module only validates that a question is well-formed
+Operator/destructive-action checks belong to the guardrails service; this
+module only validates that a question is well-formed
 enough to retrieve against (non-empty, in-range length, has searchable
 keywords). It never inspects intent.
 """

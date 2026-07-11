@@ -13,6 +13,8 @@ constants, not model output — nothing here is learned or LLM-proposed.
 
 from __future__ import annotations
 
+import math
+
 # Severity bands over the overall (max abs) deviation score. Checked in
 # descending order; the first threshold met wins. Tune only here.
 SEVERITY_BANDS: tuple[tuple[float, int], ...] = (
@@ -42,6 +44,10 @@ def score(window: list[float], alpha: float = 0.3) -> dict:
     """
     if not window:
         return {"point_scores": [], "overall_score": 0.0, "severity": DEFAULT_SEVERITY}
+
+    # Sanitize non-finite values (NaN/±Inf) to 0.0 so the output is always
+    # JSON-safe. Non-finite windows carry no meaningful anomaly signal.
+    window = [v if math.isfinite(v) else 0.0 for v in window]
 
     mean = window[0]
     var = 0.0

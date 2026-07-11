@@ -9,6 +9,7 @@ Bearer <token>`` header.
 
 from __future__ import annotations
 
+import hmac
 import os
 
 from fastapi import Depends, HTTPException, status
@@ -23,7 +24,9 @@ async def require_bearer_token(
     expected = os.environ.get("PETER_SERVICES_TOKEN")
     if not expected:
         return  # auth disabled — no token configured
-    if credentials is None or credentials.credentials != expected:
+    if credentials is None or not hmac.compare_digest(
+        credentials.credentials, expected
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid or missing bearer token",

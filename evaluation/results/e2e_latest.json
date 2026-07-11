@@ -1,0 +1,33 @@
+{
+  "generated_at": "2026-07-11T00:41:02.0365001Z",
+  "entrypoint": "n8n",
+  "git_sha": "",
+  "golden_signals_sha256": "481676d03c907436c0f7b6711ef4b9ae0046bfbad1b1422cc1a35decc67f1a2f",
+  "n8n_flow_sha256": "e88952404952a7dd8b5c9189cd8ae9f555390b4f50675c9f1fc5743b6216c3c7",
+  "results": [
+    {
+      "id": "golden-orders-api-errors",
+      "status": "ok",
+      "channel": "team:application",
+      "category": "application",
+      "p_level": "P3",
+      "provider": "fixture-fallback"
+    },
+    {
+      "id": "golden-postgres-pool",
+      "status": "ok",
+      "channel": "team:database",
+      "category": "database",
+      "p_level": "P1",
+      "provider": "fixture-fallback"
+    },
+    {
+      "id": "golden-shop-web-latency",
+      "status": "ok",
+      "channel": "team:application",
+      "category": "application",
+      "p_level": "P3",
+      "provider": "fixture-fallback"
+    }
+  ]
+}

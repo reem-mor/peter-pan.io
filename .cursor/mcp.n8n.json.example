@@ -1,0 +1,17 @@
+{
+  "_comment": "Optional: merge this server into gitignored .cursor/mcp.json. Enable n8n instance-level MCP and set both environment variables first.",
+  "mcpServers": {
+    "n8n": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "supergateway",
+        "--streamableHttp",
+        "${N8N_MCP_URL}",
+        "--header",
+        "Authorization:Bearer ${N8N_MCP_TOKEN}"
+      ],
+      "timeout": 120000
+    }
+  }
+}

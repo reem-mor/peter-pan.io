@@ -1,19 +1,4 @@
-"""Owner-team verification against the Tools API — fail-closed by design.
-
-BUILD_PLAN §3 (GRD row): "no-invented-owners check real" — an LLM-proposed
-``TriageReport.owner_team`` is never trusted on its own; it must be confirmed
-against the Tools API.
-
-Known contract gap (listed, not silently resolved — see AGENTS.md / ADR conventions):
-the frozen ``TriageReport`` contract (``docs/contracts/contracts.py``) carries
-``owner_team`` but not the originating ``service`` slug (that lives on the upstream
-``Incident``, not the report). Until an ADR extends the contract, Stage A verifies
-team *existence* via the Tools API's ``GET /teams`` route rather than team-owns-service.
-
-Fail-closed: a missing ``PETER_TOOLS_URL``, a network error, a timeout, or any
-response that doesn't affirmatively confirm the team all yield ``verified=False`` —
-an owner is never assumed genuine.
-"""
+"""Owner-team verification against the Tools API — fail-closed by design."""
 
 from __future__ import annotations
 
@@ -32,17 +17,38 @@ def _auth_headers() -> dict[str, str]:
 async def verify_owner_team(
     owner_team: str,
     *,
+    service: str | None = None,
+    environment: str | None = "production",
     client: httpx.AsyncClient,
     tools_url: str | None = None,
 ) -> bool:
-    """Return True only if the Tools API lists ``owner_team`` as a real team.
+    """Return True when owner_team is confirmed via Tools API.
 
-    ``client`` is injected (rather than constructed here) so callers — and
-    tests — can supply an ``httpx.AsyncClient`` backed by ``httpx.MockTransport``.
+    When ``service`` is provided, verify the owner matches ``service_context``.
+    Otherwise fall back to team existence via ``GET /teams``.
     """
     base_url = tools_url if tools_url is not None else os.environ.get("PETER_TOOLS_URL")
     if not base_url or not owner_team:
         return False
+
+    if service:
+        try:
+            response = await client.post(
+                f"{base_url.rstrip('/')}/tools/service_context",
+                json={"service": service, "environment": environment or "production"},
+                headers=_auth_headers(),
+                timeout=TIMEOUT_SECONDS,
+            )
+        except httpx.HTTPError:
+            return False
+        if response.status_code != 200:
+            return False
+        try:
+            body = response.json()
+        except ValueError:
+            return False
+        expected = (body.get("owner_team") or "").strip()
+        return bool(expected) and expected == owner_team
 
     try:
         response = await client.get(

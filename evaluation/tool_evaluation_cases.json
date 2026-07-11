@@ -1,26 +1,46 @@
 [
   {
     "id": "tool-recent-deployments",
-    "tool": "get_recent_deployments",
-    "arguments": {"service": "auth-service", "environment": "production"},
+    "tool": "recent_deployments",
+    "route": "/tools/recent_deployments",
+    "arguments": {
+      "service": "orders-api",
+      "environment": "production",
+      "alert_time": "2026-07-10T12:00:00Z",
+      "lookback_hours": 6
+    },
     "expected_behavior": "returns deployments or a safe no-match response"
   },
   {
     "id": "tool-service-context",
-    "tool": "get_service_context",
-    "arguments": {"service": "auth-service"},
-    "expected_behavior": "returns owner, dependencies, escalation chain, and runbook"
+    "tool": "service_context",
+    "route": "/tools/service_context",
+    "arguments": {
+      "service": "orders-api",
+      "environment": "production"
+    },
+    "expected_behavior": "returns owner, escalation chain, and business impact"
   },
   {
     "id": "tool-similar-incidents",
-    "tool": "find_similar_incidents",
-    "arguments": {"service": "auth-service", "symptom": "users cannot log in", "severity": "P2"},
+    "tool": "similar_incidents",
+    "route": "/tools/similar_incidents",
+    "arguments": {
+      "service": "orders-api",
+      "symptom": "elevated 5xx after deploy",
+      "environment": "production",
+      "limit": 3
+    },
     "expected_behavior": "returns similar incidents or an empty list without crashing"
   },
   {
     "id": "tool-escalation-preview",
-    "tool": "get_escalation_recommendation",
-    "arguments": {"service": "auth-service", "priority": "P2", "business_impact": "login failure"},
-    "expected_behavior": "returns safe_preview_only true and sends_notifications false"
+    "tool": "escalation_preview",
+    "route": "/tools/escalation_preview",
+    "arguments": {
+      "service": "orders-api",
+      "severity": "P3"
+    },
+    "expected_behavior": "returns owner and escalation path without dispatching notifications"
   }
 ]

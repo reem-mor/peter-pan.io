@@ -1,4 +1,4 @@
-"""Golden-set retrieval evaluation (ADR 0001 limitation 6 / BUILD_PLAN §4 exit gate).
+"""Golden-set retrieval evaluation for the BUILD_PLAN §4 exit gate.
 
 Runs each case in evaluation/rag_evaluation_cases.json through the real
 TF-IDF retriever and asserts the expected source shows up in the top-3

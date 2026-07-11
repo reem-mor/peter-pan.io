@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hmac
 import os
 from typing import Any
 
@@ -31,7 +32,9 @@ def require_bearer_token(
     expected = os.environ.get("PETER_SERVICES_TOKEN", "").strip()
     if not expected:
         return
-    if credentials is None or credentials.credentials != expected:
+    if credentials is None or not hmac.compare_digest(
+        credentials.credentials, expected
+    ):
         raise HTTPException(
             status_code=401,
             detail="Missing or invalid bearer token",
@@ -58,6 +61,11 @@ class SimilarIncidentsRequest(BaseModel):
     symptom: str
     environment: str = ""
     limit: int = 5
+
+
+class EscalationPreviewRequest(BaseModel):
+    service: str
+    severity: str = ""
 
 
 class EscalationRequest(BaseModel):
@@ -132,6 +140,24 @@ def similar_incidents(payload: SimilarIncidentsRequest) -> dict[str, Any]:
     return _ok_or_404(result)
 
 
+@app.post("/tools/escalation_preview", dependencies=[Depends(require_bearer_token)])
+def escalation_preview(payload: EscalationPreviewRequest) -> dict[str, Any]:
+    owner = _ok_or_404(
+        lookup_owner_and_escalation(
+            service=payload.service,
+            severity=payload.severity,
+        )
+    )
+    return {
+        "service": owner["service"],
+        "severity": owner["severity"],
+        "owner_team": owner["owner_team"],
+        "escalation_path": owner["escalation_path"],
+        "preview": True,
+        "sends_notifications": False,
+    }
+
+
 @app.post(
     "/escalations",
     response_model=EscalationResponse,
@@ -157,6 +183,6 @@ def teams() -> dict[str, list[str]]:
     return {"teams": sorted(n for n in names if n)}
 
 
-@app.get("/audit")
+@app.get("/audit", dependencies=[Depends(require_bearer_token)])
 def audit() -> list[dict[str, Any]]:
     return escalation_service.list_audit_entries(limit=50)

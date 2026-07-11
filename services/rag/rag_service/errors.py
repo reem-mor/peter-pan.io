@@ -1,7 +1,6 @@
 """Domain errors for the RAG service.
 
-Replaces the deleted ``app.errors.BedrockError`` (ADR 0001 limitation 3):
-this service no longer calls Bedrock directly, so the error type is
+This service no longer calls Bedrock directly, so the error type is
 retrieval/validation-specific rather than provider-specific.
 """
 

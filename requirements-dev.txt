@@ -1,6 +1,8 @@
 # Repo-level dev tooling only. Per-service runtime requirements land in
 # services/*/requirements.txt during Stage A.
 pytest==8.3.4
+pytest-cov==7.1.0
 ruff==0.15.12
-# contracts schema export + contract-copy identity test (docs/contracts/)
 pydantic==2.13.4
+httpx==0.28.1
+streamlit==1.44.1

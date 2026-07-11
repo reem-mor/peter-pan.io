@@ -1,28 +1,47 @@
 ---
-description: Repository MCP, CI, env, and config map for AI Engineer × SRE workflows
+name: repo-tooling
+description: Maps PETER PAN development commands, environment setup, CI gates, and Cursor tooling. Use when working with setup, .env, Docker Compose, tests, evaluation, MCP, or repository configuration.
 ---
 
-# Repo tooling
+# PETER PAN Repository Tooling
 
-When the user asks about MCP setup, Cursor/Claude config, CI, `.env`, skills, or which file to edit:
+## Start here
 
 1. Read [`docs/AGENT-TOOLING.md`](../../docs/AGENT-TOOLING.md) first.
-2. MCP canonical file: [`.mcp.json`](../../.mcp.json) — not `.cursor/mcp.json` unless overriding locally.
-3. Bootstrap: `scripts/setup-dev.ps1` (Windows) or `scripts/setup-dev.sh` (Unix).
-4. Course-tools launcher: `scripts/run-mcp-course-tools.py` (cross-platform; no hardcoded Windows python path).
-5. Keep [`AGENTS.md`](../../AGENTS.md) as single source of truth; update `CLAUDE.md` only for Claude-specific notes.
+2. Treat [`AGENTS.md`](../../AGENTS.md), accepted ADRs, and frozen contracts as constraints.
+3. Use `.cursor/mcp.json` for local Cursor MCP configuration. It is gitignored; copy from `.cursor/mcp.json.example`.
+4. Never read, print, or commit `.env` or `.cursor/mcp.json`.
 
-## CI matrix (offline pytest)
+## Commands
 
-- `projects/incident-assistant-rag/backend`
-- `projects/incident-rag-bedrock`
-- `lectures/10_langchain_langgraph`
-- `homework/hw07` — skill: [`.cursor/skills/hw07-open-webui/SKILL.md`](../hw07-open-webui/SKILL.md)
+Run from the repository root with the Python 3.12 virtual environment:
 
-Always run `ruff check .` before claiming a change is ready.
+```powershell
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe scripts\run_all_tests.py
+docker compose config --quiet
+.\.venv\Scripts\python.exe evaluation\run_e2e.py --dry-run
+```
+
+Run a service suite from its own import root:
+
+```powershell
+Set-Location services\guardrails
+..\..\.venv\Scripts\python.exe -m pytest -q
+```
+
+For the local n8n import path, set all required variables in the gitignored `.env`,
+then use the explicit bootstrap profile:
+
+```powershell
+docker compose --profile bootstrap up --build
+```
+
+Do not claim full E2E from `--dry-run`; it validates fixtures only.
 
 ## Do not
 
-- Commit `.env`, `.cursor/mcp.json`, or API keys in MCP JSON.
-- Add MCP servers without a documented use in this repo.
-- Fork skills into `.agents/`.
+- Change `docs/contracts/`, tool schemas, diagrams, or frozen evaluation cases without the required ADR/approval.
+- Commit `.env`, `.cursor/mcp.json`, credentials, live resource IDs, or generated runtime databases.
+- Run live n8n workflows, AWS deployments, or destructive Compose commands unless explicitly requested.
+- Add commands or paths that do not exist in this repository.

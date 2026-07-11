@@ -1,7 +1,7 @@
 """Guardrail-specific exceptions.
 
-Replaces the legacy ``app.errors.BedrockError`` dependency (ADR 0001 limitation 3):
-this service is self-contained and never imports from ``app.*``.
+This service is self-contained and never imports the retired application's
+provider-specific errors.
 """
 
 from __future__ import annotations

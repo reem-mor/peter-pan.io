@@ -9,6 +9,7 @@ Two endpoints, matching the n8n flow's HTTP nodes (``n8n/peter-flow.json``):
 
 from __future__ import annotations
 
+import hmac
 import os
 from collections.abc import AsyncIterator
 from typing import Any
@@ -34,7 +35,8 @@ async def require_auth(authorization: str | None = Header(default=None)) -> None
         return
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing bearer token")
-    if authorization.removeprefix("Bearer ").strip() != expected:
+    provided = authorization.removeprefix("Bearer ").strip()
+    if not hmac.compare_digest(provided, expected):
         raise HTTPException(status_code=401, detail="Invalid bearer token")
 
 
@@ -67,6 +69,8 @@ class CheckInputRequest(BaseModel):
 
 class CheckOutputRequest(BaseModel):
     report: dict[str, Any]
+    service: str | None = None
+    environment: str | None = "production"
 
 
 def _validation_reason(exc: ValidationError, label: str) -> str:
@@ -157,7 +161,12 @@ async def check_output(
         flags.append("confidence_out_of_range")
         reasons.append("confidence must be between 0.0 and 1.0.")
 
-    verified = await verify_owner_team(report.owner_team, client=http_client)
+    verified = await verify_owner_team(
+        report.owner_team,
+        service=payload.service,
+        environment=payload.environment,
+        client=http_client,
+    )
     if not verified:
         flags.append("owner_unverified")
         reasons.append(

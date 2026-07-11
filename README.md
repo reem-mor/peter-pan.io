@@ -1,83 +1,60 @@
-<div align="center">
+# PETER PAN — Agentic incident-response platform
 
-# PETER PAN
-
-### Predictive, guarded, agentic incident response — n8n-orchestrated microservices
+Predictive, guarded, agentic incident response — n8n-orchestrated microservices with
+deterministic safety floors over LLM judgement.
 
 [![CI](https://github.com/reem-mor/peter-pan.io/actions/workflows/ci.yml/badge.svg)](https://github.com/reem-mor/peter-pan.io/actions/workflows/ci.yml)
 
-</div>
+## Architecture
 
-PETER PAN ingests production signals (Grafana alerts, manual reports, deploy events, user
-complaints), enriches and de-noises them deterministically, extracts a structured incident,
-lets an **incident-commander agent** investigate through governed tools (anomaly predictor,
-citation-only RAG, LangGraph deep-reasoning specialists), and emits a **schema-enforced,
-citation-backed TriageReport** that passes output guardrails before anyone gets paged.
-Design rule throughout: **deterministic safety floors over LLM judgement** — models propose,
-unit-tested code and schemas decide.
+Source of truth: [system diagram](docs/peter-pan-system.mmd) · [n8n flow](docs/peter-pan-n8n-flow.mmd) · [build plan](docs/BUILD_PLAN.md)
 
-> **Not PITER.** This repo evolved from the legacy
-> [PITER AiOps](https://github.com/reem-mor/piter-aiops) project (Flask + Bedrock Agent +
-> React) but is a **different system with its own architecture**. What was kept, migrated,
-> and deleted is recorded in [ADR 0001](docs/adr/0001-piter-carryover.md).
+Architecture reference (runtime flow, service status, health commands): **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
 
-## Architecture — four layers
-
-The two Mermaid diagrams are the **source of truth**; anything not in them is out of scope:
-[system architecture](docs/peter-pan-system.mmd) · [n8n flow](docs/peter-pan-n8n-flow.mmd).
-
-| layer | what | status |
+| Layer | Component | Status |
 |---|---|---|
-| **1 · Humans** | Streamlit WebUI (incident form, TriageReport viewer, local assistant) | Stage B |
-| **2 · Orchestration** | the n8n **PETER flow** — webhook → guardrails → enrichment → noise gate → extractor → commander agent → TriageReport → guardrails → router/escalation | **built** → [`n8n/peter-flow.json`](n8n/peter-flow.json) · [docs](n8n/README.md) |
-| **3 · Core services** | six FastAPI microservices: Ingestion, Predictive Engine (EWMA floor + classifier), RAG (cited answers only), Guardrails (regex floor + NeMo seam), Tools API + approval gate, LangGraph agent | **packaged, suites green** — fixture LLM + E2E harness pending |
-| **4 · AI models** | task-routed ([why](docs/model-memory-db-rationale.md) · [ADR 0002](docs/adr/0002-model-memory-db.md)): Gemini 2.5 Flash (extraction), Bedrock Claude Sonnet (agent/synthesis), llama.cpp Mistral 7B (RAG generation), Ollama Llama 3 (assistant) — all behind one `LLMClient` seam | Stage C; Stage A runs deterministic fixtures |
+| 1 UI | Streamlit WebUI (`ui/`) | Stage B skeleton |
+| 2 Orchestration | n8n PETER flow (`n8n/peter-flow.json`) | Full local golden-set E2E verified |
+| 3 Core | Six FastAPI services + two supporting seams | Stage A fixture-backed implementation |
+| 4 Models | Task-routed `LLMClient` (`docs/llm_client/`) | Fixture adapters + Stage C stubs |
 
-## Contracts first
+**Graded four primary services:** RAG, Predictor, Guardrails, LangGraph agent. Ingestion and Tools API are supporting infrastructure ([ADR 0003](docs/adr/0003-system-boundaries.md)).
 
-[`docs/contracts/contracts.py`](docs/contracts/contracts.py) defines the only models the
-layers exchange — `Signal`, `Incident` (+ `IncidentContext`, `DeployRef`), `Citation`,
-`TriageReport` — **frozen at Stage A start**; changing one requires an ADR. JSON Schemas are
-exported for n8n's Structured Output Parser. Floors baked into the contracts: citations are
-schema-required (uncited answers fail), `owner_team`/`escalation_path` may only be copied
-from Tools API responses, P-level mapping is deterministic code, escalation is preview-first.
+## Quick start
 
-## Repo layout
-
-| path | contents |
-|---|---|
-| `services/` | one self-contained dir per microservice (tools-api, guardrails, rag carry migrated code; ingestion, predictor, langgraph-agent scaffolded) |
-| `n8n/` | versioned PETER-flow export + setup docs (re-exported on every flow change) |
-| `docs/` | diagrams (source of truth), [BUILD_PLAN.md](docs/BUILD_PLAN.md), ADRs, frozen contracts |
-| `predictive/` | demo/training data generators (`datagen/`) |
-| `evaluation/` | golden-set seeds; Stage A adds the E2E eval harness |
-
-## Build stages
-
-Full plan with exit gates: [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md).
-
-- **Stage A — Layers 2+3, mock-first** *(in progress)*: contracts frozen ✅ · PETER flow
-  built + exported ✅ · six services packaged with green suites ✅ · coherent PITER-free
-  dataset/corpus universe + reconciled eval golden set ✅ · FixtureLLM mock, real LangGraph
-  graph and the `run_e2e` harness ⏳. Exit gate: `docker compose up` + one command posts
-  golden `Signal` fixtures and receives valid `TriageReport`s **with zero external API calls**.
-- **Stage B — Streamlit UI** against the mock-backed stack.
-- **Stage C — real providers last**: swap the fixture client for Bedrock/llama.cpp/Ollama by
-  config; same E2E suite must stay green; eval scores recorded in `evaluation/results/`.
-
-## Development
-
-```bash
-python -m venv .venv && .venv/Scripts/pip install -r requirements-dev.txt   # Windows paths
-ruff check .                        # must pass
-python scripts/run_all_tests.py     # per-service pytest suites (each service is its own rootdir)
-docker compose build                # six self-contained service images
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+Copy-Item .env.example .env
+# Set the required empty secret values in .env; never commit that file.
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe scripts/run_all_tests.py
+docker compose config --quiet        # syntax check only
+.\.venv\Scripts\python.exe evaluation/run_e2e.py --dry-run
+docker compose --profile bootstrap up --build -d
+# Full compose-backed E2E:
+.\.venv\Scripts\python.exe evaluation/run_e2e.py --entrypoint n8n --base-url http://localhost --token $env:PETER_SERVICES_TOKEN
 ```
 
-Secrets live in `.env` (gitignored, never committed); n8n credentials are referenced by
-name only — the flow export carries none. Service URLs and webhook targets are documented
-in [`n8n/README.md`](n8n/README.md).
+The `bootstrap` profile keeps the one-shot authenticated workflow import explicit.
+Stage A attempts the structured LLM writer first and uses a tested deterministic,
+contract-valid fixture fallback when the local OpenAI-compatible parser path fails.
+
+## Layout
+
+| Path | Purpose |
+|---|---|
+| `services/` | 8 self-contained deployment units (6 core + fixture-llm + integration-stubs) |
+| `ui/` | Streamlit WebUI (Stage B) |
+| `n8n/` | Versioned workflow export |
+| `evaluation/` | Golden sets + E2E harness |
+| `infra/aws/` | CloudFormation demo stack |
+| `docs/` | Contracts, ADRs, audits, architecture reference |
+
+## Development tooling
+
+MCP servers, CI commands, and available skills: [docs/AGENT-TOOLING.md](docs/AGENT-TOOLING.md)
 
 ## License
 
-[MIT](LICENSE)
+MIT

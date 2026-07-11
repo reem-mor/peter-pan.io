@@ -28,7 +28,7 @@ flowchart LR
     N8N["n8n Orchestration<br/>the PETER flow"]:::n8n
 
     subgraph AI["AI Models — routed by task"]
-        BR["Amazon Bedrock<br/>Claude Sonnet — agents & synthesis<br/>Claude Haiku — extraction"]:::ai
+        BR["Amazon Bedrock<br/>Claude Sonnet — agents & synthesis<br/>Gemini 2.5 Flash — extraction"]:::ai
         LCPP["Llama.cpp on EC2<br/>Mistral 7B GGUF — RAG generation"]:::ai
         OLL["Ollama local — RTX 3060<br/>Llama 3 — WebUI · Hermes — OpenClaw"]:::ai
     end
@@ -47,8 +47,7 @@ flowchart LR
 
     GRAF -->|alert webhook| ING
     PROM -.->|metric windows via query API| PRED
-    ING --> PRED
-    PRED -->|draft incident| N8N
+    ING -->|validated Signal| N8N
     UI -->|manual submission| N8N
     N8N -->|triage brain| LG
     N8N -.->|input + output checks| GRD

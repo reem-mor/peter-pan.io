@@ -3,14 +3,34 @@
 `peter-flow.json` is the versioned export of the Stage A workflow. **Re-export it on every
 flow change** (BUILD_PLAN §3) — the n8n instance is not the source of record, this repo is.
 
-- Instance: `reemmor.app.n8n.cloud`, personal project, workflow **`lSa7mPQX0rbUi1K5`**
-  ("PETER PAN — PETER Flow (Stage A)"), unpublished until Stage A services exist.
+- The tracked export contains no instance URL, workflow ID, or live credential binding.
+- **Local compose** pins `n8nio/n8n:2.29.10`; upgrade only with flow/static/E2E revalidation.
+  Tool nodes in `peter-flow.json` use `n8n-nodes-base.httpRequestTool` — not the deprecated
+  `@n8n/n8n-nodes-langchain.httpRequestTool` type from early exports.
 - Webhook ingress: `POST /webhook/peter-signal` (test: `/webhook-test/peter-signal`),
   body = a `Signal` (see `docs/contracts/contracts.py`).
-- Two predecessor workflows named "PETER PAN Incident Submission Pipeline"
-  (`QLOj0j7hiEuyP28t` — a mistitled property-listing template; `TALJtWbkoHtjzbKL` — the
-  first PETER draft, superseded by this flow) are **archived** in n8n, restorable from the
-  instance archive.
+
+## Local compose bootstrap
+
+The one-shot `n8n-bootstrap` service is isolated behind the explicit `bootstrap`
+profile. It uses authenticated n8n REST endpoints and does not mount the Docker socket:
+
+```powershell
+docker compose --profile bootstrap up --build
+```
+
+The bootstrap service:
+
+1. Waits for n8n `/healthz`
+2. Creates owner session (or uses `N8N_OWNER_*` from compose)
+3. Creates **PETER Services Bearer** and **PETER Mock LLM** credentials
+4. Imports `peter-flow.json` and activates `POST /webhook/peter-signal`
+
+Alternatively, re-run the host-side script after a fresh n8n volume:
+
+```powershell
+python scripts/bootstrap_n8n_local.py
+```
 
 ## Configuration (never inline in the flow)
 
@@ -23,18 +43,19 @@ Environment variables, set in the n8n instance:
 | `PETER_RAG_URL` | RAG service base URL (`/query`) |
 | `PETER_LANGGRAPH_URL` | LangGraph agent base URL (`/agent/run`) |
 | `PETER_TOOLS_URL` | Tools API base URL (`/escalations`, preview-first) |
-| `PETER_REVIEW_QUEUE_URL` | human-review queue stub endpoint |
+| `PETER_REVIEW_QUEUE_URL` | human-review receiver in `integration-stubs` |
 | `PETER_DB_TEAM_WEBHOOK` / `PETER_INFRA_TEAM_WEBHOOK` / `PETER_APP_TEAM_WEBHOOK` / `PETER_TRIAGE_TEAM_WEBHOOK` | team webhooks (Stage A: webhook.site/stub URLs) |
 | `PETER_SLACK_STUB_URL` | Slack incident-channel stub (Stage C: real Slack) |
-| `PETER_GITHUB_API` / `PETER_GITHUB_REPO` | GitHub deployments context branch (real API, fake repo) |
+| `PETER_GITHUB_API` / `PETER_GITHUB_REPO` | Deploy context stub (`integration-stubs` in local compose) |
 
-Credentials, created in the n8n UI (the export carries **no** secrets):
+Credentials, created in the n8n UI (the export carries **no** secrets). Local compose
+creates them via `scripts/bootstrap_n8n_local.py` from `${PETER_SERVICES_TOKEN}` and
+`${PETER_FIXTURE_LLM_URL}` — see `n8n/bootstrap-credentials.example.json` for shape only.
 
 - **PETER Services Bearer** (`httpBearerAuth`) — shared secret for all service HTTP calls.
 - **PETER Mock LLM (OpenAI-compatible)** (`openAiApi`) — base URL pointing at the Stage A
-  FixtureLLM service. ⚠️ On creation n8n auto-assigned the real "OpenAi n8n course"
-  credential to the three "(Mock Seam)" model nodes — **swap it to the mock credential
-  before running anything**. Stage C swaps this same credential to real providers
+  FixtureLLM service. Verify that every "(Mock Seam)" model node uses this fixture credential
+  before running the flow. Stage C swaps this same credential to real providers
   (Gemini 2.5 Flash for extraction, Bedrock Claude Sonnet for agent/synthesis —
   [ADR 0002](../docs/adr/0002-model-memory-db.md)); the nodes never change.
 

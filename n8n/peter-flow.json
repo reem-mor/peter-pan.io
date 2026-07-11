@@ -1,5 +1,6 @@
 {
   "name": "PETER PAN — PETER Flow (Stage A)",
+  "active": false,
   "nodes": [
     {
       "id": "f2808e22-18da-465c-bee0-898e406a3835",
@@ -29,7 +30,7 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [0, 768],
-      "parameters": { "httpMethod": "POST", "path": "peter-signal", "responseMode": "responseNode" },
+      "parameters": { "httpMethod": "POST", "path": "peter-signal", "authentication": "headerAuth", "responseMode": "responseNode" },
       "webhookId": "6e52c2cd-a46f-41a1-94b2-4558bc949263"
     },
     {
@@ -154,9 +155,8 @@
       "position": [1120, 480],
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.PETER_GITHUB_API }}/repos/{{ $env.PETER_GITHUB_REPO }}/deployments",
-        "sendQuery": true,
-        "queryParameters": { "parameters": [{ "name": "environment", "value": "={{ $('Normalize Signal').item.json.environment || 'production' }}" }] },
+        "url": "={{ $env.PETER_GITHUB_API }}/github/deployments",
+        "sendQuery": false,
         "options": { "timeout": 8000 }
       },
       "alwaysOutputData": true,
@@ -171,7 +171,7 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "const nowMs = Date.now();\nconst windowMs = 2 * 60 * 60 * 1000;\nconst rows = $input.all().map(i => i.json).filter(d => d && d.sha);\nconst recent = rows.filter(d => { const t = Date.parse(d.created_at || d.updated_at || ''); return !isNaN(t) && (nowMs - t) <= windowMs; }).map(d => ({ repo: $env.PETER_GITHUB_REPO || 'unknown/repo', sha: d.sha, deployed_at: d.created_at || d.updated_at, service: (d.payload && d.payload.service) || d.environment || 'unknown' }));\nreturn [{ json: { recent_deploys: recent } }];"
+        "jsCode": "const nowMs = Date.now();\nconst windowMs = 2 * 60 * 60 * 1000;\nconst payload = $input.first().json || {};\nconst rows = Array.isArray(payload.deployments) ? payload.deployments : [];\nconst recent = rows.filter(d => { const t = Date.parse(d.deployed_at || ''); return !isNaN(t) && (nowMs - t) <= windowMs; }).map(d => ({ repo: d.repo || ($env.PETER_GITHUB_REPO || 'unknown/repo'), sha: d.sha, deployed_at: d.deployed_at, service: d.service || 'unknown' }));\nreturn [{ json: { recent_deploys: recent } }];"
       }
     },
     {
@@ -267,7 +267,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [2320, 992],
-      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "options": { "temperature": 0 } }
+      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "responsesApiEnabled": false, "options": { "temperature": 0 } }
     },
     {
       "id": "ef7c0696-00ee-4d93-9eb9-53a116ccf538",
@@ -301,13 +301,13 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [2816, 992],
-      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "options": { "temperature": 0 } }
+      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "responsesApiEnabled": false, "options": { "temperature": 0 } }
     },
     {
       "id": "9164c703-33a9-490e-8737-6dfd55a76e0c",
       "name": "Predictor Tool",
-      "type": "@n8n/n8n-nodes-langchain.httpRequestTool",
-      "typeVersion": 4.4,
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
       "position": [2944, 992],
       "parameters": {
         "toolDescription": "Classifies the incident into an objective CATEGORY and SEVERITY score with confidence, from the metric window. Do NOT guess severity yourself — always call this first.",
@@ -324,8 +324,8 @@
     {
       "id": "1053c5ff-e66f-44b7-8878-4b5a9e3e2f4e",
       "name": "RAG Query Tool",
-      "type": "@n8n/n8n-nodes-langchain.httpRequestTool",
-      "typeVersion": 4.4,
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
       "position": [3072, 992],
       "parameters": {
         "toolDescription": "Retrieves similar PAST INCIDENTS and matching RUNBOOK sections with citations (source_id, source_type, quote). Input: a short natural-language description of the current incident.",
@@ -342,8 +342,8 @@
     {
       "id": "7be60df7-1c98-4ac5-841a-5139517af398",
       "name": "LangGraph Agent Tool",
-      "type": "@n8n/n8n-nodes-langchain.httpRequestTool",
-      "typeVersion": 4.4,
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
       "position": [3200, 992],
       "parameters": {
         "toolDescription": "Runs deep multi-step Planner-Specialists-Synthesiser reasoning across infra, database and application specialists. Call ONLY for complex cross-domain incidents. Returns findings, owner_team and escalation_path grounded in the Tools API.",
@@ -360,17 +360,23 @@
     {
       "id": "ee9656ca-af59-4de4-b253-e491af88c220",
       "name": "Write TriageReport",
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 3.1,
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.8,
       "position": [3408, 768],
       "parameters": {
         "promptType": "define",
         "hasOutputParser": true,
         "text": "=Write the final TriageReport.\n\nIncident: {{ JSON.stringify($('Assemble Incident').item.json) }}\n\nCommander findings: {{ $json.output }}",
-        "options": {
-          "systemMessage": "You are the incident report writer. Synthesise the incident, the predictor severity/category, and the RAG runbook context into one TriageReport matching the schema exactly. Deterministic floors: category must be one of infra, database, application. owner_team and escalation_path may ONLY be copied from tool results in the findings — if absent use \"unknown\" and []. Map predictor severity to p_level: 5 to P1, 4 to P2, 3 to P3, 1-2 to P4; the predictor proposal wins over your own judgement. Every citations[] entry must copy a real source_id, source_type and quote from tool output — never invent citations; if you cannot cite, say \"insufficient data\" in probable_cause and lower confidence. recommended_steps must be read-only or safe diagnostic actions, never destructive commands."
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "You are the incident report writer. Synthesise the incident, the predictor severity/category, and the RAG runbook context into one TriageReport matching the schema exactly. Deterministic floors: category must be one of infra, database, application. owner_team and escalation_path may ONLY be copied from tool results in the findings — if absent use \"unknown\" and []. Map predictor severity to p_level: 5 to P1, 4 to P2, 3 to P3, 1-2 to P4; the predictor proposal wins over your own judgement. Every citations[] entry must copy a real source_id, source_type and quote from tool output — never invent citations; if you cannot cite, say \"insufficient data\" in probable_cause and lower confidence. recommended_steps must be read-only or safe diagnostic actions, never destructive commands."
+            }
+          ]
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "id": "9845a5d7-6402-4a85-940a-b25513c34915",
@@ -378,7 +384,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [3424, 992],
-      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "options": { "temperature": 0 } }
+      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "responsesApiEnabled": false, "options": { "temperature": 0 } }
     },
     {
       "id": "c2307ccc-e30c-462f-8cd7-6ffbd530bf74",
@@ -389,6 +395,18 @@
       "parameters": {
         "schemaType": "manual",
         "inputSchema": "{\"$defs\":{\"Citation\":{\"additionalProperties\":false,\"properties\":{\"source_id\":{\"title\":\"Source Id\",\"type\":\"string\"},\"source_type\":{\"enum\":[\"runbook\",\"incident_history\",\"service_doc\",\"tool_result\"],\"title\":\"Source Type\",\"type\":\"string\"},\"quote\":{\"maxLength\":500,\"title\":\"Quote\",\"type\":\"string\"}},\"required\":[\"source_id\",\"source_type\",\"quote\"],\"title\":\"Citation\",\"type\":\"object\"}},\"additionalProperties\":false,\"description\":\"The one artifact PETER PAN produces. Output-guardrail-checked before routing.\",\"properties\":{\"incident_id\":{\"title\":\"Incident Id\",\"type\":\"string\"},\"category\":{\"enum\":[\"infra\",\"database\",\"application\"],\"title\":\"Category\",\"type\":\"string\"},\"p_level\":{\"enum\":[\"P1\",\"P2\",\"P3\",\"P4\"],\"title\":\"P Level\",\"type\":\"string\"},\"summary\":{\"maxLength\":1200,\"minLength\":1,\"title\":\"Summary\",\"type\":\"string\"},\"probable_cause\":{\"maxLength\":1200,\"title\":\"Probable Cause\",\"type\":\"string\"},\"citations\":{\"items\":{\"$ref\":\"#/$defs/Citation\"},\"minItems\":1,\"title\":\"Citations\",\"type\":\"array\"},\"owner_team\":{\"title\":\"Owner Team\",\"type\":\"string\"},\"escalation_path\":{\"items\":{\"type\":\"string\"},\"title\":\"Escalation Path\",\"type\":\"array\"},\"recommended_steps\":{\"items\":{\"type\":\"string\"},\"maxItems\":8,\"title\":\"Recommended Steps\",\"type\":\"array\"},\"confidence\":{\"maximum\":1.0,\"minimum\":0.0,\"title\":\"Confidence\",\"type\":\"number\"},\"guardrail_flags\":{\"items\":{\"type\":\"string\"},\"title\":\"Guardrail Flags\",\"type\":\"array\"},\"generated_at\":{\"format\":\"date-time\",\"title\":\"Generated At\",\"type\":\"string\"},\"model_meta\":{\"additionalProperties\":{\"type\":\"string\"},\"title\":\"Model Meta\",\"type\":\"object\"}},\"required\":[\"incident_id\",\"category\",\"p_level\",\"summary\",\"probable_cause\",\"citations\",\"owner_team\",\"confidence\",\"generated_at\"],\"title\":\"TriageReport\",\"type\":\"object\"}"
+      }
+    },
+    {
+      "id": "8ab3ac21-7f7d-4d91-9e50-5678e9a1f001",
+      "name": "Fixture TriageReport Fallback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3632, 1120],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const incident = $('Assemble Incident').first().json;\nconst service = String(incident.service || 'unknown').toLowerCase();\nlet category = 'application';\nlet pLevel = 'P3';\nlet owner = 'App Platform';\nlet escalation = ['Primary App Platform On-Call', 'Secondary App Platform On-Call'];\nlet sourceId = service === 'shop-web' ? 'shop_web' : 'orders_api_error_spike';\nlet sourceType = service === 'shop-web' ? 'service_doc' : 'runbook';\nif (service.includes('postgres')) {\n  category = 'database';\n  pLevel = 'P1';\n  owner = 'Database Reliability';\n  escalation = ['Primary Database Reliability On-Call', 'Secondary Database Reliability On-Call'];\n  sourceId = 'database_connectivity';\n  sourceType = 'runbook';\n} else if (service.includes('redis') || service.includes('ingress') || service.includes('k8s')) {\n  category = 'infra';\n  pLevel = 'P2';\n  owner = 'Infra SRE';\n  escalation = ['Primary Infra SRE On-Call', 'Secondary Infra SRE On-Call'];\n  sourceId = service.includes('redis') ? 'redis_cache_degradation' : 'ingress_5xx';\n  sourceType = 'runbook';\n}\nreturn [{ json: {\n  incident_id: incident.id,\n  category,\n  p_level: pLevel,\n  summary: `Deterministic fixture fallback: ${service} requires evidence-based triage.`,\n  probable_cause: 'Recent-change correlation requires verification.',\n  citations: [{ source_id: sourceId, source_type: sourceType, quote: 'Review the cited service guidance and recent-change evidence.' }],\n  owner_team: owner,\n  escalation_path: escalation,\n  recommended_steps: [`Review recent changes and health metrics for ${service}.`, 'Compare current signals against the documented baseline.'],\n  confidence: 0.75,\n  guardrail_flags: [],\n  generated_at: new Date().toISOString(),\n  model_meta: { provider: 'fixture-fallback', stage: 'A' }\n} }];"
       }
     },
     {
@@ -416,7 +434,7 @@
         "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { report: $json } }}",
+        "jsonBody": "={{ { report: $json, service: $('Assemble Incident').item.json.service, environment: $('Assemble Incident').item.json.environment } }}",
         "options": { "timeout": 10000 }
       },
       "onError": "continueErrorOutput"
@@ -515,6 +533,8 @@
       "parameters": {
         "method": "POST",
         "url": "={{ $env.PETER_DB_TEAM_WEBHOOK }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $('Finalize TriageReport').item.json }}",
@@ -543,6 +563,8 @@
       "parameters": {
         "method": "POST",
         "url": "={{ $env.PETER_INFRA_TEAM_WEBHOOK }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $('Finalize TriageReport').item.json }}",
@@ -559,6 +581,8 @@
       "parameters": {
         "method": "POST",
         "url": "={{ $env.PETER_APP_TEAM_WEBHOOK }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $('Finalize TriageReport').item.json }}",
@@ -575,6 +599,8 @@
       "parameters": {
         "method": "POST",
         "url": "={{ $env.PETER_TRIAGE_TEAM_WEBHOOK }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { report: $('Finalize TriageReport').item.json, reason: 'category did not match a known team' } }}",
@@ -623,6 +649,8 @@
       "parameters": {
         "method": "POST",
         "url": "={{ $env.PETER_SLACK_STUB_URL }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { channel: 'incident-' + $('Finalize TriageReport').item.json.incident_id, summary: $('Finalize TriageReport').item.json.summary, owner_team: $('Finalize TriageReport').item.json.owner_team, recommended_steps: $('Finalize TriageReport').item.json.recommended_steps } }}",
@@ -653,9 +681,10 @@
     "Predictor Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },
     "RAG Query Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },
     "LangGraph Agent Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },
-    "Write TriageReport": { "main": [[{ "node": "Finalize TriageReport", "type": "main", "index": 0 }]] },
+    "Write TriageReport": { "main": [[{ "node": "Finalize TriageReport", "type": "main", "index": 0 }], [{ "node": "Fixture TriageReport Fallback", "type": "main", "index": 0 }]] },
     "Writer Model (Mock Seam)": { "ai_languageModel": [[{ "node": "Write TriageReport", "type": "ai_languageModel", "index": 0 }]] },
     "TriageReport Parser": { "ai_outputParser": [[{ "node": "Write TriageReport", "type": "ai_outputParser", "index": 0 }]] },
+    "Fixture TriageReport Fallback": { "main": [[{ "node": "Finalize TriageReport", "type": "main", "index": 0 }]] },
     "Finalize TriageReport": { "main": [[{ "node": "Guardrails Output Check", "type": "main", "index": 0 }]] },
     "Guardrails Output Check": { "main": [[{ "node": "Output Passed?", "type": "main", "index": 0 }], [{ "node": "Respond Flagged (Guardrails Down)", "type": "main", "index": 0 }]] },
     "Output Passed?": { "main": [[{ "node": "Prepare Routing", "type": "main", "index": 0 }], [{ "node": "Send to Review Queue", "type": "main", "index": 0 }]] },

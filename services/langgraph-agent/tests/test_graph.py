@@ -152,6 +152,18 @@ def test_missing_severity_defaults_to_p3_with_lowered_confidence(monkeypatch):
     assert report.confidence == pytest.approx(0.4)
 
 
+def test_canonical_incident_p_level_is_preserved(monkeypatch):
+    _patch_client(monkeypatch, _healthy_handler)
+    incident = {**P1_INCIDENT, "p_level": "P1", "context": {}}
+
+    response = client.post("/agent/run", json={"incident": incident})
+
+    assert response.status_code == 200
+    report = TriageReport.model_validate(response.json())
+    assert report.p_level == "P1"
+    assert report.confidence == pytest.approx(0.9)
+
+
 def test_tools_failure_marks_owner_unverified_but_rag_citations_survive(monkeypatch):
     _patch_client(monkeypatch, _tools_down_handler)
 
@@ -219,3 +231,92 @@ def test_accepts_valid_bearer_token(monkeypatch):
         headers={"Authorization": "Bearer s3cret"},
     )
     assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Infra category path
+# ---------------------------------------------------------------------------
+
+REDIS_INFRA_INCIDENT = {
+    "id": "inc-redis-infra001",
+    "service": "redis-cache",
+    "environment": "production",
+    "symptom": "cache miss rate elevated, memory usage high",
+    "context": {"severity": 4},
+}
+
+K8S_INFRA_INCIDENT = {
+    "id": "inc-k8s-infra001",
+    "service": "k8s-ingress",
+    "environment": "production",
+    "symptom": "5xx errors from ingress controller",
+    "context": {"severity": 3},
+}
+
+
+def test_redis_cache_incident_category_is_infra(monkeypatch):
+    """redis-* service names must route to the infra category."""
+    _patch_client(monkeypatch, _healthy_handler)
+
+    resp = client.post("/agent/run", json={"incident": REDIS_INFRA_INCIDENT})
+    assert resp.status_code == 200, resp.text
+
+    report = TriageReport.model_validate(resp.json())
+    assert report.category == "infra"
+    assert report.p_level == "P2"  # severity 4 → P2
+    assert report.confidence == pytest.approx(0.9)
+    assert report.guardrail_flags == []
+
+
+def test_k8s_ingress_incident_category_is_infra(monkeypatch):
+    """k8s-* / ingress service names must route to the infra category."""
+    _patch_client(monkeypatch, _healthy_handler)
+
+    resp = client.post("/agent/run", json={"incident": K8S_INFRA_INCIDENT})
+    assert resp.status_code == 200, resp.text
+
+    report = TriageReport.model_validate(resp.json())
+    assert report.category == "infra"
+    assert report.p_level == "P3"  # severity 3 → P3
+
+
+# ---------------------------------------------------------------------------
+# Graph topology: plan → specialists → synthesise
+# ---------------------------------------------------------------------------
+
+
+def test_graph_visits_plan_then_specialists_then_synthesise(monkeypatch):
+    """The LangGraph topology must execute nodes in plan → specialists → synthesise order."""
+    import langgraph_agent.graph as graph_mod
+
+    visited: list[str] = []
+
+    orig_plan = graph_mod.plan_node
+    orig_specialists = graph_mod.specialists_node
+    orig_synthesise = graph_mod.synthesise_node
+
+    def tracking_plan(state):
+        visited.append("plan")
+        return orig_plan(state)
+
+    async def tracking_specialists(state, *, rag_url, tools_url, client):
+        visited.append("specialists")
+        return await orig_specialists(
+            state, rag_url=rag_url, tools_url=tools_url, client=client
+        )
+
+    def tracking_synthesise(state):
+        visited.append("synthesise")
+        return orig_synthesise(state)
+
+    monkeypatch.setattr(graph_mod, "plan_node", tracking_plan)
+    monkeypatch.setattr(graph_mod, "specialists_node", tracking_specialists)
+    monkeypatch.setattr(graph_mod, "synthesise_node", tracking_synthesise)
+    _patch_client(monkeypatch, _healthy_handler)
+
+    resp = client.post("/agent/run", json={"incident": P1_INCIDENT})
+    assert resp.status_code == 200, resp.text
+
+    assert visited == ["plan", "specialists", "synthesise"], (
+        f"Expected plan → specialists → synthesise, got: {visited}"
+    )

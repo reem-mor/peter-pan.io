@@ -4,7 +4,7 @@ The pre-migration version of this module also validated ``app.data_loader``
 example-question/workflow-alert helpers used by the deleted Flask/React UI.
 Those helpers have no rag_service equivalent (Stage B ships a Streamlit UI
 that doesn't need them) and are dropped rather than reimplemented dead code
-(ADR 0001 limitation 1).
+from the retired application.
 """
 
 from __future__ import annotations

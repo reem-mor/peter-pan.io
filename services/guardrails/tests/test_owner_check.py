@@ -93,6 +93,23 @@ def test_returns_false_on_malformed_teams_value() -> None:
     assert result is False
 
 
+def test_returns_true_when_service_owner_matches() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/tools/service_context"
+        return httpx.Response(200, json={"owner_team": "App Platform"})
+
+    async def _run_case():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await verify_owner_team(
+                "App Platform",
+                service="orders-api",
+                client=client,
+                tools_url="http://tools-api.test",
+            )
+
+    assert asyncio.run(_run_case()) is True
+
+
 def test_sends_bearer_header_when_token_set(monkeypatch) -> None:
     monkeypatch.setenv("PETER_SERVICES_TOKEN", "sekrit")
 

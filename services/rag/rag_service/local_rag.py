@@ -1,6 +1,6 @@
 """Pure-Python TF-IDF + keyword retriever for offline RAG.
 
-Stage A deterministic stub (ADR 0001 / BUILD_PLAN §3 RAG row): retrieval is
+Stage A deterministic stub (BUILD_PLAN §3 RAG row): retrieval is
 real TF-IDF cosine similarity over the local JSON corpus, no network call.
 It loads JSON corpus documents from ``corpus/``, splits them into
 heading-delimited chunks, and ranks chunks against a query. Every hit

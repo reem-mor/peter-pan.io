@@ -43,11 +43,15 @@ async def _forward_to_n8n(signal: Signal, url: str) -> int:
     re-raised for the caller to turn into a degraded (forwarded=false) reply.
     """
     payload = signal.model_dump(mode="json")
+    headers: dict[str, str] = {}
+    secret = os.environ.get("PETER_WEBHOOK_SECRET", "").strip()
+    if secret:
+        headers["X-Peter-Webhook-Secret"] = secret
     last_exc: httpx.HTTPError | None = None
     async with _build_client() as client:
         for _attempt in range(_FORWARD_ATTEMPTS):
             try:
-                response = await client.post(url, json=payload)
+                response = await client.post(url, json=payload, headers=headers)
                 return response.status_code
             except httpx.HTTPError as exc:  # noqa: PERF203 — retry loop is intentional
                 last_exc = exc
@@ -58,6 +62,12 @@ async def _forward_to_n8n(signal: Signal, url: str) -> int:
 @app.get("/healthz")
 async def healthz() -> dict:
     return {"status": "ok", "service": SERVICE_NAME}
+
+
+@app.get("/readyz")
+async def readyz() -> dict:
+    n8n_configured = bool(os.environ.get("N8N_WEBHOOK_URL"))
+    return {"ready": True, "checks": {"n8n_webhook_configured": n8n_configured}}
 
 
 @app.post("/signals", status_code=202, dependencies=[Depends(require_bearer_token)])

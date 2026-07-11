@@ -4,10 +4,9 @@
 Self-contained (AGENTS.md: no cross-directory imports outside a component's
 own tree) -- loads every dataset produced by ``generate_demo_data.py`` /
 ``generate_alert_stream.py`` with plain ``csv``/``json`` and asserts each
-parses and has rows. This replaced an earlier version that imported
-``app.services.data_access``; that module lived in the deleted PITER Flask
-app and, even if it still existed, importing into it from here would violate
-the "services talk HTTP only" rule (ADR 0001 limitation 4).
+parses and has rows. It replaces the retired application's data-access import
+with a local loader (see ``_load_service_owners_table``), preserving the
+"services talk HTTP only" boundary.
 
 Usage:
     python -m predictive.datagen.validate_data

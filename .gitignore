@@ -6,6 +6,8 @@
 .env
 .env.*
 !.env.example
+.cursor/mcp.json
+n8n/bootstrap-credentials.json
 *.pem
 *.key
 *.p12
@@ -39,13 +41,8 @@ build/
 *.egg
 pip-wheel-metadata/
 
-# --- Node / frontend (parked bonus dashboard) ---
+# --- Node / frontend (removed — Streamlit UI in ui/) ---
 node_modules/
-frontend/.vite/
-frontend/dist/
-# stale local SPA build output from the pre-reset layout; safe to delete locally
-app/static/
-scripts/ec2-notification.env
 
 # --- Logs & debug captures ---
 *.log
@@ -59,8 +56,6 @@ evaluation/pytest_output.txt
 *.sqlite
 *.sqlite3
 *.db
-knowledge_base/faiss_index/
-
 # --- Predictor/Ingestion demo fixtures (regenerate via predictive/datagen) ---
 predictive/data/
 
@@ -84,9 +79,6 @@ docs/review/var/
 # runtime state (chat history JSON store)
 var/
 
-# deploy artifacts
-piter-aiops.tar
-scripts/ssm-*.json
-
 # Test artifacts (any service or frontend)
 **/test-results/
+.playwright-mcp/

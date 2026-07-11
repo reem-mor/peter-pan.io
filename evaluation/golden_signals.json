@@ -1,0 +1,56 @@
+[
+  {
+    "id": "golden-orders-api-errors",
+    "signal": {
+      "id": "sig-golden0001",
+      "source": "grafana",
+      "kind": "alert",
+      "received_at": "2026-07-10T12:00:00Z",
+      "title": "orders-api 5xx spike",
+      "body": "Error rate above 5% for 10 minutes after deploy",
+      "service": "orders-api",
+      "environment": "production",
+      "severity_hint": "warning",
+      "labels": {"team": "checkout"},
+      "raw": {}
+    },
+    "expected_category": "application",
+    "expected_p_level": "P3"
+  },
+  {
+    "id": "golden-postgres-pool",
+    "signal": {
+      "id": "sig-golden0002",
+      "source": "webui",
+      "kind": "manual",
+      "received_at": "2026-07-10T12:05:00Z",
+      "title": "postgres connection pool exhausted",
+      "body": "Active connections at max; queries timing out",
+      "service": "postgres-primary",
+      "environment": "production",
+      "severity_hint": "critical",
+      "labels": {},
+      "raw": {}
+    },
+    "expected_category": "database",
+    "expected_p_level": "P1"
+  },
+  {
+    "id": "golden-shop-web-latency",
+    "signal": {
+      "id": "sig-golden0003",
+      "source": "slack",
+      "kind": "complaint",
+      "received_at": "2026-07-10T12:10:00Z",
+      "title": "checkout latency complaints",
+      "body": "Users reporting slow checkout on shop-web",
+      "service": "shop-web",
+      "environment": "production",
+      "severity_hint": "warning",
+      "labels": {},
+      "raw": {}
+    },
+    "expected_category": "application",
+    "expected_p_level": "P3"
+  }
+]

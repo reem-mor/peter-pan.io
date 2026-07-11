@@ -11,7 +11,9 @@ floor engineering principle.
 
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
 from .auth import require_bearer_token
@@ -26,11 +28,28 @@ app = FastAPI(title="PETER PAN Predictor Service")
 
 
 class AnalyseRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     incident: dict | None = None
     metric_window_ref: str | None = None
     window: list[float] | None = None
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_error(
+    _request: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    """Return JSON-safe validation errors even when the rejected input is NaN/Inf."""
+    detail = [
+        {
+            key: value
+            for key, value in error.items()
+            if key not in {"input", "ctx", "url"}
+        }
+        for error in exc.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": detail})
 
 
 @app.get("/healthz")

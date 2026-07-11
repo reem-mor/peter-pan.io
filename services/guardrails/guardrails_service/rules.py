@@ -1,5 +1,6 @@
-"""Deterministic regex guardrail floor — migrated from the legacy ``app/guardrails.py``
-(ADR 0001). Self-contained: no ``app.*`` imports, no ``BedrockError`` dependency.
+"""Deterministic regex guardrail floor, isolated from the retired legacy application.
+
+Self-contained: no ``app.*`` imports, no ``BedrockError`` dependency.
 
 Two entry points:
 
