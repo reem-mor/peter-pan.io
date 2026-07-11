@@ -2,7 +2,7 @@
 
 Covers:
 - Prompt-injection attempts in signal title / body: must not crash (valid JSON
-  response with pass/flags; no 500).
+  response with passed/flags; no 500).
 - Hebrew and other Unicode text in safe signals: must not raise.
 - Max-length body (8000 chars) with safe content: must pass all checks.
 - Explicit null severity_hint: schema allows it, must not flag.
@@ -61,7 +61,7 @@ def test_prompt_injection_in_body_never_causes_500(injection: str) -> None:
     resp = client.post("/check/input", json={"signal": signal})
     assert resp.status_code == 200, f"Expected 200 for injection payload, got {resp.status_code}: {resp.text}"
     body = resp.json()
-    assert "pass" in body
+    assert "passed" in body
     assert isinstance(body["flags"], list)
     assert isinstance(body["reason"], str)
 
@@ -81,7 +81,7 @@ def test_prompt_injection_containing_blocked_keywords_is_flagged(
     resp = client.post("/check/input", json={"signal": signal})
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is False
+    assert body["passed"] is False
     assert body["flags"], "expected at least one flag for embedded blocked keyword"
 
 
@@ -108,7 +108,7 @@ def test_unicode_title_safe_signal_passes_without_crash(title: str) -> None:
     assert resp.status_code == 200
     body = resp.json()
     # Safe Unicode content must not be flagged as destructive / policy bypass.
-    assert body["pass"] is True, (
+    assert body["passed"] is True, (
         f"Safe Unicode title unexpectedly flagged: flags={body['flags']!r}"
     )
 
@@ -125,7 +125,7 @@ def test_unicode_body_safe_signal_passes(body_text: str) -> None:
     signal = {**_BASE_SIGNAL, "body": body_text}
     resp = client.post("/check/input", json={"signal": signal})
     assert resp.status_code == 200
-    assert resp.json()["pass"] is True
+    assert resp.json()["passed"] is True
 
 
 # ---------------------------------------------------------------------------
@@ -138,16 +138,16 @@ def test_max_length_body_safe_content_passes() -> None:
     signal = {**_BASE_SIGNAL, "body": "x" * 8000}
     resp = client.post("/check/input", json={"signal": signal})
     assert resp.status_code == 200
-    assert resp.json()["pass"] is True
+    assert resp.json()["passed"] is True
 
 
 def test_body_over_max_length_is_schema_rejected() -> None:
     """A body of 8001 chars must be rejected at schema validation level."""
     signal = {**_BASE_SIGNAL, "body": "x" * 8001}
     resp = client.post("/check/input", json={"signal": signal})
-    # Pydantic rejects via the Signal schema; guardrail returns pass=False schema_invalid
+    # Pydantic rejects via the Signal schema; guardrail returns passed=False schema_invalid
     assert resp.status_code == 200
-    assert resp.json()["pass"] is False
+    assert resp.json()["passed"] is False
     assert "schema_invalid" in resp.json()["flags"]
 
 
@@ -161,7 +161,7 @@ def test_null_severity_hint_is_accepted() -> None:
     signal = {**_BASE_SIGNAL, "severity_hint": None}
     resp = client.post("/check/input", json={"signal": signal})
     assert resp.status_code == 200
-    assert resp.json()["pass"] is True
+    assert resp.json()["passed"] is True
 
 
 # ---------------------------------------------------------------------------
@@ -195,7 +195,7 @@ def test_false_positive_rate_zero_on_safe_population() -> None:
         resp = client.post("/check/input", json={"signal": signal})
         assert resp.status_code == 200
         body = resp.json()
-        if not body["pass"]:
+        if not body["passed"]:
             false_positives.append(
                 f"title={sample['title']!r} flags={body['flags']!r}"
             )

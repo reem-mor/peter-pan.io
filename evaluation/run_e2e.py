@@ -209,7 +209,7 @@ def _run_golden_path(
         timeout=10.0,
     )
     input_check.raise_for_status()
-    if not input_check.json().get("pass"):
+    if not input_check.json().get("passed"):
         return {"id": case["id"], "status": "rejected", "reason": input_check.json()}
 
     incident = _incident_from_signal(signal)
@@ -246,14 +246,14 @@ def _run_golden_path(
         report.get("category") == case.get("expected_category")
         and report.get("p_level") == case.get("expected_p_level")
         and len(report.get("citations", [])) >= 1
-        and output_verdict.get("pass") is True
+        and output_verdict.get("passed") is True
     )
     return {
         "id": case["id"],
         "status": "ok" if ok else "mismatch",
         "category": report.get("category"),
         "p_level": report.get("p_level"),
-        "guardrail_pass": output_verdict.get("pass"),
+        "guardrail_pass": output_verdict.get("passed"),
     }
 
 

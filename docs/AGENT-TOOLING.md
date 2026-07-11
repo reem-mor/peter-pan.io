@@ -29,13 +29,23 @@ live PETER webhook flow, and re-export every approved change to `n8n/peter-flow.
 
 | Skill | Use when |
 |---|---|
-| `.cursor/skills/repo-tooling/` | CI and dev commands |
-| `.cursor/skills/mcp-integration/` | Adding or troubleshooting Cursor MCP servers |
-| `.cursor/skills/peter-evaluation/` | Running frozen evaluation and Stage A gates |
-| `.cursor/skills/agent-development/` | Creating focused project subagents |
+| `.claude/skills/ec2-deploy/` | EC2 provisioning, deployment, recovery, and live validation |
+| `.claude/skills/frontend-design/` | Building or refining the operator UI |
+| `.claude/skills/guardrails-testing/` | Changing rails, deterministic floors, or frozen guardrail cases |
+| `.claude/skills/incident-triage/` | Changing classification, severity, routing, or `TriageReport` generation |
+| `.claude/skills/mcp-integration/` | Adding or troubleshooting project MCP servers |
+| `.claude/skills/peter-evaluation/` | Running frozen evaluation and Stage A gates |
+| `.claude/skills/prompt-engineering-log/` | Versioning and measuring the five graded prompt surfaces |
+| `.claude/skills/rag-evaluation/` | Changing retrieval, grounding, citations, or RAG benchmarks |
 
-Cursor skills under `.cursor/skills/` are authoritative for Cursor behavior.
-`.claude/skills/` remains Claude-specific; do not assume the formats are interchangeable.
+`.claude/skills/` is the single project source of truth. Claude Code reads it
+natively; Cursor reads it through third-party skill compatibility. Keep
+**Include third-party Plugins, Skills, and other configs** enabled and verify the
+inventory under **Customize → Skills**. Do not mirror skills into `.cursor/skills/`
+or `.agents/skills/`: cross-root precedence is undocumented and duplicate copies drift.
+
+References: [Cursor Agent Skills](https://cursor.com/docs/skills),
+[Claude Code Agent Skills](https://code.claude.com/docs/en/skills).
 
 ## Project subagents
 
@@ -61,6 +71,8 @@ n8n entrypoint documented by the evaluation harness.
 ## Security
 
 - Never commit `.env`, `.cursor/mcp.json`, PEM keys, or live AWS/n8n resource IDs.
+- `.claude/settings.json` is the shared deny baseline; `.claude/settings.local.json`
+  is user-local and gitignored.
 - n8n flow export carries credential **names** only, never values.
 - Stop after a definitive auth or permission denial; do not weaken scopes or embed a token.
 - Verify `git status` does not show `.cursor/mcp.json` before any commit.

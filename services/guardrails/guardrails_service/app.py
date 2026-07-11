@@ -3,8 +3,8 @@
 Two endpoints, matching the n8n flow's HTTP nodes (``n8n/peter-flow.json``):
 ``POST /check/input`` (body ``{"signal": <Signal dict>}``) and
 ``POST /check/output`` (body ``{"report": <TriageReport dict>}``). Both return
-``{"pass": bool, "flags": [str], "reason": str}``. Any non-empty flag list means
-``pass=false``.
+``{"passed": bool, "flags": [str], "reason": str}``. Any non-empty flag list means
+``passed=false``.
 """
 
 from __future__ import annotations
@@ -16,16 +16,17 @@ from typing import Any
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ValidationError
 
 from . import rules
-from .contracts import Signal, TriageReport
+from .contracts import GuardrailResult, Signal, TriageReport
 from .owner_check import verify_owner_team
 from .policy_engine import NoopPolicyEngine, PolicyEngine
 
 app = FastAPI(title="PETER PAN Guardrails", version="0.1.0")
 
 _policy_engine: PolicyEngine = NoopPolicyEngine()
+_MAX_REASON_LENGTH = 500
 
 
 async def require_auth(authorization: str | None = Header(default=None)) -> None:
@@ -55,14 +56,6 @@ async def get_http_client() -> AsyncIterator[httpx.AsyncClient]:
         yield client
 
 
-class GuardrailResponse(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    passed: bool = Field(alias="pass")
-    flags: list[str] = Field(default_factory=list)
-    reason: str = ""
-
-
 class CheckInputRequest(BaseModel):
     signal: dict[str, Any]
 
@@ -77,7 +70,17 @@ class CheckOutputRequest(BaseModel):
 def _validation_reason(exc: ValidationError, label: str) -> str:
     first = exc.errors()[0]
     loc = ".".join(str(part) for part in first["loc"]) or label
-    return f"{label} failed schema validation at '{loc}': {first['msg']}"
+    return _bounded_reason(
+        [f"{label} failed schema validation at '{loc}': {first['msg']}"],
+        "",
+    )
+
+
+def _bounded_reason(reasons: list[str], success_reason: str) -> str:
+    reason = " ".join(reasons) if reasons else success_reason
+    if len(reason) <= _MAX_REASON_LENGTH:
+        return reason
+    return reason[: _MAX_REASON_LENGTH - 3].rstrip() + "..."
 
 
 @app.get("/healthz")
@@ -85,17 +88,15 @@ async def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post(
-    "/check/input", response_model=GuardrailResponse, response_model_by_alias=True
-)
+@app.post("/check/input", response_model=GuardrailResult)
 async def check_input(
     payload: CheckInputRequest,
     _auth: None = Depends(require_auth),
-) -> GuardrailResponse:
+) -> GuardrailResult:
     try:
         signal = Signal.model_validate(payload.signal)
     except ValidationError as exc:
-        return GuardrailResponse(
+        return GuardrailResult(
             passed=False,
             flags=["schema_invalid"],
             reason=_validation_reason(exc, "signal"),
@@ -115,22 +116,20 @@ async def check_input(
     flags.extend(_policy_engine.check_input(signal))
 
     passed = not flags
-    reason = " ".join(reasons) if reasons else "Signal passed all guardrail checks."
-    return GuardrailResponse(passed=passed, flags=flags, reason=reason)
+    reason = _bounded_reason(reasons, "Signal passed all guardrail checks.")
+    return GuardrailResult(passed=passed, flags=flags, reason=reason)
 
 
-@app.post(
-    "/check/output", response_model=GuardrailResponse, response_model_by_alias=True
-)
+@app.post("/check/output", response_model=GuardrailResult)
 async def check_output(
     payload: CheckOutputRequest,
     _auth: None = Depends(require_auth),
     http_client: httpx.AsyncClient = Depends(get_http_client),
-) -> GuardrailResponse:
+) -> GuardrailResult:
     try:
         report = TriageReport.model_validate(payload.report)
     except ValidationError as exc:
-        return GuardrailResponse(
+        return GuardrailResult(
             passed=False,
             flags=["schema_invalid"],
             reason=_validation_reason(exc, "report"),
@@ -219,7 +218,5 @@ async def check_output(
     flags.extend(_policy_engine.check_output(report))
 
     passed = not flags
-    reason = (
-        " ".join(reasons) if reasons else "TriageReport passed all guardrail checks."
-    )
-    return GuardrailResponse(passed=passed, flags=flags, reason=reason)
+    reason = _bounded_reason(reasons, "TriageReport passed all guardrail checks.")
+    return GuardrailResult(passed=passed, flags=flags, reason=reason)

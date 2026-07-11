@@ -178,6 +178,16 @@ def _commander_evidence(messages: list[ChatMessage]) -> dict[str, Any] | None:
     return None
 
 
+_INCIDENT_CLASS_TO_CATEGORY: dict[str, str | None] = {
+    "cpu_saturation": "infra",
+    "memory_leak": "infra",
+    "db_lock_contention": "database",
+    "replication_lag": "database",
+    "error_rate_spike": "application",
+    "normal": None,
+}
+
+
 def _tool_grounded_report(
     messages: list[ChatMessage], evidence: dict[str, Any]
 ) -> dict[str, Any]:
@@ -197,10 +207,13 @@ def _tool_grounded_report(
     p_level = {5: "P1", 4: "P2", 3: "P3", 2: "P4", 1: "P4"}.get(
         severity, deep.get("p_level", "P3")
     )
-    category = predictor.get("category") or deep.get("category")
-    if category not in {"infra", "database", "application"}:
-        category = "application"
-        flags.append("predictor_unverified")
+    incident_class = predictor.get("incident_class")
+    category = _INCIDENT_CLASS_TO_CATEGORY.get(incident_class)
+    if category is None:
+        raise ValueError(
+            "predictor incident_class is missing, unknown, or normal; "
+            "routing policy must stop before synthesis"
+        )
 
     citations = retrieval.get("citations", [])
     if not isinstance(citations, list) or not citations:
@@ -244,6 +257,7 @@ def _tool_grounded_report(
         "model_meta": {
             "provider": "fixture",
             "model": "peter-stage-a-fixture",
+            "predictor_incident_class": str(incident_class),
             "predictor_severity": str(severity or ""),
             "evidence": ",".join(sorted(evidence)),
         },

@@ -1,0 +1,34 @@
+---
+description: Karpathy-inspired coding behavior for simple, surgical, verifiable changes
+alwaysApply: true
+---
+
+# Karpathy-inspired coding behavior
+
+These guidelines bias toward caution over speed. PETER PAN's safety floors, frozen
+contracts, security rules, and required resilience paths always take precedence.
+
+## 1. Think before coding
+- Surface assumptions and trade-offs that materially affect the result.
+- If uncertainty would change behavior or architecture, stop and ask. Proceed autonomously on reversible, well-specified work.
+- If a simpler approach exists, say so and push back when warranted.
+
+## 2. Simplicity first
+- Write the minimum code that solves the requested problem; add nothing speculative.
+- Avoid single-use abstractions and unrequested flexibility or configurability.
+- Preserve required error handling, graceful degradation, health checks, and audit paths.
+
+## 3. Surgical changes
+- Every changed line must trace directly to the request.
+- Match existing style; do not refactor, reformat, or remove unrelated code.
+- Remove only imports, variables, or functions made obsolete by the current change.
+
+## 4. Goal-driven execution
+- Define verifiable success criteria before implementation and verify them before claiming completion.
+- For fixes, reproduce the failure first; for refactors, verify behavior before and after.
+- Never weaken tests, contracts, deterministic floors, or evaluation thresholds to make a change pass.
+
+## Project authority
+- Behavioral and operational hard rules: [CLAUDE.md](../../CLAUDE.md)
+- Architecture, ownership, and implementation status: [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md)
+- Build gates and frozen contracts: [docs/BUILD_PLAN.md](../../docs/BUILD_PLAN.md), [docs/contracts/](../../docs/contracts/)

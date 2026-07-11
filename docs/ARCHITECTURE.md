@@ -73,7 +73,7 @@ TriageReport (returned to caller / rendered in UI)
 | Service dir | Package | Primary endpoint | Status |
 |---|---|---|---|
 | `services/ingestion/` | `ingestion_service` | `POST /signals` | Implemented |
-| `services/predictor/` | `predictor_service` | `POST /analyse` | EWMA floor implemented; PyTorch classifier **stubbed** |
+| `services/predictor/` | `predictor_service` | `POST /analyse` | EWMA floor + typed six-class fixture implemented; trained PyTorch classifier **stubbed** |
 | `services/rag/` | `rag_service` | `POST /query` | TF-IDF retrieval implemented; llama.cpp generation **stubbed** |
 | `services/guardrails/` | `guardrails_service` | `POST /check/input`, `POST /check/output` | Regex floor implemented; NeMo **stubbed** |
 | `services/image-analyzer/` | `image_analyzer_service` | `POST /analyze` | Stage A supporting seam — ResNet scaffold; not invoked by the current n8n flow |
@@ -93,10 +93,27 @@ All nine service units expose `GET /healthz`.
 | `Signal` | Ingestion → n8n webhook | pydantic schema + contract copy-identity test |
 | `Incident` | n8n node 4 output → agent input | Structured Output Parser JSON Schema |
 | `IncidentContext` | CTX branch merge output | pydantic |
+| `GuardrailResult` | Guardrails input/output checks → n8n IF nodes | pydantic + contract copy-identity test |
 | `TriageReport` | n8n node 6 → guardrail output check | pydantic + output guardrail owner-verification |
 
 Changing any contract requires an ADR. Copies live in `<service>/<pkg>/contracts.py`;
 a contract-identity test asserts all copies match `docs/contracts/contracts.py`.
+
+---
+
+## Predictor taxonomy and routing policy
+
+Predictor `/analyse` emits a fine-grained `incident_class`; it never emits the report's routing
+`category`. n8n applies the deterministic policy before report generation:
+
+| `incident_class` | `TriageReport.category` |
+|---|---|
+| `cpu_saturation`, `memory_leak` | `infra` |
+| `db_lock_contention`, `replication_lag` | `database` |
+| `error_rate_spike` | `application` |
+| `normal` | suppressed; no team, Slack, or escalation route |
+
+Missing or unknown classes fail closed with no routing. The report writer cannot override this map.
 
 ---
 
@@ -157,5 +174,5 @@ n8n bootstrap profile must be running first.
 | Prompt Engineering Log (5 surfaces × 5 iterations) | **Planned** (Stage A → C) |
 | Real LLM providers (Gemini, Bedrock, Ollama) | **Optional/planned** (Stage C; not required for Layers 2–3) |
 | pgvector / Supabase ingestion | **Planned** (Stage C) |
-| AWS EC2 deployment | **Planned** (Stage C / demo) |
+| AWS EC2 deployment | **Verified (demo)** — `scripts/provision_ec2.sh` · `scripts/deploy_ec2.sh` · `docker-compose.ec2.yml`; dev-IP-only SG, instance-generated secrets. The Stage A demo EC2 instance is currently running, and the full n8n-path E2E passed 7/7 on EC2 on 2026-07-11. |
 | PyTorch training + dataset (≥200 samples) | **Planned** (Stage C stretch) |

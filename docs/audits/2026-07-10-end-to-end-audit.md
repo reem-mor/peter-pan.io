@@ -44,6 +44,10 @@ CloudFormation validation passed, Claude Sonnet is authorized in `us-east-1`, an
 PETER PAN stack, EC2 instance, IAM role, or Bedrock Guardrail is currently deployed.
 No model invocation or resource mutation was performed.
 
+Update (2026-07-11, post-audit): the demo instance was provisioned after the read-only
+audit above. The Stage A demo EC2 instance is currently running, and the full n8n-path
+E2E passed 7/7 on EC2 on 2026-07-11.
+
 ## Understanding lock (confirmed)
 
 - Complete all four layers with fixture-first validation; no live AWS provisioning.

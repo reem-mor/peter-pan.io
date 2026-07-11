@@ -1,0 +1,69 @@
+# =============================================================================
+# PETER PAN — .cursorignore
+# Controls what Cursor's AI can READ (indexing, context, Tab, agent access).
+# NOT a hard security boundary — real secret protection is .gitignore + not committing.
+# This is defense-in-depth + keeping the AI's context sharp (no junk, no huge blobs).
+# Do NOT ignore docs/ or .claude/skills/ — the workflow depends on the AI reading them.
+# =============================================================================
+
+# --- Secrets (defense-in-depth — keep out of AI context) ---
+.env
+.env.*
+!.env.example
+.cursor/mcp.json
+.claude/settings.local.json
+n8n/bootstrap-credentials.json
+*.pem
+*.key
+*.p12
+*.pfx
+.ssh/
+.aws/
+kaggle.json
+**/.kaggle/
+.ec2_instance_id.txt
+.sg_id.txt
+
+# --- Large model / index blobs (blow the context budget, zero reasoning value) ---
+*.gguf
+*.pth
+*.faiss
+*.pkl
+*.onnx
+
+# --- Generated / caches (noise that dilutes AI answers) ---
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+dist/
+build/
+node_modules/
+
+# --- Data & runtime state (regenerated; low signal) ---
+predictive/data/
+evaluation/results/
+*.sqlite
+*.sqlite3
+*.db
+var/
+.trash/
+**/test-results/
+.playwright-mcp/
+
+# --- Logs ---
+*.log
+*.err.log
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+Desktop.ini

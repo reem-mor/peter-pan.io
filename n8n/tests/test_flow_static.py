@@ -72,6 +72,9 @@ REQUIRED_NODE_NAMES: list[str] = [
     "RAG Query Tool",
     "LangGraph Agent Tool",
     "Service Context Tool",
+    "Apply Predictor Policy",
+    "Predictor Outcome",
+    "Respond Predictor Invalid",
     # triage report
     "Write TriageReport",
     "Writer Model (Mock Seam)",
@@ -226,6 +229,29 @@ class TestCoreConnections:
     def test_known_noise_false_to_extract_info(self, connections: dict) -> None:
         assert "Extract Incident Info" in _connected_to(connections, "Known Noise?", 1)
 
+    def test_commander_to_predictor_policy(self, connections: dict) -> None:
+        assert "Apply Predictor Policy" in _connected_to(
+            connections, "Incident Commander", 0
+        )
+
+    def test_predictor_policy_to_outcome_switch(self, connections: dict) -> None:
+        assert "Predictor Outcome" in _connected_to(
+            connections, "Apply Predictor Policy", 0
+        )
+
+    def test_predictor_outcomes_are_routable_suppressed_or_invalid(
+        self, connections: dict
+    ) -> None:
+        assert "Write TriageReport" in _connected_to(
+            connections, "Predictor Outcome", 0
+        )
+        assert "Log Suppression" in _connected_to(
+            connections, "Predictor Outcome", 1
+        )
+        assert "Respond Predictor Invalid" in _connected_to(
+            connections, "Predictor Outcome", 2
+        )
+
     def test_finalize_to_guardrails_output(self, connections: dict) -> None:
         assert "Guardrails Output Check" in _connected_to(connections, "Finalize TriageReport", 0)
 
@@ -255,6 +281,83 @@ class TestCoreConnections:
             .get("systemMessage", "")
         )
         assert "do not call RAG directly" in prompt
+
+    def test_guardrail_if_nodes_use_frozen_passed_field(
+        self, nodes_by_name: dict
+    ) -> None:
+        for name in ("Input Passed?", "Output Passed?"):
+            serialized = json.dumps(_params(nodes_by_name[name]))
+            assert "$json.passed" in serialized
+            assert "$json.pass }}" not in serialized
+
+    def test_predictor_policy_contains_complete_six_to_three_map(
+        self, nodes_by_name: dict
+    ) -> None:
+        code = _params(nodes_by_name["Apply Predictor Policy"]).get("jsCode", "")
+        expected = {
+            "cpu_saturation": "infra",
+            "memory_leak": "infra",
+            "db_lock_contention": "database",
+            "replication_lag": "database",
+            "error_rate_spike": "application",
+            "normal": None,
+        }
+        for incident_class, category in expected.items():
+            assert incident_class in code
+            if category is not None:
+                assert category in code
+        assert "predictor.category" not in code
+        assert "outcome: 'suppressed'" in code
+        assert "outcome: 'invalid'" in code
+
+    def test_predictor_policy_reads_raw_intermediate_tool_observation(
+        self, nodes_by_name: dict
+    ) -> None:
+        commander_options = _params(nodes_by_name["Incident Commander"]).get(
+            "options", {}
+        )
+        assert commander_options.get("returnIntermediateSteps") is True
+
+        code = _params(nodes_by_name["Apply Predictor Policy"]).get("jsCode", "")
+        assert "intermediateSteps" in code
+        assert "observation" in code
+        assert "$json.output" not in code
+
+    def test_predictor_policy_rejects_model_fallback_and_preserves_severity(
+        self, nodes_by_name: dict
+    ) -> None:
+        policy_code = _params(nodes_by_name["Apply Predictor Policy"]).get(
+            "jsCode", ""
+        )
+        finalize_code = _params(nodes_by_name["Finalize TriageReport"]).get(
+            "jsCode", ""
+        )
+
+        assert "scores?.classifier?.fallback" in policy_code
+        assert "!modelFallback" in policy_code
+        assert "severityMap" in policy_code
+        assert "p_level" in policy_code
+        assert "ewmaSeverity === rawSeverity" in policy_code
+        assert "incidentClass === 'normal' && severity === 1" in policy_code
+        assert "report.p_level = policy.p_level" in finalize_code
+        assert "report.model_meta.predictor_severity" in finalize_code
+
+    def test_predictor_policy_strictly_validates_required_response_fields(
+        self, nodes_by_name: dict
+    ) -> None:
+        code = _params(nodes_by_name["Apply Predictor Policy"]).get("jsCode", "")
+
+        assert "typeof rawSeverity === 'number'" in code
+        assert "validConfidence" in code
+        assert "validMethod" in code
+        assert "validScores" in code
+
+    def test_service_context_does_not_accept_llm_selected_severity(
+        self, nodes_by_name: dict
+    ) -> None:
+        body = _params(nodes_by_name["Service Context Tool"]).get("jsonBody", "")
+        assert "$fromAI('severity'" not in body
+        assert '"severity"' not in body
 
     def test_fixture_fallback_uses_tool_evidence(self, nodes_by_name: dict) -> None:
         code = _params(nodes_by_name["Fixture TriageReport Fallback"]).get(

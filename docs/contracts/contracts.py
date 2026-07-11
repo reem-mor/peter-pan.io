@@ -62,6 +62,15 @@ class Incident(BaseModel):
     context: IncidentContext = Field(default_factory=IncidentContext)
 
 
+class GuardrailResult(BaseModel):
+    """Frozen response returned by both Guardrails checks."""
+    model_config = ConfigDict(extra="forbid")
+
+    passed: bool
+    flags: list[str] = Field(default_factory=list)
+    reason: str = Field(default="", max_length=500)
+
+
 class Citation(BaseModel):
     model_config = ConfigDict(extra="forbid")
     source_id: str            # corpus doc id or tool call id

@@ -8,14 +8,14 @@
   `evaluation/rag_evaluation_cases.json` (stale carryover — cases 2–3 reference corpus docs
   not in the current repo; reconciled when the eval harness is built).
 - **Source of truth:** [peter-pan-system.mmd](peter-pan-system.mmd) · [peter-pan-n8n-flow.mmd](peter-pan-n8n-flow.mmd).
-  Anything not in the diagrams is out of scope. Architecture reference: [ARCHITECTURE.md](ARCHITECTURE.md). Architecture decisions: [ADR 0002](adr/0002-model-memory-db.md), [ADR 0003](adr/0003-system-boundaries.md).
+  Anything not in the diagrams is out of scope. Architecture reference: [ARCHITECTURE.md](ARCHITECTURE.md). Architecture decisions: [ADR 0002](adr/0002-model-memory-db.md), [ADR 0003](adr/0003-system-boundaries.md), [ADR 0004](adr/0004-guardrail-and-predictor-contracts.md).
 - **Build order (fixed, do not reorder):** Stage A (Layers 2+3, mock-first) → Stage B (Layer 1 UI) → Stage C (Layer 4 real LLM providers).
 
 ---
 
 ## 1 · Contracts first
 
-Every layer speaks only these three models. They are **frozen at the start of Stage A**; changing
+Every layer speaks only these canonical models. They are **frozen at the start of Stage A**; changing
 one afterwards requires an ADR. They live in a single shared file vendored into each service
 (`<service>/<pkg>/contracts.py` — copied, not imported across services; a contract test asserts
 the copies are identical) plus one canonical copy in `docs/contracts/contracts.py` exported to
@@ -79,6 +79,15 @@ class Incident(BaseModel):
     started_at: datetime | None = None
     symptom: str = Field(min_length=1, max_length=1000)
     context: IncidentContext = Field(default_factory=IncidentContext)
+
+
+class GuardrailResult(BaseModel):
+    """Frozen response returned by both Guardrails checks."""
+    model_config = ConfigDict(extra="forbid")
+
+    passed: bool
+    flags: list[str] = Field(default_factory=list)
+    reason: str = Field(default="", max_length=500)
 
 
 class Citation(BaseModel):

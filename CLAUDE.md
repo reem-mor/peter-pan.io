@@ -13,40 +13,44 @@ PAN = Predictive · Agentic · Navigator
 1. **Audit before action.** Read the relevant code/config and state a plan before editing. No edits on assumption.
 2. **Phased execution with approval gates.** Break work into phases; pause for explicit approval before any destructive or consequential step (deletes, migrations, deploys, force-push, `docker compose down -v`, dropping data).
 3. **Deterministic floors override the LLM.** The regex guardrail floor and the EWMA/z-score predictor floor have final say. Never let a change route around them.
-4. **Synthetic data only.** No real PII, secrets, customer incidents. Ever. Not in code, fixtures, commits, or logs.
-5. **Secrets via `.env` + Secrets Manager.** Never hardcode keys. Never commit `.env`. `.env.example` stays key-less.
-6. **Be brief.** Short, direct answers. Concrete diffs over prose. Decide autonomously where context allows rather than asking.
+4. **Contracts are frozen.** Canonical schemas live in `docs/contracts/`; changing one requires an ADR. Never break a service contract silently.
+5. **Synthetic data only.** No real PII, secrets, customer incidents. Ever. Not in code, fixtures, commits, or logs.
+6. **Secrets via `.env` + Secrets Manager.** Never hardcode keys. Never commit `.env`. `.env.example` stays key-less.
+7. **Be brief.** Short, direct answers. Concrete diffs over prose. Decide autonomously where context allows rather than asking.
 
-## Repo layout
-```
-/n8n                    → exported flow JSON (import target for the 8-node spine)
-/services
-  /ingestion            → FastAPI · POST /signals · validate + normalise Signal
-  /predictor            → FastAPI · POST /analyse · EWMA floor (impl); PyTorch stubbed
-  /rag                  → FastAPI · POST /query · TF-IDF retrieval (impl); llama.cpp stubbed
-  /guardrails           → FastAPI · POST /check/input + /check/output · regex floor (impl); NeMo stubbed
-  /tools-api            → FastAPI · tools + escalation preview + audit log
-  /langgraph-agent      → FastAPI · POST /agent/run · planner→tools→synthesiser
-  /fixture-llm          → Stage A seam: OpenAI-compatible deterministic fixture server
-  /integration-stubs    → Stage A seam: team webhook stubs + review-queue receiver
-/ui                     → Streamlit WebUI — Stage B (skeleton exists)
-/scripts                → run_all_tests.py, bootstrap_n8n_local.py, seed_kb.py (planned)
-/docs                   → ARCHITECTURE.md (entry point), diagrams, ADRs, contracts, audits
-/evaluation             → frozen golden sets + run_e2e.py harness (do not mutate mid-run)
-/predictive             → datagen + training pipeline (Stage C)
-```
+## Karpathy-inspired coding behavior
 
-## Service contracts (do not break silently)
-| Service | Endpoint | In → Out |
-|---|---|---|
-| Ingestion | `POST /signals` | `Signal` → forwarded n8n response |
-| RAG | `POST /query` | `{query, limit}` → `{answer, citations, refused}` |
-| Predictor | `POST /analyse` | `{incident?, metric_window_ref?, window?}` → `{category, severity, confidence, method, scores}` |
-| Guardrails | `POST /check/input`, `/check/output` | `{signal}` / `{report, service?, environment?}` → `{pass, flags, reason}` |
-| Tools API | `/tools/*`, `POST /escalations`, `GET /audit` | deterministic facts, preview-first escalation, audit records |
-| LangGraph | `POST /agent/run` | `{incident, question?}` → `TriageReport` |
+These guidelines bias toward caution over speed. PETER PAN's safety floors, frozen
+contracts, security rules, and required resilience paths always take precedence.
 
-Predictor categories: `cpu_saturation`, `memory_leak`, `db_lock_contention`, `replication_lag`, `error_rate_spike`, `normal`. Severity 1–5 → P4–P1.
+### 1. Think before coding
+- Surface assumptions and trade-offs that materially affect the result.
+- If uncertainty would change behavior or architecture, stop and ask. Proceed autonomously on reversible, well-specified work.
+- If a simpler approach exists, say so and push back when warranted.
+
+### 2. Simplicity first
+- Write the minimum code that solves the requested problem; add nothing speculative.
+- Avoid single-use abstractions and unrequested flexibility or configurability.
+- Preserve required error handling, graceful degradation, health checks, and audit paths.
+
+### 3. Surgical changes
+- Every changed line must trace directly to the request.
+- Match existing style; do not refactor, reformat, or remove unrelated code.
+- Remove only imports, variables, or functions made obsolete by the current change.
+
+### 4. Goal-driven execution
+- Define verifiable success criteria before implementation and verify them before claiming completion.
+- For fixes, reproduce the failure first; for refactors, verify behavior before and after.
+- Never weaken tests, contracts, deterministic floors, or evaluation thresholds to make a change pass.
+
+## Canonical project references
+- Architecture, ownership, endpoints, and implementation status: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Build sequence and milestone gates: [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md)
+- Frozen schemas: [docs/contracts/](docs/contracts/)
+- Rubric and prompt-engineering requirements: [docs/PROJECT-PLAN.md](docs/PROJECT-PLAN.md)
+- Agent tooling, MCP setup, and CI commands: [docs/AGENT-TOOLING.md](docs/AGENT-TOOLING.md)
+
+## Verification and evidence
 
 Every core service exposes `/healthz`. Before any demo run:
 ```powershell
@@ -59,11 +63,6 @@ three golden signals on 2026-07-11. It requires the compose stack and explicit n
 bootstrap profile. The Stage A writer has a deterministic contract-valid fallback for
 local parser incompatibility; do not describe that fallback as a real-provider result.
 
-## Build order (guideline-aligned)
-Stage A: Layer 2 (n8n spine) + Layer 3 (services) first — this is the graded core.
-Stage B: Layer 1 (WebUI) once services are stable.
-Prompt Engineering Log grows from Phase 2 onward — 5 surfaces × 5 iterations, ≥10 frozen test cases each.
-
 ## n8n MCP safety (hard rules — violating these breaks production)
 - **Never** call `test_workflow` on a live webhook/Telegram-triggered flow — it deregisters the production webhook.
 - Use `update_workflow` with an `operations` array as the safe modification path.
@@ -74,8 +73,12 @@ Prompt Engineering Log grows from Phase 2 onward — 5 surfaces × 5 iterations,
 - Project-scope credential mismatch is the most common `publish_workflow` failure — check scope first.
 - `get_execution` needs both `executionId` and `workflowId`; use `includeData: true` with filtered `nodeNames` to avoid response-size limits.
 
-## Deployment scope (portfolio / demo)
-Single EC2 t3.large, six core services plus local support containers via docker-compose. Inbound restricted to n8n egress + dev IP — **never 0.0.0.0/0**. Containers non-root. GGUF on EBS. Design for ≤5 concurrent users, ≤1 signal/sec, ≤10k KB docs. No formal SLA — graceful degradation + recoverable restart is the failure model. The production path is planned for `docs/deployment.md`; it is not implemented in Stage A.
+## Deployment safety (portfolio / demo)
+- Canonical deployment constraints and procedures: [infra/aws/README.md](infra/aws/README.md).
+- Restrict inbound access to n8n egress and the developer IP — **never `0.0.0.0/0`**.
+- Containers run non-root. Secrets come from environment interpolation or Secrets Manager.
+- There is no formal SLA; graceful degradation and recoverable restart are the failure model.
+- The production deployment path remains planned, not implemented in Stage A.
 
 ## Declared deviations (state upfront, never hide)
 1. AIOps domain instead of real estate.
@@ -87,11 +90,6 @@ Single EC2 t3.large, six core services plus local support containers via docker-
 - `/healthz` still green; `python scripts/run_all_tests.py` passes in the touched service.
 - No secrets in diff; `.env.example` still key-less.
 - If it touches a prompt surface, the frozen test set still passes and the log is updated.
-
-## Planned vs implemented (Stage A in progress)
-- **Implemented:** signal validation, regex guardrail floor, EWMA floor, LangGraph topology, Tools API, n8n spine + CTX branches, FixtureLLM seam, integration stubs, TF-IDF retrieval.
-- **Stubbed (fixture-backed):** PyTorch classifier, NeMo rails layer, llama.cpp GGUF generation.
-- **Planned:** ≥55-doc corpus + seed_kb.py, Prompt Engineering Log, real LLM providers (Gemini/Bedrock/Ollama), pgvector ingestion, PyTorch training, AWS EC2 deployment.
 
 ## Language
 Author switches Hebrew/English naturally; mirror whichever is used, keeping English technical terms inline in Hebrew. Prefer human-sounding, warm phrasing over formal/AI-sounding output.

@@ -3,14 +3,12 @@
 Real anomaly *classification* (as opposed to the deterministic EWMA severity
 floor in ``ewma.py``) is out of scope for Stage A — training a real model is
 an unbounded stretch goal flagged in BUILD_PLAN §6. This module ships a
-fixed-weight stub behind the interface a trained classifier would expose
-(``predict(window) -> {"category_hint", "confidence"}``) so callers and
-tests don't change shape when a real model lands later.
+fixed-weight stub behind the six-class interface the trained classifier will
+expose. Explicit metric context selects a class deterministically; otherwise
+the window shape selects one of the documented fixture fallback classes.
 
-Note: ``category_hint`` here describes the *shape* of the window (stable /
-drift / spike) — it is NOT the infra/database/application routing category.
-That mapping is separate, deterministic, and service-name based; see
-``category.py``.
+The result is a fine-grained ``incident_class``. The n8n policy layer, not this
+service, maps it to the coarse ``TriageReport.category`` routing bucket.
 """
 
 from __future__ import annotations
@@ -22,14 +20,43 @@ import statistics
 _SPIKE_STDEV_RATIO = 0.15  # stdev / max(|mean|, 1) at/above this -> "spike"
 _DRIFT_STDEV_RATIO = 0.05  # at/above this (but below spike) -> "drift"
 
-# Fixed confidence per hint — a documented fixture, not a learned value.
-_FIXED_CONFIDENCE = {"stable": 0.55, "drift": 0.70, "spike": 0.85}
+# Fixed confidence per fixture result — documented constants, not learned values.
+_FIXED_CONFIDENCE = {
+    "cpu_saturation": 0.75,
+    "memory_leak": 0.75,
+    "db_lock_contention": 0.75,
+    "replication_lag": 0.75,
+    "error_rate_spike": 0.85,
+    "normal": 0.55,
+}
+
+_CONTEXT_MARKERS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("replication_lag", ("replication lag", "replica lag")),
+    (
+        "db_lock_contention",
+        ("deadlock", "lock wait", "lock contention", "pool exhausted"),
+    ),
+    ("error_rate_spike", ("error rate", "5xx", "exception rate")),
+    ("cpu_saturation", ("cpu saturation", "high cpu", "run queue", "load average")),
+    ("memory_leak", ("memory leak", "heap growth", "heap growing", "oom")),
+)
 
 
-def predict(window: list[float]) -> dict:
-    """Fixed-weight classifier stub. Returns ``{"category_hint", "confidence"}``."""
+def predict(window: list[float], *, context: str = "") -> dict:
+    """Return a deterministic six-class fixture prediction."""
+    normalized_context = context.lower().replace("_", " ")
+    for incident_class, markers in _CONTEXT_MARKERS:
+        if any(marker in normalized_context for marker in markers):
+            return {
+                "incident_class": incident_class,
+                "confidence": _FIXED_CONFIDENCE[incident_class],
+            }
+
     if not window:
-        return {"category_hint": "stable", "confidence": _FIXED_CONFIDENCE["stable"]}
+        return {
+            "incident_class": "normal",
+            "confidence": _FIXED_CONFIDENCE["normal"],
+        }
 
     mean = statistics.fmean(window)
     stdev = statistics.pstdev(window) if len(window) > 1 else 0.0
@@ -37,10 +64,13 @@ def predict(window: list[float]) -> dict:
     ratio = stdev / scale
 
     if ratio >= _SPIKE_STDEV_RATIO:
-        hint = "spike"
+        incident_class = "error_rate_spike"
     elif ratio >= _DRIFT_STDEV_RATIO:
-        hint = "drift"
+        incident_class = "memory_leak"
     else:
-        hint = "stable"
+        incident_class = "normal"
 
-    return {"category_hint": hint, "confidence": _FIXED_CONFIDENCE[hint]}
+    return {
+        "incident_class": incident_class,
+        "confidence": _FIXED_CONFIDENCE[incident_class],
+    }

@@ -98,7 +98,7 @@
       "parameters": {
         "conditions": {
           "options": { "caseSensitive": true, "typeValidation": "loose", "version": 1 },
-          "conditions": [{ "leftValue": "={{ $json.pass }}", "operator": { "type": "boolean", "operation": "true" }, "rightValue": "" }],
+          "conditions": [{ "leftValue": "={{ $json.passed }}", "operator": { "type": "boolean", "operation": "true" }, "rightValue": "" }],
           "combinator": "and"
         }
       }
@@ -291,8 +291,49 @@
         "promptType": "define",
         "text": "=Triage this operational incident using your tools.\n\nIncident: {{ JSON.stringify($json) }}\n\nCall the tools, then summarise your findings with citations.",
         "options": {
-          "systemMessage": "You are a senior incident commander for a production SRE team. Always call Predictor Tool first. For a normal single-domain incident, then call RAG Query Tool and Service Context Tool; do not call LangGraph. For a complex cross-domain incident, call LangGraph Agent Tool after Predictor and do not call RAG directly because LangGraph owns retrieval. Return one JSON object containing the exact tool results under predictor, rag, service_context, or langgraph. Never invent severity, category, owners, escalation paths, citations, runbook IDs, or root causes."
+          "returnIntermediateSteps": true,
+          "systemMessage": "You are a senior incident commander for a production SRE team. Always call Predictor Tool first. If its incident_class is normal, stop and return that exact predictor result. For a non-normal single-domain incident, then call RAG Query Tool and Service Context Tool; do not call LangGraph. For a complex cross-domain incident, call LangGraph Agent Tool after Predictor and do not call RAG directly because LangGraph owns retrieval. Return one JSON object containing the exact tool results under predictor, rag, service_context, or langgraph. Never invent incident_class, severity, routing category, owners, escalation paths, citations, runbook IDs, or root causes."
         }
+      }
+    },
+    {
+      "id": "f4cccd81-1f85-4fd4-9549-76a130b6b061",
+      "name": "Apply Predictor Policy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3216, 640],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const categoryByClass = Object.freeze({\n  cpu_saturation: 'infra',\n  memory_leak: 'infra',\n  db_lock_contention: 'database',\n  replication_lag: 'database',\n  error_rate_spike: 'application',\n  normal: null\n});\nconst severityMap = Object.freeze({ 5: 'P1', 4: 'P2', 3: 'P3', 2: 'P4', 1: 'P4' });\nconst steps = Array.isArray($json.intermediateSteps) ? $json.intermediateSteps : [];\nconst predictorStep = steps.find(step => String(step.action?.tool || '').replace(/[^a-z0-9]/gi, '').toLowerCase() === 'predictortool');\nlet predictor = predictorStep?.observation ?? {};\nif (typeof predictor === 'string') {\n  try { predictor = JSON.parse(predictor); } catch (_) { predictor = {}; }\n}\nif (Array.isArray(predictor) && predictor.length === 1) predictor = predictor[0];\nconst incidentClass = predictor?.incident_class;\nconst rawSeverity = predictor?.severity;\nconst severity = rawSeverity;\nconst confidence = predictor?.confidence;\nconst ewmaSeverity = predictor?.scores?.ewma?.severity;\nconst knownClass = Object.prototype.hasOwnProperty.call(categoryByClass, incidentClass);\nconst validSeverity = typeof rawSeverity === 'number' && Number.isInteger(rawSeverity) && Object.prototype.hasOwnProperty.call(severityMap, rawSeverity);\nconst validConfidence = typeof confidence === 'number' && Number.isFinite(confidence) && confidence >= 0 && confidence <= 1;\nconst validMethod = predictor?.method === 'ewma-floor';\nconst validScores = predictor?.scores !== null && typeof predictor?.scores === 'object' && !Array.isArray(predictor?.scores) && Object.prototype.hasOwnProperty.call(predictor.scores, 'ewma') && Object.prototype.hasOwnProperty.call(predictor.scores, 'classifier');\nconst validEwmaSeverity = typeof ewmaSeverity === 'number' && Number.isInteger(ewmaSeverity) && ewmaSeverity === rawSeverity;\nconst modelFallback = predictor?.scores?.classifier?.fallback;\nconst validResponse = knownClass && validSeverity && validConfidence && validMethod && validScores && validEwmaSeverity && !modelFallback;\nlet policy = { incident_class: incidentClass || null, severity: null, p_level: null, routing_category: null, outcome: 'invalid' };\nif (validResponse && incidentClass === 'normal' && severity === 1) {\n  policy = { incident_class: incidentClass, severity, p_level: severityMap[severity], routing_category: null, outcome: 'suppressed' };\n} else if (validResponse && incidentClass !== 'normal') {\n  policy = { incident_class: incidentClass, severity, p_level: severityMap[severity], routing_category: categoryByClass[incidentClass], outcome: 'routable' };\n}\nreturn [{ json: { ...$json, predictor_policy: policy, noise_reason: policy.outcome === 'suppressed' ? 'predictor_normal' : '', context: $('Build IncidentContext').first().json.context } }];"
+      }
+    },
+    {
+      "id": "c0d84bed-11f3-47d6-8a1c-c6044aa445c3",
+      "name": "Predictor Outcome",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [3424, 640],
+      "parameters": {
+        "rules": {
+          "values": [
+            { "outputKey": "routable", "renameOutput": true, "conditions": { "options": { "caseSensitive": true, "typeValidation": "strict", "version": 1 }, "conditions": [{ "leftValue": "={{ $json.predictor_policy.outcome }}", "operator": { "type": "string", "operation": "equals" }, "rightValue": "routable" }], "combinator": "and" } },
+            { "outputKey": "suppressed", "renameOutput": true, "conditions": { "options": { "caseSensitive": true, "typeValidation": "strict", "version": 1 }, "conditions": [{ "leftValue": "={{ $json.predictor_policy.outcome }}", "operator": { "type": "string", "operation": "equals" }, "rightValue": "suppressed" }], "combinator": "and" } }
+          ]
+        },
+        "options": { "fallbackOutput": "extra", "renameFallbackOutput": "invalid" }
+      }
+    },
+    {
+      "id": "af0d4187-668f-4893-9140-3c91c4058575",
+      "name": "Respond Predictor Invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [3632, 544],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'predictor_invalid', reason: 'predictor returned a missing or unknown incident_class' } }}",
+        "options": { "responseCode": 503 }
       }
     },
     {
@@ -310,7 +351,7 @@
       "typeVersion": 4.2,
       "position": [2944, 992],
       "parameters": {
-        "toolDescription": "Classifies the incident into an objective CATEGORY and SEVERITY score with confidence, from the metric window. Do NOT guess severity yourself — always call this first.",
+        "toolDescription": "Classifies the metric window into one objective six-way INCIDENT_CLASS plus a SEVERITY score and confidence. Do NOT convert incident_class to a routing category or guess severity — always call this first.",
         "method": "POST",
         "url": "={{ $env.PETER_PREDICTOR_URL }}/analyse",
         "authentication": "genericCredentialType",
@@ -364,14 +405,14 @@
       "typeVersion": 4.2,
       "position": [3328, 992],
       "parameters": {
-        "toolDescription": "Returns the deterministic owner_team and escalation_path for the incident service. Call for normal single-domain incidents after Predictor and RAG.",
+        "toolDescription": "Returns the deterministic owner_team and escalation_path for the incident service. Call for routable, non-complex single-domain incidents after Predictor and RAG.",
         "method": "POST",
         "url": "={{ $env.PETER_TOOLS_URL }}/tools/service_context",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { service: $('Assemble Incident').item.json.service, environment: $('Assemble Incident').item.json.environment, severity: $fromAI('severity', 'P-level from Predictor Tool, such as P1 or P3', 'string') } }}",
+        "jsonBody": "={{ { service: $('Assemble Incident').item.json.service, environment: $('Assemble Incident').item.json.environment } }}",
         "options": { "timeout": 15000 }
       }
     },
@@ -384,12 +425,12 @@
       "parameters": {
         "promptType": "define",
         "hasOutputParser": true,
-        "text": "=Write the final TriageReport.\n\nIncident: {{ JSON.stringify($('Assemble Incident').item.json) }}\n\nCommander findings: {{ $json.output }}",
+        "text": "=Write the final TriageReport.\n\nIncident: {{ JSON.stringify($('Assemble Incident').item.json) }}\n\nPredictor policy: {{ JSON.stringify($json.predictor_policy) }}\n\nCommander findings: {{ $json.output }}",
         "messages": {
           "messageValues": [
             {
               "type": "SystemMessagePromptTemplate",
-              "message": "You are the incident report writer. Synthesise the incident, the predictor severity/category, and the RAG runbook context into one TriageReport matching the schema exactly. Deterministic floors: category must be one of infra, database, application. owner_team and escalation_path may ONLY be copied from tool results in the findings — if absent use \"unknown\" and []. Map predictor severity to p_level: 5 to P1, 4 to P2, 3 to P3, 1-2 to P4; the predictor proposal wins over your own judgement. Every citations[] entry must copy a real source_id, source_type and quote from tool output — never invent citations; if you cannot cite, say \"insufficient data\" in probable_cause and lower confidence. recommended_steps must be read-only or safe diagnostic actions, never destructive commands."
+              "message": "You are the incident report writer. Synthesise the incident, predictor severity/incident_class, deterministic Predictor policy, and RAG context into one TriageReport matching the schema exactly. Copy category only from predictor_policy.routing_category; never derive or choose it yourself. owner_team and escalation_path may ONLY be copied from tool results in the findings — if absent use \"unknown\" and []. Map predictor severity to p_level: 5 to P1, 4 to P2, 3 to P3, 1-2 to P4; the predictor proposal wins over your own judgement. Every citations[] entry must copy a real source_id, source_type and quote from tool output — never invent citations; if you cannot cite, say \"insufficient data\" in probable_cause and lower confidence. recommended_steps must be read-only or safe diagnostic actions, never destructive commands."
             }
           ]
         }
@@ -424,7 +465,7 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "const incident = $('Assemble Incident').first().json;\nconst service = String(incident.service || 'unknown');\nlet evidence = {};\ntry { evidence = JSON.parse($('Incident Commander').first().json.output || '{}'); } catch (_) {}\nconst predictor = evidence.predictor || {};\nconst deep = evidence.langgraph || {};\nconst retrieval = evidence.rag || deep;\nconst ownerContext = evidence.service_context || deep;\nconst flags = [];\nconst severity = Number(predictor.severity);\nconst severityMap = { 5: 'P1', 4: 'P2', 3: 'P3', 2: 'P4', 1: 'P4' };\nlet pLevel = severityMap[severity] || deep.p_level || 'P3';\nif (!severityMap[severity] && !deep.p_level) flags.push('predictor_unverified');\nlet category = predictor.category || deep.category;\nif (!['infra', 'database', 'application'].includes(category)) {\n  category = 'application';\n  flags.push('predictor_unverified');\n}\nlet citations = Array.isArray(retrieval.citations) ? retrieval.citations : [];\nif (!citations.length) {\n  citations = [{ source_id: 'tool:unavailable', source_type: 'tool_result', quote: 'insufficient data' }];\n  flags.push('insufficient_citations');\n}\nconst owner = ownerContext.owner_team || 'unknown';\nconst escalation = Array.isArray(ownerContext.escalation_path) ? ownerContext.escalation_path : [];\nif (owner === 'unknown') flags.push('owner_unverified');\nconst recommendations = Array.isArray(deep.recommended_steps) && deep.recommended_steps.length\n  ? deep.recommended_steps\n  : [`Review current health metrics for ${service}.`, 'Compare the signal with recent deployment evidence.'];\nreturn [{ json: {\n  incident_id: incident.id,\n  category,\n  p_level: pLevel,\n  summary: `Tool-grounded fixture fallback: ${service} classified as ${category}.`,\n  probable_cause: deep.probable_cause || retrieval.answer || 'Tool evidence requires human analysis.',\n  citations,\n  owner_team: owner,\n  escalation_path: escalation,\n  recommended_steps: recommendations.slice(0, 8),\n  confidence: Number(predictor.confidence || deep.confidence || 0.5),\n  guardrail_flags: [...new Set(flags)],\n  generated_at: new Date().toISOString(),\n  model_meta: { provider: 'fixture-fallback', stage: 'A', predictor_severity: String(severity || ''), evidence: Object.keys(evidence).sort().join(',') }\n} }];"
+        "jsCode": "const incident = $('Assemble Incident').first().json;\nconst service = String(incident.service || 'unknown');\nconst policy = $('Apply Predictor Policy').first().json.predictor_policy;\nlet evidence = {};\ntry { evidence = JSON.parse($('Incident Commander').first().json.output || '{}'); } catch (_) {}\nconst predictor = evidence.predictor || {};\nconst deep = evidence.langgraph || {};\nconst retrieval = evidence.rag || deep;\nconst ownerContext = evidence.service_context || deep;\nconst flags = [];\nconst category = policy.routing_category;\nlet citations = Array.isArray(retrieval.citations) ? retrieval.citations : [];\nif (!citations.length) {\n  citations = [{ source_id: 'tool:unavailable', source_type: 'tool_result', quote: 'insufficient data' }];\n  flags.push('insufficient_citations');\n}\nconst owner = ownerContext.owner_team || 'unknown';\nconst escalation = Array.isArray(ownerContext.escalation_path) ? ownerContext.escalation_path : [];\nif (owner === 'unknown') flags.push('owner_unverified');\nconst recommendations = Array.isArray(deep.recommended_steps) && deep.recommended_steps.length\n  ? deep.recommended_steps\n  : [`Review current health metrics for ${service}.`, 'Compare the signal with recent deployment evidence.'];\nreturn [{ json: {\n  incident_id: incident.id,\n  category,\n  p_level: policy.p_level,\n  summary: `Tool-grounded fixture fallback: ${service} classified as ${category}.`,\n  probable_cause: deep.probable_cause || retrieval.answer || 'Tool evidence requires human analysis.',\n  citations,\n  owner_team: owner,\n  escalation_path: escalation,\n  recommended_steps: recommendations.slice(0, 8),\n  confidence: Number(predictor.confidence || deep.confidence || 0.5),\n  guardrail_flags: [...new Set(flags)],\n  generated_at: new Date().toISOString(),\n  model_meta: { provider: 'fixture-fallback', stage: 'A', predictor_incident_class: String(policy.incident_class || ''), predictor_severity: String(policy.severity || ''), evidence: Object.keys(evidence).sort().join(',') }\n} }];"
       }
     },
     {
@@ -436,7 +477,7 @@
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "const out = $json.output || $json;\nconst incident = $('Assemble Incident').first().json;\nconst report = Object.assign({}, out);\nreport.incident_id = incident.id;\nreport.generated_at = new Date().toISOString();\nreport.model_meta = Object.assign({ provider: 'mock-openai-compatible', stage: 'A' }, report.model_meta || {});\nreport.guardrail_flags = Array.isArray(report.guardrail_flags) ? report.guardrail_flags : [];\nreport.escalation_path = Array.isArray(report.escalation_path) ? report.escalation_path : [];\nreport.recommended_steps = (Array.isArray(report.recommended_steps) ? report.recommended_steps : []).slice(0, 8);\nreport.confidence = Math.max(0, Math.min(1, Number(report.confidence) || 0));\nreturn [{ json: report }];"
+        "jsCode": "const out = $json.output || $json;\nconst incident = $('Assemble Incident').first().json;\nconst policy = $('Apply Predictor Policy').first().json.predictor_policy;\nconst report = Object.assign({}, out);\nreport.incident_id = incident.id;\nreport.category = policy.routing_category;\nreport.p_level = policy.p_level;\nreport.generated_at = new Date().toISOString();\nreport.model_meta = Object.assign({ provider: 'mock-openai-compatible', stage: 'A' }, report.model_meta || {});\nreport.model_meta.predictor_incident_class = String(policy.incident_class || '');\nreport.model_meta.predictor_severity = String(policy.severity || '');\nreport.guardrail_flags = Array.isArray(report.guardrail_flags) ? report.guardrail_flags : [];\nreport.escalation_path = Array.isArray(report.escalation_path) ? report.escalation_path : [];\nreport.recommended_steps = (Array.isArray(report.recommended_steps) ? report.recommended_steps : []).slice(0, 8);\nreport.confidence = Math.max(0, Math.min(1, Number(report.confidence) || 0));\nreturn [{ json: report }];"
       }
     },
     {
@@ -478,7 +519,7 @@
       "parameters": {
         "conditions": {
           "options": { "caseSensitive": true, "typeValidation": "loose", "version": 1 },
-          "conditions": [{ "leftValue": "={{ $json.pass }}", "operator": { "type": "boolean", "operation": "true" }, "rightValue": "" }],
+          "conditions": [{ "leftValue": "={{ $json.passed }}", "operator": { "type": "boolean", "operation": "true" }, "rightValue": "" }],
           "combinator": "and"
         }
       }
@@ -694,7 +735,9 @@
     "Extract Incident Info": { "main": [[{ "node": "Assemble Incident", "type": "main", "index": 0 }]] },
     "Extractor Model (Mock Seam)": { "ai_languageModel": [[{ "node": "Extract Incident Info", "type": "ai_languageModel", "index": 0 }]] },
     "Assemble Incident": { "main": [[{ "node": "Incident Commander", "type": "main", "index": 0 }]] },
-    "Incident Commander": { "main": [[{ "node": "Write TriageReport", "type": "main", "index": 0 }]] },
+    "Incident Commander": { "main": [[{ "node": "Apply Predictor Policy", "type": "main", "index": 0 }]] },
+    "Apply Predictor Policy": { "main": [[{ "node": "Predictor Outcome", "type": "main", "index": 0 }]] },
+    "Predictor Outcome": { "main": [[{ "node": "Write TriageReport", "type": "main", "index": 0 }], [{ "node": "Log Suppression", "type": "main", "index": 0 }], [{ "node": "Respond Predictor Invalid", "type": "main", "index": 0 }]] },
     "Commander Model (Mock Seam)": { "ai_languageModel": [[{ "node": "Incident Commander", "type": "ai_languageModel", "index": 0 }]] },
     "Predictor Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },
     "RAG Query Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },

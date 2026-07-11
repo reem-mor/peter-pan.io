@@ -79,7 +79,10 @@ Stage A proves the fixture-backed orchestration and service contracts. It does n
 - a 55+ document corpus,
 - five prompt iterations per surface,
 - real Bedrock/Gemini/Ollama execution,
-- production AWS deployment.
+- a production deployment path beyond the Stage A demo instance.
+
+The Stage A demo EC2 instance is currently running, and the full n8n-path E2E passed 7/7
+on EC2 on 2026-07-11.
 
 Those remain ordered Stage B/C rubric work. The current design keeps them as provider or
 data swaps without changing the deterministic safety floors.

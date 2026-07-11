@@ -7,6 +7,7 @@
 .env.*
 !.env.example
 .cursor/mcp.json
+.claude/settings.local.json
 n8n/bootstrap-credentials.json
 *.pem
 *.key
@@ -14,6 +15,8 @@ n8n/bootstrap-credentials.json
 *.pfx
 .ssh/
 .aws/
+kaggle.json
+**/.kaggle/
 
 # Local infra helper output (EC2 launch scripts)
 .ec2_instance_id.txt
@@ -56,6 +59,9 @@ evaluation/pytest_output.txt
 *.sqlite
 *.sqlite3
 *.db
+# Large model blobs — never in git. Track the deliverable .pth via Git LFS if needed,
+# otherwise ship the training script + repro instructions (guideline allows either).
+*.gguf
 # --- Predictor/Ingestion demo fixtures (regenerate via predictive/datagen) ---
 predictive/data/
 

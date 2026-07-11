@@ -158,9 +158,9 @@ def test_layer3_golden_ok(tmp_path, monkeypatch):
         ("GET", "http://localhost:8004/healthz"): _json_resp({"status": "ok"}),
         ("GET", "http://localhost:8005/healthz"): _json_resp({"status": "ok"}),
         ("GET", "http://localhost:8006/healthz"): _json_resp({"status": "ok"}),
-        ("POST", "http://localhost:8004/check/input"): _json_resp({"pass": True}),
+        ("POST", "http://localhost:8004/check/input"): _json_resp({"passed": True}),
         ("POST", "http://localhost:8006/agent/run"): _json_resp(_VALID_TRIAGE_REPORT_APP),
-        ("POST", "http://localhost:8004/check/output"): _json_resp({"pass": True}),
+        ("POST", "http://localhost:8004/check/output"): _json_resp({"passed": True}),
     }
     transport = _make_transport(routes)
     result = run_e2e.main(
@@ -212,9 +212,9 @@ def test_layer3_category_mismatch(tmp_path, monkeypatch):
         ("GET", "http://localhost:8004/healthz"): _json_resp({"status": "ok"}),
         ("GET", "http://localhost:8005/healthz"): _json_resp({"status": "ok"}),
         ("GET", "http://localhost:8006/healthz"): _json_resp({"status": "ok"}),
-        ("POST", "http://localhost:8004/check/input"): _json_resp({"pass": True}),
+        ("POST", "http://localhost:8004/check/input"): _json_resp({"passed": True}),
         ("POST", "http://localhost:8006/agent/run"): _json_resp(wrong_report),
-        ("POST", "http://localhost:8004/check/output"): _json_resp({"pass": True}),
+        ("POST", "http://localhost:8004/check/output"): _json_resp({"passed": True}),
     }
     transport = _make_transport(routes)
     result = run_e2e.main(
@@ -245,7 +245,7 @@ def test_layer3_guardrail_rejection(tmp_path, monkeypatch):
         ("GET", "http://localhost:8005/healthz"): _json_resp({"status": "ok"}),
         ("GET", "http://localhost:8006/healthz"): _json_resp({"status": "ok"}),
         ("POST", "http://localhost:8004/check/input"): _json_resp(
-            {"pass": False, "reason": "owner mismatch"}
+            {"passed": False, "reason": "owner mismatch"}
         ),
     }
     transport = _make_transport(routes)

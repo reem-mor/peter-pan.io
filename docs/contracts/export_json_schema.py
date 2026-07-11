@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from contracts import Incident, IncidentContext, Signal, TriageReport
+from contracts import GuardrailResult, Incident, IncidentContext, Signal, TriageReport
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "schema"
@@ -20,6 +20,7 @@ MODELS = {
     "signal": Signal,
     "incident_context": IncidentContext,
     "incident": Incident,
+    "guardrail_result": GuardrailResult,
     "triage_report": TriageReport,
 }
 

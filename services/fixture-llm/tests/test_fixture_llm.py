@@ -165,7 +165,11 @@ def test_synthesis_returns_triage_shape():
 
 def test_synthesis_prefers_commander_tool_evidence_over_service_guessing():
     commander_evidence = {
-        "predictor": {"category": "database", "severity": 5, "confidence": 0.93},
+        "predictor": {
+            "incident_class": "db_lock_contention",
+            "severity": 5,
+            "confidence": 0.93,
+        },
         "rag": {
             "answer": "Connection pool exhaustion is documented.",
             "citations": [
@@ -429,7 +433,7 @@ def test_commander_calls_simple_incident_tools_then_returns_evidence():
     messages = _tool_roundtrip(
         messages,
         predictor,
-        [{"category": "application", "severity": 3, "confidence": 0.91}],
+        [{"incident_class": "error_rate_spike", "severity": 3, "confidence": 0.91}],
     )
 
     rag = _commander_request(messages)
@@ -484,7 +488,7 @@ def test_commander_uses_langgraph_without_direct_rag_for_complex_infra():
     messages = _tool_roundtrip(
         messages,
         predictor,
-        [{"category": "infra", "severity": 4, "confidence": 0.9}],
+        [{"incident_class": "memory_leak", "severity": 4, "confidence": 0.9}],
     )
 
     deep = _commander_request(messages)

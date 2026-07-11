@@ -1,5 +1,5 @@
-"""POST /analyse TestClient cases per category mapping (BUILD_PLAN §3,
-Predictor row) + fixture-window fallback + auth.
+"""POST /analyse tests for the typed six-class response (BUILD_PLAN §3,
+Predictor row), fixture-window fallback, and auth.
 """
 
 from __future__ import annotations
@@ -24,27 +24,29 @@ def test_healthz():
 
 
 @pytest.mark.parametrize(
-    "service, expected_category",
+    ("symptom", "expected_incident_class"),
     [
-        ("postgres-primary", "database"),
-        ("orders-db", "database"),
-        ("redis-cache", "infra"),
-        ("k8s-ingress", "infra"),
-        ("shop-web", "application"),
-        ("orders-api", "application"),
+        ("CPU saturation and run queue growth", "cpu_saturation"),
+        ("memory leak with monotonic heap growth", "memory_leak"),
+        ("database deadlock and lock waits", "db_lock_contention"),
+        ("postgres replication lag increasing", "replication_lag"),
+        ("HTTP 5xx error rate spike", "error_rate_spike"),
     ],
 )
-def test_analyse_category_mapping_via_incident_service(service, expected_category):
+def test_analyse_returns_fine_grained_incident_class(
+    symptom, expected_incident_class
+):
     response = client.post(
         "/analyse",
         json={
-            "incident": {"service": service},
-            "window": [10.0, 10.1, 9.9, 10.0, 10.2],
+            "incident": {"service": "orders-api", "symptom": symptom},
+            "window": [10.0, 10.0, 10.0, 10.0],
         },
     )
     assert response.status_code == 200, response.text
     body = response.json()
-    assert body["category"] == expected_category
+    assert body["incident_class"] == expected_incident_class
+    assert "category" not in body
     assert body["method"] == "ewma-floor"
     assert 1 <= body["severity"] <= 5
     assert 0.0 <= body["confidence"] <= 1.0
@@ -52,19 +54,69 @@ def test_analyse_category_mapping_via_incident_service(service, expected_categor
     assert "classifier" in body["scores"]
 
 
-def test_analyse_category_from_metric_window_ref_when_no_incident():
+def test_analyse_incident_class_from_metric_window_ref_when_no_incident():
     response = client.post(
         "/analyse",
-        json={"metric_window_ref": "postgres-primary:cpu_pct", "window": [1.0, 1.0]},
+        json={
+            "metric_window_ref": "postgres-primary:replication_lag",
+            "window": [1.0, 1.0],
+        },
     )
     assert response.status_code == 200
-    assert response.json()["category"] == "database"
+    assert response.json()["incident_class"] == "replication_lag"
 
 
-def test_analyse_without_service_info_defaults_to_application():
-    response = client.post("/analyse", json={"window": [1.0, 1.0]})
+def test_analyse_flat_window_without_context_defaults_to_normal():
+    response = client.post("/analyse", json={"window": [1.0, 1.0, 1.0]})
     assert response.status_code == 200
-    assert response.json()["category"] == "application"
+    assert response.json()["incident_class"] == "normal"
+
+
+def test_analyse_openapi_response_model_uses_incident_class_enum():
+    schema = client.get("/openapi.json").json()
+    response_schema = schema["components"]["schemas"]["AnalyseResponse"]
+    incident_class = response_schema["properties"]["incident_class"]
+
+    assert set(incident_class["enum"]) == {
+        "cpu_saturation",
+        "memory_leak",
+        "db_lock_contention",
+        "replication_lag",
+        "error_rate_spike",
+        "normal",
+    }
+    assert "category" not in response_schema["properties"]
+
+
+def test_analyse_rejects_unknown_model_class_to_normal_low_confidence(monkeypatch):
+    monkeypatch.setattr(
+        "predictor_service.app.classify",
+        lambda _window, *, context: {
+            "incident_class": "invented_class",
+            "confidence": 0.99,
+        },
+    )
+
+    response = client.post("/analyse", json={"window": [1.0, 2.0]})
+
+    assert response.status_code == 200
+    assert response.json()["incident_class"] == "normal"
+    assert response.json()["confidence"] <= 0.2
+    assert response.json()["scores"]["classifier"]["fallback"] == "unknown_class"
+
+
+def test_analyse_marks_normal_class_with_anomalous_ewma_as_conflict():
+    response = client.post(
+        "/analyse",
+        json={"window": [10.0] * 9 + [11.3]},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["incident_class"] == "normal"
+    assert body["severity"] == 5
+    assert body["confidence"] <= 0.2
+    assert body["scores"]["classifier"]["fallback"] == "severity_conflict"
 
 
 def test_analyse_falls_back_to_fixture_window_when_none_given():

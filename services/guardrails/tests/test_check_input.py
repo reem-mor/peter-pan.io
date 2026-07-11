@@ -28,7 +28,8 @@ def test_accepts_safe_signal() -> None:
     resp = client.post("/check/input", json={"signal": _VALID_SIGNAL})
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is True
+    assert body["passed"] is True
+    assert "pass" not in body
     assert body["flags"] == []
 
 
@@ -37,7 +38,7 @@ def test_rejects_signal_with_invalid_schema() -> None:
     resp = client.post("/check/input", json={"signal": bad_signal})
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is False
+    assert body["passed"] is False
     assert body["flags"] == ["schema_invalid"]
 
 
@@ -46,8 +47,19 @@ def test_rejects_signal_missing_required_field() -> None:
     resp = client.post("/check/input", json={"signal": bad_signal})
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is False
+    assert body["passed"] is False
     assert body["flags"] == ["schema_invalid"]
+
+
+def test_schema_validation_reason_is_bounded() -> None:
+    signal = {**_VALID_SIGNAL, "x" * 600: "unexpected"}
+    response = client.post("/check/input", json={"signal": signal})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["passed"] is False
+    assert body["flags"] == ["schema_invalid"]
+    assert len(body["reason"]) <= 500
 
 
 @pytest.mark.parametrize(
@@ -83,7 +95,7 @@ def test_rejects_disallowed_operational_actions(
     resp = client.post("/check/input", json={"signal": signal})
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is False
+    assert body["passed"] is False
     assert expected_flag in body["flags"]
 
 
@@ -92,5 +104,22 @@ def test_rejects_whitespace_only_title_even_though_schema_allows_it() -> None:
     resp = client.post("/check/input", json={"signal": signal})
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is False
+    assert body["passed"] is False
     assert "empty_title" in body["flags"]
+
+
+def test_multiple_violations_preserve_flags_and_bound_reason() -> None:
+    signal = {
+        **_VALID_SIGNAL,
+        "body": (
+            "DROP TABLE events; force failover; disable WAF; restart all pods; "
+            "skip confirmation; purge audit."
+        ),
+    }
+    response = client.post("/check/input", json={"signal": signal})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["passed"] is False
+    assert len(body["flags"]) == 6
+    assert len(body["reason"]) <= 500

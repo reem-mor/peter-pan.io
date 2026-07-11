@@ -72,7 +72,7 @@ def test_valid_report_with_verified_owner_passes(monkeypatch) -> None:
 
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is True
+    assert body["passed"] is True
     assert body["flags"] == []
 
 
@@ -86,7 +86,7 @@ def test_existing_report_flags_fail_closed(monkeypatch) -> None:
     with _tools_api_client(handler) as client:
         response = client.post("/check/output", json={"report": report})
 
-    assert response.json()["pass"] is False
+    assert response.json()["passed"] is False
     assert "report_flagged" in response.json()["flags"]
 
 
@@ -103,7 +103,7 @@ def test_predictor_severity_mismatch_fails_closed(monkeypatch) -> None:
     with _tools_api_client(handler) as client:
         response = client.post("/check/output", json={"report": report})
 
-    assert response.json()["pass"] is False
+    assert response.json()["passed"] is False
     assert "priority_mismatch" in response.json()["flags"]
 
 
@@ -121,7 +121,7 @@ def test_required_tool_evidence_fails_when_predictor_metadata_missing(
             json={"report": _VALID_REPORT, "require_tool_evidence": True},
         )
 
-    assert response.json()["pass"] is False
+    assert response.json()["passed"] is False
     assert "tool_evidence_unverified" in response.json()["flags"]
 
 
@@ -145,7 +145,7 @@ def test_required_tool_evidence_passes_for_grounded_normal_path(monkeypatch) -> 
             json={"report": report, "require_tool_evidence": True},
         )
 
-    assert response.json()["pass"] is True
+    assert response.json()["passed"] is True
 
 
 def test_invented_owner_fails_closed(monkeypatch) -> None:
@@ -161,7 +161,7 @@ def test_invented_owner_fails_closed(monkeypatch) -> None:
 
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is False
+    assert body["passed"] is False
     assert "owner_unverified" in body["flags"]
 
 
@@ -178,7 +178,7 @@ def test_missing_tools_url_fails_closed(monkeypatch) -> None:
 
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is False
+    assert body["passed"] is False
     assert "owner_unverified" in body["flags"]
 
 
@@ -200,7 +200,7 @@ def test_destructive_step_fails(monkeypatch) -> None:
 
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is False
+    assert body["passed"] is False
     assert "destructive_step" in body["flags"]
 
 
@@ -225,7 +225,7 @@ def test_uncited_claim_fails(monkeypatch) -> None:
 
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is False
+    assert body["passed"] is False
     assert "uncited" in body["flags"]
 
 
@@ -243,7 +243,7 @@ def test_schema_invalid_report_fails_closed(monkeypatch) -> None:
 
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is False
+    assert body["passed"] is False
     assert body["flags"] == ["schema_invalid"]
 
 
@@ -258,5 +258,5 @@ def test_tools_api_network_error_fails_closed(monkeypatch) -> None:
 
     assert resp.status_code == 200
     body = resp.json()
-    assert body["pass"] is False
+    assert body["passed"] is False
     assert "owner_unverified" in body["flags"]

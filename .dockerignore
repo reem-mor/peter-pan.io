@@ -1,3 +1,12 @@
+# =============================================================================
+# PETER PAN — root .dockerignore
+# NOTE: services build with per-service contexts (build: services/<name>), so this
+# root file applies ONLY to the one build that uses `context: .` — the n8n-bootstrap
+# (scripts/n8n-bootstrap/Dockerfile). Its job: keep that build context lean + secret-free.
+# If a SERVICE image is bloated, add a .dockerignore inside that services/<name>/ dir.
+# =============================================================================
+
+# --- Secrets (never in any image layer) ---
 .env
 .env.*
 !.env.example
@@ -7,10 +16,39 @@
 *.p12
 *.pfx
 .aws/
+kaggle.json
+**/.kaggle/
 .ec2_instance_id.txt
 .sg_id.txt
 lambda-out.json
 
+# --- The bootstrap build needs only scripts/ — exclude everything heavy/irrelevant ---
+.git/
+.gitignore
+.dockerignore
+.cursor/
+.claude/
+.github/
+docs/
+tests/
+infra/
+evaluation/
+predictive/data/
+n8n/bootstrap-credentials.json
+*.md
+!knowledge_base/**
+
+# --- Large blobs (never needed by the bootstrap) ---
+*.gguf
+*.pth
+*.faiss
+*.pkl
+*.onnx
+*.sqlite
+*.sqlite3
+*.db
+
+# --- Python caches / build output ---
 .venv/
 venv/
 env/
@@ -28,23 +66,20 @@ htmlcov/
 dist/
 build/
 
+# --- Node (parked React frontend; harmless if absent) ---
 node_modules/
 frontend/node_modules/
 scripts/node_modules/
 frontend/.vite/
 frontend/dist/
 
-tests/
+# --- Misc / runtime / OS ---
+docker-compose*.yml
+var/
+.trash/
 screenshots/
-docs/
-infra/
-*.md
-!knowledge_base/**
-
-.git/
-.gitignore
-.dockerignore
-docker-compose.yml
+**/test-results/
+.playwright-mcp/
 *.log
 .DS_Store
 Thumbs.db

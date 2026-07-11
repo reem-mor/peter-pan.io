@@ -17,6 +17,8 @@
   and AppTest/Playwright smoke validation.
 - **Enterprise engineering:** least-privilege CloudFormation improvements, generated CI
   credentials, internal no-egress test network, frozen contracts, and audit evidence.
+- **EC2 demo deployment:** The Stage A demo EC2 instance is currently running, and the
+  full n8n-path E2E passed 7/7 on EC2 on 2026-07-11.
 
 ## Verified presentation scenario
 
@@ -39,6 +41,6 @@ The same gate also verified:
 - Five measured prompt iterations across every graded surface
 - Real Bedrock Sonnet, Gemini, llama.cpp, or Ollama execution
 - Playwright screenshot/recording artifact
-- Deployed EC2 demo and final deployment evidence
+- Production deployment path beyond the Stage A demo EC2 instance
 
 These are follow-on rubric items, not hidden as completed Stage A work.
