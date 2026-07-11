@@ -1,0 +1,84 @@
+{
+  "currency": "USD",
+  "calculation_note": "Sanitized demo estimates for a portfolio project. Values are not real company financial data.",
+  "services": {
+    "shop-web": {
+      "service_tier": "tier-1",
+      "revenue_per_minute_usd": 1800,
+      "active_users_typical": 9000,
+      "sla_target_uptime_pct": 99.9,
+      "regulatory_exposure": [],
+      "p1_cost_per_minute_usd": 1800,
+      "p2_cost_per_minute_usd": 756,
+      "p3_cost_per_minute_usd": 180,
+      "p4_cost_per_minute_usd": 0,
+      "reputation_risk": "medium",
+      "customer_trust_impact": "customer-facing"
+    },
+    "orders-api": {
+      "service_tier": "tier-0",
+      "revenue_per_minute_usd": 6200,
+      "active_users_typical": 18500,
+      "sla_target_uptime_pct": 99.95,
+      "regulatory_exposure": ["SOC2"],
+      "p1_cost_per_minute_usd": 6200,
+      "p2_cost_per_minute_usd": 2604,
+      "p3_cost_per_minute_usd": 620,
+      "p4_cost_per_minute_usd": 0,
+      "reputation_risk": "high",
+      "customer_trust_impact": "customer-facing"
+    },
+    "payments-api": {
+      "service_tier": "tier-0",
+      "revenue_per_minute_usd": 9800,
+      "active_users_typical": 15000,
+      "sla_target_uptime_pct": 99.95,
+      "regulatory_exposure": ["PCI-DSS"],
+      "p1_cost_per_minute_usd": 9800,
+      "p2_cost_per_minute_usd": 4116,
+      "p3_cost_per_minute_usd": 980,
+      "p4_cost_per_minute_usd": 0,
+      "reputation_risk": "high",
+      "customer_trust_impact": "customer-facing"
+    },
+    "postgres-primary": {
+      "service_tier": "tier-0",
+      "revenue_per_minute_usd": 8000,
+      "active_users_typical": 0,
+      "sla_target_uptime_pct": 99.95,
+      "regulatory_exposure": ["SOC2"],
+      "p1_cost_per_minute_usd": 8000,
+      "p2_cost_per_minute_usd": 3360,
+      "p3_cost_per_minute_usd": 800,
+      "p4_cost_per_minute_usd": 0,
+      "reputation_risk": "high",
+      "customer_trust_impact": "indirect platform impact"
+    },
+    "redis-cache": {
+      "service_tier": "tier-1",
+      "revenue_per_minute_usd": 3000,
+      "active_users_typical": 0,
+      "sla_target_uptime_pct": 99.9,
+      "regulatory_exposure": [],
+      "p1_cost_per_minute_usd": 3000,
+      "p2_cost_per_minute_usd": 1260,
+      "p3_cost_per_minute_usd": 300,
+      "p4_cost_per_minute_usd": 0,
+      "reputation_risk": "medium",
+      "customer_trust_impact": "indirect platform impact"
+    },
+    "k8s-ingress": {
+      "service_tier": "tier-0",
+      "revenue_per_minute_usd": 12000,
+      "active_users_typical": 27000,
+      "sla_target_uptime_pct": 99.95,
+      "regulatory_exposure": ["SOC2"],
+      "p1_cost_per_minute_usd": 12000,
+      "p2_cost_per_minute_usd": 5040,
+      "p3_cost_per_minute_usd": 1200,
+      "p4_cost_per_minute_usd": 0,
+      "reputation_risk": "high",
+      "customer_trust_impact": "customer-facing"
+    }
+  }
+}

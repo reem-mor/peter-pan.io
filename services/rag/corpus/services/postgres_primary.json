@@ -1,0 +1,13 @@
+{
+  "doc_id": "postgres_primary",
+  "title": "Postgres Primary Service Context",
+  "doc_type": "service",
+  "services": "postgres-primary",
+  "environments": "production, staging",
+  "severity_applicable": "P1,P2,P3",
+  "tags": "service ownership, database, postgres, tier-0",
+  "last_updated": "2026-06-20",
+  "author": "Platform Engineering",
+  "version": "1.0",
+  "body": "# Postgres Primary Service Context\n\nPostgres-primary is the primary relational database backing orders-api and payments-api: order records, payment records, and transactional state.\n\n## Owner\n\n- Team: Database Reliability\n- Primary escalation: Primary Database Reliability On-Call\n- Secondary escalation: Secondary Database Reliability On-Call\n- Channel: `#database-reliability`\n\n## Dependencies\n\n- Consumed by orders-api and payments-api.\n- No upstream service dependencies.\n\n## Business Impact\n\nPostgres-primary is tier-0. Saturation or connectivity loss stalls every write path in orders-api and payments-api."
+}

@@ -1,0 +1,138 @@
+{
+  "$defs": {
+    "Citation": {
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_type": {
+          "enum": [
+            "runbook",
+            "incident_history",
+            "service_doc",
+            "tool_result"
+          ],
+          "title": "Source Type",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 500,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "source_type",
+        "quote"
+      ],
+      "title": "Citation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The one artifact PETER PAN produces. Output-guardrail-checked before routing.",
+  "properties": {
+    "incident_id": {
+      "title": "Incident Id",
+      "type": "string"
+    },
+    "category": {
+      "enum": [
+        "infra",
+        "database",
+        "application"
+      ],
+      "title": "Category",
+      "type": "string"
+    },
+    "p_level": {
+      "enum": [
+        "P1",
+        "P2",
+        "P3",
+        "P4"
+      ],
+      "title": "P Level",
+      "type": "string"
+    },
+    "summary": {
+      "maxLength": 1200,
+      "minLength": 1,
+      "title": "Summary",
+      "type": "string"
+    },
+    "probable_cause": {
+      "maxLength": 1200,
+      "title": "Probable Cause",
+      "type": "string"
+    },
+    "citations": {
+      "items": {
+        "$ref": "#/$defs/Citation"
+      },
+      "minItems": 1,
+      "title": "Citations",
+      "type": "array"
+    },
+    "owner_team": {
+      "title": "Owner Team",
+      "type": "string"
+    },
+    "escalation_path": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Escalation Path",
+      "type": "array"
+    },
+    "recommended_steps": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 8,
+      "title": "Recommended Steps",
+      "type": "array"
+    },
+    "confidence": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "guardrail_flags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Guardrail Flags",
+      "type": "array"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "model_meta": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Model Meta",
+      "type": "object"
+    }
+  },
+  "required": [
+    "incident_id",
+    "category",
+    "p_level",
+    "summary",
+    "probable_cause",
+    "citations",
+    "owner_team",
+    "confidence",
+    "generated_at"
+  ],
+  "title": "TriageReport",
+  "type": "object"
+}

@@ -1,0 +1,764 @@
+{
+  "name": "PETER PAN — PETER Flow (Stage A)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "f2808e22-18da-465c-bee0-898e406a3835",
+      "name": "Sticky Note 83ead680",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2560, 1216],
+      "parameters": {
+        "content": "## PETER PAN — PETER Flow (Stage A, mock-first)\n\nSource of truth: docs/peter-pan-n8n-flow.mmd + docs/BUILD_PLAN.md.\nContracts: docs/contracts (TriageReport schema frozen — changes need an ADR).\n\n**Env vars (n8n instance settings):** PETER_GUARDRAILS_URL, PETER_PREDICTOR_URL, PETER_RAG_URL, PETER_LANGGRAPH_URL, PETER_TOOLS_URL, PETER_REVIEW_QUEUE_URL, PETER_DB_TEAM_WEBHOOK, PETER_INFRA_TEAM_WEBHOOK, PETER_APP_TEAM_WEBHOOK, PETER_TRIAGE_TEAM_WEBHOOK, PETER_SLACK_STUB_URL, PETER_GITHUB_API, PETER_GITHUB_REPO.\n\n**Credentials (fill in n8n, never inline):** \"PETER Services Bearer\" = shared-secret for the EC2 services; \"PETER Mock LLM (OpenAI-compatible)\" = base URL of the Stage A FixtureLLM service. Stage C swaps this credential to real per-task providers (Gemini 2.5 Flash extract, Bedrock Claude Sonnet agent/synthesis — ADR 0002) — nodes stay unchanged.",
+        "color": 4
+      }
+    },
+    {
+      "id": "62339c27-d3fd-4d51-be7a-32efcdc80aa6",
+      "name": "Sticky Note 1e86f573",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2560, 1536],
+      "parameters": {
+        "content": "## Context enrichment (Stage A)\nMaintenance window = static stub (Stage C: calendar). Deploys = real GitHub API against a fake repo. Complaints = fixture stub (Stage C: Slack reader). Merged output validates as IncidentContext. Known-noise rule is deterministic code, not LLM.",
+        "color": 5
+      }
+    },
+    {
+      "id": "9857f15f-b8bb-494e-bb04-b184798fd0ce",
+      "name": "Signal Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 768],
+      "parameters": { "httpMethod": "POST", "path": "peter-signal", "authentication": "headerAuth", "responseMode": "responseNode" },
+      "webhookId": "6e52c2cd-a46f-41a1-94b2-4558bc949263"
+    },
+    {
+      "id": "6b37c546-9b2e-4e19-942f-1380a8271640",
+      "name": "Normalize Signal",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [224, 768],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            { "id": "sig-id", "name": "id", "value": "={{ $json.body?.id ?? ('sig-' + $execution.id.toString().toLowerCase()) }}", "type": "string" },
+            { "id": "sig-source", "name": "source", "value": "={{ $json.body?.source ?? 'webui' }}", "type": "string" },
+            { "id": "sig-kind", "name": "kind", "value": "={{ $json.body?.kind ?? 'manual' }}", "type": "string" },
+            { "id": "sig-received", "name": "received_at", "value": "={{ $json.body?.received_at ?? $now.toISO() }}", "type": "string" },
+            { "id": "sig-title", "name": "title", "value": "={{ $json.body?.title ?? $json.body?.description ?? 'untitled signal' }}", "type": "string" },
+            { "id": "sig-body", "name": "body", "value": "={{ $json.body?.body ?? $json.body?.description ?? '' }}", "type": "string" },
+            { "id": "sig-service", "name": "service", "value": "={{ $json.body?.service ?? '' }}", "type": "string" },
+            { "id": "sig-env", "name": "environment", "value": "={{ $json.body?.environment ?? 'production' }}", "type": "string" },
+            { "id": "sig-sev", "name": "severity_hint", "value": "={{ $json.body?.severity_hint ?? '' }}", "type": "string" },
+            { "id": "sig-labels", "name": "labels", "value": "={{ $json.body?.labels ?? {} }}", "type": "object" },
+            { "id": "sig-raw", "name": "raw", "value": "={{ $json.body?.raw ?? {} }}", "type": "object" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "32f4e11b-105e-46df-b936-96bdba5dba90",
+      "name": "Guardrails Input Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [448, 768],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PETER_GUARDRAILS_URL }}/check/input",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { signal: $json } }}",
+        "options": { "timeout": 10000 }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "6ceaa3ea-510e-4467-9976-0194fef907ab",
+      "name": "Respond 503 Guardrails Down",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [672, 864],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"error\", reason: \"input guardrails service unavailable\" } }}",
+        "options": { "responseCode": 503 }
+      }
+    },
+    {
+      "id": "ba5e3eaa-1bac-432b-ba67-463b4273a902",
+      "name": "Input Passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [672, 672],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose", "version": 1 },
+          "conditions": [{ "leftValue": "={{ $json.passed }}", "operator": { "type": "boolean", "operation": "true" }, "rightValue": "" }],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "a169d706-5c7e-4943-9308-9d5aa66d2010",
+      "name": "Signal Accepted",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [896, 576],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": true,
+        "assignments": { "assignments": [{ "id": "accepted-at", "name": "accepted_at", "value": "={{ $now.toISO() }}", "type": "string" }] }
+      }
+    },
+    {
+      "id": "e9045fd1-bc3c-49b4-822e-55c356379704",
+      "name": "Reject Signal",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [896, 768],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"rejected\", reason: $json.reason ?? \"input failed guardrails\", flags: $json.flags ?? [] } }}",
+        "options": { "responseCode": 200 }
+      }
+    },
+    {
+      "id": "a1ed8255-4461-4382-96df-535b03b6b58e",
+      "name": "Maintenance Window Stub",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1344, 288],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "return [{ json: { maintenance_window: false, source: 'stub-calendar-stage-a' } }];"
+      }
+    },
+    {
+      "id": "3895516a-5b6b-4280-b2e1-b93d22f7ee87",
+      "name": "Merge Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1568, 464],
+      "parameters": { "mode": "combine", "combineBy": "combineByPosition", "numberInputs": 3 }
+    },
+    {
+      "id": "f0127258-a610-4e3c-89d2-051859b859c9",
+      "name": "Recent Deploys (GitHub)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1120, 480],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.PETER_GITHUB_API }}/github/deployments",
+        "sendQuery": false,
+        "options": { "timeout": 8000 }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "c36c0094-de1d-47fb-bd15-5c212afd8f16",
+      "name": "Shape DeployRefs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1344, 480],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const nowMs = Date.now();\nconst windowMs = 2 * 60 * 60 * 1000;\nconst payload = $input.first().json || {};\nconst rows = Array.isArray(payload.deployments) ? payload.deployments : [];\nconst recent = rows.filter(d => { const t = Date.parse(d.deployed_at || ''); const age = nowMs - t; return !isNaN(t) && age >= 0 && age <= windowMs; }).map(d => ({ repo: d.repo || ($env.PETER_GITHUB_REPO || 'unknown/repo'), sha: d.sha, deployed_at: d.deployed_at, service: d.service || 'unknown' }));\nreturn [{ json: { recent_deploys: recent } }];"
+      }
+    },
+    {
+      "id": "a21e97ae-5b23-4e13-9f90-d3965545d5da",
+      "name": "Complaints Stub",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1344, 672],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "return [{ json: { complaint_count: 0, complaint_samples: [], source: 'stub-slack-stage-a' } }];"
+      }
+    },
+    {
+      "id": "bac2d586-fea3-4a8b-8958-c182cd47b99d",
+      "name": "Build IncidentContext",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1792, 480],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const merged = Object.assign({}, ...$input.all().map(i => i.json));\nconst signal = $('Normalize Signal').first().json;\nconst context = {\n  maintenance_window: merged.maintenance_window === true,\n  recent_deploys: Array.isArray(merged.recent_deploys) ? merged.recent_deploys : [],\n  complaint_count: Number(merged.complaint_count) || 0,\n  complaint_samples: (Array.isArray(merged.complaint_samples) ? merged.complaint_samples : []).slice(0, 5)\n};\nconst infoOnly = (signal.severity_hint || '') === 'info';\nconst known_noise = context.maintenance_window || (context.recent_deploys.length > 0 && infoOnly);\nconst noise_reason = context.maintenance_window ? 'maintenance_window' : (known_noise ? 'info_alert_inside_deploy_window' : '');\nreturn [{ json: { context, known_noise, noise_reason } }];"
+      }
+    },
+    {
+      "id": "d6352e56-dd13-4282-824c-066da612d1a8",
+      "name": "Known Noise?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2016, 480],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose", "version": 1 },
+          "conditions": [{ "leftValue": "={{ $json.known_noise }}", "operator": { "type": "boolean", "operation": "true" }, "rightValue": "" }],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "2dc0b0dc-6062-4022-b708-3dd2b0efc5c2",
+      "name": "Log Suppression",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2304, 336],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const signal = $('Normalize Signal').first().json;\nconst decision = $json;\nconsole.log('PETER suppression', JSON.stringify({ signal_id: signal.id, reason: decision.noise_reason }));\nreturn [{ json: { status: 'suppressed', signal_id: signal.id, reason: decision.noise_reason, context: decision.context } }];"
+      }
+    },
+    {
+      "id": "528e2848-09c9-4e3f-88f2-641d4d58522e",
+      "name": "Respond Suppressed",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [2592, 336],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"suppressed\", reason: $json.reason, signal_id: $json.signal_id } }}",
+        "options": { "responseCode": 202 }
+      }
+    },
+    {
+      "id": "8f8041d6-0030-43d3-89fb-6fb22b16563e",
+      "name": "Extract Incident Info",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [2240, 768],
+      "parameters": {
+        "text": "={{ $('Normalize Signal').item.json.title }}\n\n{{ $('Normalize Signal').item.json.body }}",
+        "attributes": {
+          "attributes": [
+            { "name": "service", "description": "Name of the affected service or component. Extract only if explicitly named.", "required": true },
+            { "name": "environment", "description": "Deployment environment: production or staging. Null if not stated." },
+            { "name": "started_at", "description": "When the issue began, as stated in the text, ISO 8601 if possible. Null if not mentioned." },
+            { "name": "symptom", "description": "One-sentence observable symptom, quoting the text. Null if none." },
+            { "name": "affected_metric", "description": "The primary metric in trouble. Null if none named." },
+            { "name": "error_signature", "description": "Exception class, HTTP status code, or error string mentioned. Null if absent." },
+            { "name": "customer_impact", "description": "Stated user-facing impact. Null if not mentioned." },
+            { "name": "mentioned_deploys", "description": "Any deploy, release, or change reference mentioned. Empty if none." }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You extract structured incident facts from operational alert text. Rules: (1) Extract ONLY facts explicitly present in the text. (2) Never infer or guess severity, priority, or root cause. (3) Missing fields MUST be null, never fabricated. (4) Return consistent types. If the text is not an operational incident, set service to null.\n\nText:\n{text}"
+        }
+      }
+    },
+    {
+      "id": "9fee8630-a290-482c-b9f4-f8b5b3cdeb16",
+      "name": "Extractor Model (Mock Seam)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [2320, 992],
+      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "responsesApiEnabled": false, "options": { "temperature": 0 } }
+    },
+    {
+      "id": "ef7c0696-00ee-4d93-9eb9-53a116ccf538",
+      "name": "Assemble Incident",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2592, 768],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const extracted = $json.output || $json;\nconst signal = $('Normalize Signal').first().json;\nconst ctx = $('Build IncidentContext').first().json;\nconst execId = ($execution.id || 'exec0000').toString().toLowerCase().replace(/[^a-z0-9-]/g, '');\nconst id = ('inc-' + execId + '-' + Date.now().toString(36)).slice(0, 48);\nreturn [{ json: {\n  id,\n  created_at: new Date().toISOString(),\n  status: 'triaging',\n  signal_ids: [signal.id].filter(Boolean),\n  service: extracted.service || signal.service || 'unknown',\n  environment: extracted.environment || signal.environment || 'production',\n  p_level: null,\n  started_at: extracted.started_at || null,\n  symptom: extracted.symptom || signal.title,\n  context: ctx.context\n} }];"
+      }
+    },
+    {
+      "id": "d55152f3-1b7a-4404-9fea-e43fb5e02473",
+      "name": "Incident Commander",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [2944, 768],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Triage this operational incident using your tools.\n\nIncident: {{ JSON.stringify($json) }}\n\nCall the tools, then summarise your findings with citations.",
+        "options": {
+          "returnIntermediateSteps": true,
+          "systemMessage": "You are a senior incident commander for a production SRE team. Always call Predictor Tool first. If its incident_class is normal, stop and return that exact predictor result. For a non-normal single-domain incident, then call RAG Query Tool and Service Context Tool; do not call LangGraph. For a complex cross-domain incident, call LangGraph Agent Tool after Predictor and do not call RAG directly because LangGraph owns retrieval. Return one JSON object containing the exact tool results under predictor, rag, service_context, or langgraph. Never invent incident_class, severity, routing category, owners, escalation paths, citations, runbook IDs, or root causes."
+        }
+      }
+    },
+    {
+      "id": "f4cccd81-1f85-4fd4-9549-76a130b6b061",
+      "name": "Apply Predictor Policy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3216, 640],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const categoryByClass = Object.freeze({\n  cpu_saturation: 'infra',\n  memory_leak: 'infra',\n  db_lock_contention: 'database',\n  replication_lag: 'database',\n  error_rate_spike: 'application',\n  normal: null\n});\nconst severityMap = Object.freeze({ 5: 'P1', 4: 'P2', 3: 'P3', 2: 'P4', 1: 'P4' });\nconst steps = Array.isArray($json.intermediateSteps) ? $json.intermediateSteps : [];\nconst predictorStep = steps.find(step => String(step.action?.tool || '').replace(/[^a-z0-9]/gi, '').toLowerCase() === 'predictortool');\nlet predictor = predictorStep?.observation ?? {};\nif (typeof predictor === 'string') {\n  try { predictor = JSON.parse(predictor); } catch (_) { predictor = {}; }\n}\nif (Array.isArray(predictor) && predictor.length === 1) predictor = predictor[0];\nconst incidentClass = predictor?.incident_class;\nconst rawSeverity = predictor?.severity;\nconst severity = rawSeverity;\nconst confidence = predictor?.confidence;\nconst ewmaSeverity = predictor?.scores?.ewma?.severity;\nconst knownClass = Object.prototype.hasOwnProperty.call(categoryByClass, incidentClass);\nconst validSeverity = typeof rawSeverity === 'number' && Number.isInteger(rawSeverity) && Object.prototype.hasOwnProperty.call(severityMap, rawSeverity);\nconst validConfidence = typeof confidence === 'number' && Number.isFinite(confidence) && confidence >= 0 && confidence <= 1;\nconst validMethod = predictor?.method === 'ewma-floor';\nconst validScores = predictor?.scores !== null && typeof predictor?.scores === 'object' && !Array.isArray(predictor?.scores) && Object.prototype.hasOwnProperty.call(predictor.scores, 'ewma') && Object.prototype.hasOwnProperty.call(predictor.scores, 'classifier');\nconst validEwmaSeverity = typeof ewmaSeverity === 'number' && Number.isInteger(ewmaSeverity) && ewmaSeverity === rawSeverity;\nconst modelFallback = predictor?.scores?.classifier?.fallback;\nconst validResponse = knownClass && validSeverity && validConfidence && validMethod && validScores && validEwmaSeverity && !modelFallback;\nlet policy = { incident_class: incidentClass || null, severity: null, p_level: null, routing_category: null, outcome: 'invalid' };\nif (validResponse && incidentClass === 'normal' && severity === 1) {\n  policy = { incident_class: incidentClass, severity, p_level: severityMap[severity], routing_category: null, outcome: 'suppressed' };\n} else if (validResponse && incidentClass !== 'normal') {\n  policy = { incident_class: incidentClass, severity, p_level: severityMap[severity], routing_category: categoryByClass[incidentClass], outcome: 'routable' };\n}\nreturn [{ json: { ...$json, predictor_policy: policy, noise_reason: policy.outcome === 'suppressed' ? 'predictor_normal' : '', context: $('Build IncidentContext').first().json.context } }];"
+      }
+    },
+    {
+      "id": "c0d84bed-11f3-47d6-8a1c-c6044aa445c3",
+      "name": "Predictor Outcome",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [3424, 640],
+      "parameters": {
+        "rules": {
+          "values": [
+            { "outputKey": "routable", "renameOutput": true, "conditions": { "options": { "caseSensitive": true, "typeValidation": "strict", "version": 1 }, "conditions": [{ "leftValue": "={{ $json.predictor_policy.outcome }}", "operator": { "type": "string", "operation": "equals" }, "rightValue": "routable" }], "combinator": "and" } },
+            { "outputKey": "suppressed", "renameOutput": true, "conditions": { "options": { "caseSensitive": true, "typeValidation": "strict", "version": 1 }, "conditions": [{ "leftValue": "={{ $json.predictor_policy.outcome }}", "operator": { "type": "string", "operation": "equals" }, "rightValue": "suppressed" }], "combinator": "and" } }
+          ]
+        },
+        "options": { "fallbackOutput": "extra", "renameFallbackOutput": "invalid" }
+      }
+    },
+    {
+      "id": "af0d4187-668f-4893-9140-3c91c4058575",
+      "name": "Respond Predictor Invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [3632, 544],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'predictor_invalid', reason: 'predictor returned a missing or unknown incident_class' } }}",
+        "options": { "responseCode": 503 }
+      }
+    },
+    {
+      "id": "b96910e3-0bf7-44ec-a4d8-241a50456e00",
+      "name": "Commander Model (Mock Seam)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [2816, 992],
+      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "responsesApiEnabled": false, "options": { "temperature": 0 } }
+    },
+    {
+      "id": "9164c703-33a9-490e-8737-6dfd55a76e0c",
+      "name": "Predictor Tool",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [2944, 992],
+      "parameters": {
+        "toolDescription": "Classifies the metric window into one objective six-way INCIDENT_CLASS plus a SEVERITY score and confidence. Do NOT convert incident_class to a routing category or guess severity — always call this first.",
+        "method": "POST",
+        "url": "={{ $env.PETER_PREDICTOR_URL }}/analyse",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { incident: $('Assemble Incident').item.json, metric_window_ref: $('Normalize Signal').item.json.raw.metric_window_ref ?? null } }}",
+        "options": { "timeout": 15000 }
+      }
+    },
+    {
+      "id": "1053c5ff-e66f-44b7-8878-4b5a9e3e2f4e",
+      "name": "RAG Query Tool",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [3072, 992],
+      "parameters": {
+        "toolDescription": "Retrieves similar PAST INCIDENTS and matching RUNBOOK sections with citations (source_id, source_type, quote). Input: a short natural-language description of the current incident.",
+        "method": "POST",
+        "url": "={{ $env.PETER_RAG_URL }}/query",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { query: $fromAI(\"query\", \"short incident description to search runbooks and incident history\", \"string\"), limit: 3 } }}",
+        "options": { "timeout": 15000 }
+      }
+    },
+    {
+      "id": "7be60df7-1c98-4ac5-841a-5139517af398",
+      "name": "LangGraph Agent Tool",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [3200, 992],
+      "parameters": {
+        "toolDescription": "Runs deep multi-step Planner-Specialists-Synthesiser reasoning across infra, database and application specialists. Call ONLY for complex cross-domain incidents. Returns findings, owner_team and escalation_path grounded in the Tools API.",
+        "method": "POST",
+        "url": "={{ $env.PETER_LANGGRAPH_URL }}/agent/run",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { incident: $('Assemble Incident').item.json, question: $fromAI('question', 'what to analyse for this incident', 'string') } }}",
+        "options": { "timeout": 30000 }
+      }
+    },
+    {
+      "id": "2b166ef1-8dde-4c0e-a4a2-9a17bd7f2c01",
+      "name": "Service Context Tool",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [3328, 992],
+      "parameters": {
+        "toolDescription": "Returns the deterministic owner_team and escalation_path for the incident service. Call for routable, non-complex single-domain incidents after Predictor and RAG.",
+        "method": "POST",
+        "url": "={{ $env.PETER_TOOLS_URL }}/tools/service_context",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { service: $('Assemble Incident').item.json.service, environment: $('Assemble Incident').item.json.environment } }}",
+        "options": { "timeout": 15000 }
+      }
+    },
+    {
+      "id": "ee9656ca-af59-4de4-b253-e491af88c220",
+      "name": "Write TriageReport",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.8,
+      "position": [3408, 768],
+      "parameters": {
+        "promptType": "define",
+        "hasOutputParser": true,
+        "text": "=Write the final TriageReport.\n\nIncident: {{ JSON.stringify($('Assemble Incident').item.json) }}\n\nPredictor policy: {{ JSON.stringify($json.predictor_policy) }}\n\nCommander findings: {{ $json.output }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "You are the incident report writer. Synthesise the incident, predictor severity/incident_class, deterministic Predictor policy, and RAG context into one TriageReport matching the schema exactly. Copy category only from predictor_policy.routing_category; never derive or choose it yourself. owner_team and escalation_path may ONLY be copied from tool results in the findings — if absent use \"unknown\" and []. Map predictor severity to p_level: 5 to P1, 4 to P2, 3 to P3, 1-2 to P4; the predictor proposal wins over your own judgement. Every citations[] entry must copy a real source_id, source_type and quote from tool output — never invent citations; if you cannot cite, say \"insufficient data\" in probable_cause and lower confidence. recommended_steps must be read-only or safe diagnostic actions, never destructive commands."
+            }
+          ]
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "9845a5d7-6402-4a85-940a-b25513c34915",
+      "name": "Writer Model (Mock Seam)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [3424, 992],
+      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "responsesApiEnabled": false, "options": { "temperature": 0 } }
+    },
+    {
+      "id": "c2307ccc-e30c-462f-8cd7-6ffbd530bf74",
+      "name": "TriageReport Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [3552, 992],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"$defs\":{\"Citation\":{\"additionalProperties\":false,\"properties\":{\"source_id\":{\"title\":\"Source Id\",\"type\":\"string\"},\"source_type\":{\"enum\":[\"runbook\",\"incident_history\",\"service_doc\",\"tool_result\"],\"title\":\"Source Type\",\"type\":\"string\"},\"quote\":{\"maxLength\":500,\"title\":\"Quote\",\"type\":\"string\"}},\"required\":[\"source_id\",\"source_type\",\"quote\"],\"title\":\"Citation\",\"type\":\"object\"}},\"additionalProperties\":false,\"description\":\"The one artifact PETER PAN produces. Output-guardrail-checked before routing.\",\"properties\":{\"incident_id\":{\"title\":\"Incident Id\",\"type\":\"string\"},\"category\":{\"enum\":[\"infra\",\"database\",\"application\"],\"title\":\"Category\",\"type\":\"string\"},\"p_level\":{\"enum\":[\"P1\",\"P2\",\"P3\",\"P4\"],\"title\":\"P Level\",\"type\":\"string\"},\"summary\":{\"maxLength\":1200,\"minLength\":1,\"title\":\"Summary\",\"type\":\"string\"},\"probable_cause\":{\"maxLength\":1200,\"title\":\"Probable Cause\",\"type\":\"string\"},\"citations\":{\"items\":{\"$ref\":\"#/$defs/Citation\"},\"minItems\":1,\"title\":\"Citations\",\"type\":\"array\"},\"owner_team\":{\"title\":\"Owner Team\",\"type\":\"string\"},\"escalation_path\":{\"items\":{\"type\":\"string\"},\"title\":\"Escalation Path\",\"type\":\"array\"},\"recommended_steps\":{\"items\":{\"type\":\"string\"},\"maxItems\":8,\"title\":\"Recommended Steps\",\"type\":\"array\"},\"confidence\":{\"maximum\":1.0,\"minimum\":0.0,\"title\":\"Confidence\",\"type\":\"number\"},\"guardrail_flags\":{\"items\":{\"type\":\"string\"},\"title\":\"Guardrail Flags\",\"type\":\"array\"},\"generated_at\":{\"format\":\"date-time\",\"title\":\"Generated At\",\"type\":\"string\"},\"model_meta\":{\"additionalProperties\":{\"type\":\"string\"},\"title\":\"Model Meta\",\"type\":\"object\"}},\"required\":[\"incident_id\",\"category\",\"p_level\",\"summary\",\"probable_cause\",\"citations\",\"owner_team\",\"confidence\",\"generated_at\"],\"title\":\"TriageReport\",\"type\":\"object\"}"
+      }
+    },
+    {
+      "id": "8ab3ac21-7f7d-4d91-9e50-5678e9a1f001",
+      "name": "Fixture TriageReport Fallback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3632, 1120],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const incident = $('Assemble Incident').first().json;\nconst service = String(incident.service || 'unknown');\nconst policy = $('Apply Predictor Policy').first().json.predictor_policy;\nlet evidence = {};\ntry { evidence = JSON.parse($('Incident Commander').first().json.output || '{}'); } catch (_) {}\nconst predictor = evidence.predictor || {};\nconst deep = evidence.langgraph || {};\nconst retrieval = evidence.rag || deep;\nconst ownerContext = evidence.service_context || deep;\nconst flags = [];\nconst category = policy.routing_category;\nlet citations = Array.isArray(retrieval.citations) ? retrieval.citations : [];\nif (!citations.length) {\n  citations = [{ source_id: 'tool:unavailable', source_type: 'tool_result', quote: 'insufficient data' }];\n  flags.push('insufficient_citations');\n}\nconst owner = ownerContext.owner_team || 'unknown';\nconst escalation = Array.isArray(ownerContext.escalation_path) ? ownerContext.escalation_path : [];\nif (owner === 'unknown') flags.push('owner_unverified');\nconst recommendations = Array.isArray(deep.recommended_steps) && deep.recommended_steps.length\n  ? deep.recommended_steps\n  : [`Review current health metrics for ${service}.`, 'Compare the signal with recent deployment evidence.'];\nreturn [{ json: {\n  incident_id: incident.id,\n  category,\n  p_level: policy.p_level,\n  summary: `Tool-grounded fixture fallback: ${service} classified as ${category}.`,\n  probable_cause: deep.probable_cause || retrieval.answer || 'Tool evidence requires human analysis.',\n  citations,\n  owner_team: owner,\n  escalation_path: escalation,\n  recommended_steps: recommendations.slice(0, 8),\n  confidence: Number(predictor.confidence || deep.confidence || 0.5),\n  guardrail_flags: [...new Set(flags)],\n  generated_at: new Date().toISOString(),\n  model_meta: { provider: 'fixture-fallback', stage: 'A', predictor_incident_class: String(policy.incident_class || ''), predictor_severity: String(policy.severity || ''), evidence: Object.keys(evidence).sort().join(',') }\n} }];"
+      }
+    },
+    {
+      "id": "ee258d86-4681-465c-b02f-5c928bc7bd29",
+      "name": "Finalize TriageReport",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3760, 768],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const out = $json.output || $json;\nconst incident = $('Assemble Incident').first().json;\nconst policy = $('Apply Predictor Policy').first().json.predictor_policy;\nconst report = Object.assign({}, out);\nreport.incident_id = incident.id;\nreport.category = policy.routing_category;\nreport.p_level = policy.p_level;\nreport.generated_at = new Date().toISOString();\nreport.model_meta = Object.assign({ provider: 'mock-openai-compatible', stage: 'A' }, report.model_meta || {});\nreport.model_meta.predictor_incident_class = String(policy.incident_class || '');\nreport.model_meta.predictor_severity = String(policy.severity || '');\nreport.guardrail_flags = Array.isArray(report.guardrail_flags) ? report.guardrail_flags : [];\nreport.escalation_path = Array.isArray(report.escalation_path) ? report.escalation_path : [];\nreport.recommended_steps = (Array.isArray(report.recommended_steps) ? report.recommended_steps : []).slice(0, 8);\nreport.confidence = Math.max(0, Math.min(1, Number(report.confidence) || 0));\nreturn [{ json: report }];"
+      }
+    },
+    {
+      "id": "5e9038de-a805-4341-ad25-1c6999aeb999",
+      "name": "Guardrails Output Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [3984, 768],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PETER_GUARDRAILS_URL }}/check/output",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { report: $json, service: $('Assemble Incident').item.json.service, environment: $('Assemble Incident').item.json.environment, require_tool_evidence: true } }}",
+        "options": { "timeout": 10000 }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "329f9bc4-8092-4fb6-8964-08b28689fd7e",
+      "name": "Respond Flagged (Guardrails Down)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [4208, 912],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: \"review_queue_unavailable\", reason: \"output could not be queued for human review\" } }}",
+        "options": { "responseCode": 503 }
+      }
+    },
+    {
+      "id": "464a9f09-4cdd-4a42-989c-9c27d6fc91b4",
+      "name": "Output Passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [4208, 720],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose", "version": 1 },
+          "conditions": [{ "leftValue": "={{ $json.passed }}", "operator": { "type": "boolean", "operation": "true" }, "rightValue": "" }],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "879a92fb-de25-4a5b-8dd3-af89eb25ffd7",
+      "name": "Prepare Routing",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [4432, 624],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": true,
+        "assignments": { "assignments": [{ "id": "routed-at", "name": "routed_at", "value": "={{ $now.toISO() }}", "type": "string" }] }
+      }
+    },
+    {
+      "id": "8757e88b-168d-4406-85b6-bcfe369c0fed",
+      "name": "Send to Review Queue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [4432, 1152],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PETER_REVIEW_QUEUE_URL }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { report: { ...$('Finalize TriageReport').item.json, guardrail_flags: [...new Set([...( $('Finalize TriageReport').item.json.guardrail_flags ?? [] ), ...( $json.flags ?? ['guardrails_unavailable'] )])] }, flags: $json.flags ?? ['guardrails_unavailable'] } }}",
+        "options": { "timeout": 10000 }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "6bc43b6e-ee60-4f1a-881b-b595f7a02b46",
+      "name": "Respond Flagged for Review",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [4656, 1152],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'flagged_for_review', report: { ...$('Finalize TriageReport').item.json, guardrail_flags: [...new Set([...( $('Finalize TriageReport').item.json.guardrail_flags ?? [] ), ...( $('Guardrails Output Check').item.json.flags ?? ['guardrails_unavailable'] )])] } } }}",
+        "options": { "responseCode": 202 }
+      }
+    },
+    {
+      "id": "e5e134bf-bc25-4f43-a762-9d1405a6231d",
+      "name": "Route by Category",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [4656, 256],
+      "parameters": {
+        "rules": {
+          "values": [
+            { "outputKey": "database", "renameOutput": true, "conditions": { "options": { "caseSensitive": false, "typeValidation": "loose", "version": 1 }, "conditions": [{ "leftValue": "={{ $('Finalize TriageReport').item.json.category }}", "operator": { "type": "string", "operation": "equals" }, "rightValue": "database" }], "combinator": "and" } },
+            { "outputKey": "infra", "renameOutput": true, "conditions": { "options": { "caseSensitive": false, "typeValidation": "loose", "version": 1 }, "conditions": [{ "leftValue": "={{ $('Finalize TriageReport').item.json.category }}", "operator": { "type": "string", "operation": "equals" }, "rightValue": "infra" }], "combinator": "and" } },
+            { "outputKey": "application", "renameOutput": true, "conditions": { "options": { "caseSensitive": false, "typeValidation": "loose", "version": 1 }, "conditions": [{ "leftValue": "={{ $('Finalize TriageReport').item.json.category }}", "operator": { "type": "string", "operation": "equals" }, "rightValue": "application" }], "combinator": "and" } }
+          ]
+        },
+        "options": { "fallbackOutput": "extra", "renameFallbackOutput": "unroutable" }
+      }
+    },
+    {
+      "id": "09c043f8-a940-413a-a59d-48ad455f790d",
+      "name": "DB Team Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [4880, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PETER_DB_TEAM_WEBHOOK }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Finalize TriageReport').item.json }}",
+        "options": { "timeout": 10000 }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "107c2a86-4da8-4060-9eb9-e2d615ea7aa4",
+      "name": "Respond TriageReport",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [5104, 288],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $('Finalize TriageReport').item.json }}",
+        "options": { "responseCode": 200 }
+      }
+    },
+    {
+      "id": "15fa672b-e2ec-47f4-abaf-13f28b24eb4b",
+      "name": "Infra Team Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [4880, 192],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PETER_INFRA_TEAM_WEBHOOK }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Finalize TriageReport').item.json }}",
+        "options": { "timeout": 10000 }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "a6cf6ea2-b8b7-405b-864b-c8b0cfc99dc5",
+      "name": "App Team Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [4880, 384],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PETER_APP_TEAM_WEBHOOK }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Finalize TriageReport').item.json }}",
+        "options": { "timeout": 10000 }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "f2e5d989-4666-477b-9412-bdac94454188",
+      "name": "Manual Triage Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [4880, 576],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PETER_TRIAGE_TEAM_WEBHOOK }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { report: $('Finalize TriageReport').item.json, reason: 'category did not match a known team' } }}",
+        "options": { "timeout": 10000 }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "f01b3c51-460a-4f94-9ee3-22151090cb12",
+      "name": "P1?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [4656, 768],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose", "version": 1 },
+          "conditions": [{ "leftValue": "={{ $('Finalize TriageReport').item.json.p_level }}", "operator": { "type": "string", "operation": "equals" }, "rightValue": "P1" }],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "ed95fbf1-0a9b-481e-998f-49fdc79cc1c4",
+      "name": "Escalation Dispatch (Preview-First)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [4880, 768],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PETER_TOOLS_URL }}/escalations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { report: $('Finalize TriageReport').item.json, preview: true, requested_by: 'peter-flow' } }}",
+        "options": { "timeout": 10000 }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "290de823-3e25-4fe0-be2e-869a616153b9",
+      "name": "Slack Incident Channel Stub",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [4656, 960],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PETER_SLACK_STUB_URL }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { channel: 'incident-' + $('Finalize TriageReport').item.json.incident_id, summary: $('Finalize TriageReport').item.json.summary, owner_team: $('Finalize TriageReport').item.json.owner_team, recommended_steps: $('Finalize TriageReport').item.json.recommended_steps } }}",
+        "options": { "timeout": 10000 }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Signal Webhook": { "main": [[{ "node": "Normalize Signal", "type": "main", "index": 0 }]] },
+    "Normalize Signal": { "main": [[{ "node": "Guardrails Input Check", "type": "main", "index": 0 }]] },
+    "Guardrails Input Check": { "main": [[{ "node": "Input Passed?", "type": "main", "index": 0 }], [{ "node": "Respond 503 Guardrails Down", "type": "main", "index": 0 }]] },
+    "Input Passed?": { "main": [[{ "node": "Signal Accepted", "type": "main", "index": 0 }], [{ "node": "Reject Signal", "type": "main", "index": 0 }]] },
+    "Signal Accepted": { "main": [[{ "node": "Maintenance Window Stub", "type": "main", "index": 0 }, { "node": "Recent Deploys (GitHub)", "type": "main", "index": 0 }, { "node": "Complaints Stub", "type": "main", "index": 0 }]] },
+    "Maintenance Window Stub": { "main": [[{ "node": "Merge Context", "type": "main", "index": 0 }]] },
+    "Recent Deploys (GitHub)": { "main": [[{ "node": "Shape DeployRefs", "type": "main", "index": 0 }]] },
+    "Shape DeployRefs": { "main": [[{ "node": "Merge Context", "type": "main", "index": 1 }]] },
+    "Complaints Stub": { "main": [[{ "node": "Merge Context", "type": "main", "index": 2 }]] },
+    "Merge Context": { "main": [[{ "node": "Build IncidentContext", "type": "main", "index": 0 }]] },
+    "Build IncidentContext": { "main": [[{ "node": "Known Noise?", "type": "main", "index": 0 }]] },
+    "Known Noise?": { "main": [[{ "node": "Log Suppression", "type": "main", "index": 0 }], [{ "node": "Extract Incident Info", "type": "main", "index": 0 }]] },
+    "Log Suppression": { "main": [[{ "node": "Respond Suppressed", "type": "main", "index": 0 }]] },
+    "Extract Incident Info": { "main": [[{ "node": "Assemble Incident", "type": "main", "index": 0 }]] },
+    "Extractor Model (Mock Seam)": { "ai_languageModel": [[{ "node": "Extract Incident Info", "type": "ai_languageModel", "index": 0 }]] },
+    "Assemble Incident": { "main": [[{ "node": "Incident Commander", "type": "main", "index": 0 }]] },
+    "Incident Commander": { "main": [[{ "node": "Apply Predictor Policy", "type": "main", "index": 0 }]] },
+    "Apply Predictor Policy": { "main": [[{ "node": "Predictor Outcome", "type": "main", "index": 0 }]] },
+    "Predictor Outcome": { "main": [[{ "node": "Write TriageReport", "type": "main", "index": 0 }], [{ "node": "Log Suppression", "type": "main", "index": 0 }], [{ "node": "Respond Predictor Invalid", "type": "main", "index": 0 }]] },
+    "Commander Model (Mock Seam)": { "ai_languageModel": [[{ "node": "Incident Commander", "type": "ai_languageModel", "index": 0 }]] },
+    "Predictor Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },
+    "RAG Query Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },
+    "LangGraph Agent Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },
+    "Service Context Tool": { "ai_tool": [[{ "node": "Incident Commander", "type": "ai_tool", "index": 0 }]] },
+    "Write TriageReport": { "main": [[{ "node": "Finalize TriageReport", "type": "main", "index": 0 }], [{ "node": "Fixture TriageReport Fallback", "type": "main", "index": 0 }]] },
+    "Writer Model (Mock Seam)": { "ai_languageModel": [[{ "node": "Write TriageReport", "type": "ai_languageModel", "index": 0 }]] },
+    "TriageReport Parser": { "ai_outputParser": [[{ "node": "Write TriageReport", "type": "ai_outputParser", "index": 0 }]] },
+    "Fixture TriageReport Fallback": { "main": [[{ "node": "Finalize TriageReport", "type": "main", "index": 0 }]] },
+    "Finalize TriageReport": { "main": [[{ "node": "Guardrails Output Check", "type": "main", "index": 0 }]] },
+    "Guardrails Output Check": { "main": [[{ "node": "Output Passed?", "type": "main", "index": 0 }], [{ "node": "Send to Review Queue", "type": "main", "index": 0 }]] },
+    "Output Passed?": { "main": [[{ "node": "Prepare Routing", "type": "main", "index": 0 }], [{ "node": "Send to Review Queue", "type": "main", "index": 0 }]] },
+    "Prepare Routing": { "main": [[{ "node": "Route by Category", "type": "main", "index": 0 }, { "node": "P1?", "type": "main", "index": 0 }, { "node": "Slack Incident Channel Stub", "type": "main", "index": 0 }]] },
+    "Send to Review Queue": { "main": [[{ "node": "Respond Flagged for Review", "type": "main", "index": 0 }], [{ "node": "Respond Flagged (Guardrails Down)", "type": "main", "index": 0 }]] },
+    "Route by Category": { "main": [[{ "node": "DB Team Webhook", "type": "main", "index": 0 }], [{ "node": "Infra Team Webhook", "type": "main", "index": 0 }], [{ "node": "App Team Webhook", "type": "main", "index": 0 }], [{ "node": "Manual Triage Webhook", "type": "main", "index": 0 }]] },
+    "DB Team Webhook": { "main": [[{ "node": "Respond TriageReport", "type": "main", "index": 0 }]] },
+    "Infra Team Webhook": { "main": [[{ "node": "Respond TriageReport", "type": "main", "index": 0 }]] },
+    "App Team Webhook": { "main": [[{ "node": "Respond TriageReport", "type": "main", "index": 0 }]] },
+    "Manual Triage Webhook": { "main": [[{ "node": "Respond TriageReport", "type": "main", "index": 0 }]] },
+    "P1?": { "main": [[{ "node": "Escalation Dispatch (Preview-First)", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

@@ -1,0 +1,80 @@
+---
+title: PETER PAN — System Architecture
+---
+flowchart LR
+    subgraph DEMO["Demo Environment · local · Docker Compose + k3d"]
+        LOAD["Load + Chaos Injector<br/>k6 traffic · pod kill · memory leak · DB locks"]:::demo
+        APPS["Demo microservices on k3d<br/>shop-web · orders-api · PostgreSQL"]:::demo
+        OTEL["OpenTelemetry Collector"]:::demo
+        PROM["Prometheus — metrics"]:::demo
+        LOKI["Loki — logs"]:::demo
+        GRAF["Grafana OSS<br/>dashboards + alert rules"]:::demo
+        LOAD --> APPS --> OTEL
+        OTEL --> PROM
+        OTEL --> LOKI
+        PROM --> GRAF
+        LOKI --> GRAF
+    end
+
+    subgraph CORE["PETER PAN Core · AWS EC2 · Docker Compose"]
+        ING["Ingestion API<br/>FastAPI POST /signals"]:::core
+        PRED["Predictive Engine<br/>EWMA floor + PyTorch classifier"]:::core
+        RAG["RAG Service<br/>cited answers only"]:::core
+        GRD["Guardrails Service<br/>NeMo + regex floor"]:::core
+        LG["LangGraph Agent<br/>Planner → Specialists → Synthesiser"]:::core
+        TOOLS["Tools API + Approval Gate<br/>owners · deploys · escalation · audit log"]:::core
+    end
+
+    N8N["n8n Orchestration<br/>the PETER flow"]:::n8n
+    IMG["Image Analyzer Seam<br/>ResNet scaffold · not flow-integrated"]:::seam
+
+    subgraph AI["AI Models — routed by task"]
+        FIX["Stage A FixtureLM<br/>OpenAI-compatible · deterministic"]:::ai
+        BR["Optional Stage C · Amazon Bedrock<br/>Claude Sonnet — agents & synthesis"]:::ai
+        GEM["Optional Stage C · Gemini 2.5 Flash<br/>information extraction"]:::ai
+        LCPP["Optional Stage C · Llama.cpp on EC2<br/>Mistral 7B GGUF — RAG generation"]:::ai
+        OLL["Optional Stage C · Ollama local<br/>Llama 3 — WebUI · Hermes — OpenClaw"]:::ai
+    end
+
+    subgraph KNOW["Knowledge & Change"]
+        CONF["Confluence Free<br/>runbooks + ownership docs"]:::know
+        PGV["Supabase pgvector<br/>vector store"]:::know
+        GH["GitHub<br/>repo · Actions CI evals · deploy events"]:::know
+    end
+
+    subgraph HUM["Humans & Comms"]
+        UI["Streamlit WebUI<br/>fixture assistant + incident form<br/>optional Stage C Ollama"]:::hum
+        SLK["Slack<br/>incident channels · complaint reader"]:::hum
+        OC["OpenClaw + Hermes<br/>Telegram approvals from the phone"]:::hum
+    end
+
+    GRAF -->|alert webhook| ING
+    PROM -.->|metric windows via query API| PRED
+    ING -->|validated Signal| N8N
+    UI -->|manual submission| N8N
+    N8N -->|triage brain| LG
+    N8N -.->|input + output checks| GRD
+    LG --> RAG
+    LG --> TOOLS
+    CONF -->|ingested + chunked| PGV
+    PGV --> RAG
+    GH -->|deploy events → context| N8N
+    GH -.->|CI runs eval harness| CORE
+    N8N -->|TriageReport| SLK
+    N8N --> UI
+    OC <-->|approve · ack · status| TOOLS
+    N8N --> FIX
+    N8N -.-> BR
+    N8N -.-> GEM
+    LG -.-> BR
+    RAG -.-> LCPP
+    UI -.-> OLL
+    OC -.-> OLL
+
+    classDef demo fill:#14262e,stroke:#3ec1a7,color:#d6f2ec
+    classDef core fill:#1a2438,stroke:#6c8cff,color:#dde5fb
+    classDef n8n fill:#30251a,stroke:#e8a13c,color:#f7e8d0
+    classDef seam fill:#24242d,stroke:#8a8fa3,color:#e1e3ea
+    classDef ai fill:#2b1f33,stroke:#b07ce8,color:#ecdffa
+    classDef know fill:#2e2a1a,stroke:#d3c04a,color:#f4eecb
+    classDef hum fill:#1d2e22,stroke:#63c76f,color:#dcf3e0

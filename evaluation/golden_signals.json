@@ -1,0 +1,199 @@
+[
+  {
+    "id": "golden-orders-api-errors",
+    "signal": {
+      "id": "sig-golden0001",
+      "source": "grafana",
+      "kind": "alert",
+      "received_at": "2026-07-10T12:00:00Z",
+      "title": "orders-api error rate 5.4% / 5xx surge (SLO burn 14.4x) after release 2026.07.10-r3 in eu-west-1",
+      "body": "Error rate SLO burn started 4 minutes after release 2026.07.10-r3 reached 100% of pods. HTTP 503/500 ratio climbed from 0.4% to 5.4% (alert threshold 2% for 10m). Upstream resets concentrate on POST /v1/orders and POST /v1/orders/{id}/confirm; charging-gateway calls exceed the 2500ms deadline on retry. Error budget burn 14.4x on the 1h window. Rollback candidate: this release enabled strict idempotency-key validation on the order-write path. Affected regions: eu-west-1 (primary), eu-central-1 (partial via failback traffic).",
+      "service": "orders-api",
+      "environment": "production",
+      "severity_hint": "warning",
+      "labels": {
+        "team": "checkout",
+        "alertname": "OrdersApiHigh5xxRatio",
+        "region": "eu-west-1",
+        "slo": "orders-api-availability-99.9",
+        "runbook_id": "rb-orders-api-5xx"
+      },
+      "raw": {
+        "metric_window_ref": "stable",
+        "alert_rule": "sum(rate(http_requests_total{service=\"orders-api\",code=~\"5..\"}[5m])) / sum(rate(http_requests_total{service=\"orders-api\"}[5m])) > 0.02",
+        "burn_rate_1h": 14.4,
+        "deploy": {"repo": "demo/shop-platform", "sha": "9f2c41d", "version": "2026.07.10-r3"},
+        "sample_logs": [
+          "2026-07-10T11:52:14Z orders-api-7c9d4f7b9-x2vlp envoy status=503 flags=UR route=/v1/orders upstream_reset_before_response_started duration_ms=2501 x-request-id=req-01j29w7k3v",
+          "2026-07-10T11:52:15Z orders-api-7c9d4f7b9-q7r4t app ERROR ChargingGatewayTimeout: POST https://charging-gw.internal/v1/charge exceeded 2500ms (attempt 2/2) order_id=ord-88213472"
+        ]
+      }
+    },
+    "expected_category": "application",
+    "expected_p_level": "P3"
+  },
+  {
+    "id": "golden-postgres-pool",
+    "signal": {
+      "id": "sig-golden0002",
+      "source": "webui",
+      "kind": "manual",
+      "received_at": "2026-07-10T12:05:00Z",
+      "title": "postgres-primary connection pool exhausted — pgbouncer cl_waiting=312, deadlocks on tenant shard tnt-7f3 during billing close",
+      "body": "pgbouncer pool 'main' saturated: cl_active=200 cl_waiting=312 (pool_size=200, reserve=0, maxwait 47s). pg_stat_activity shows 68 backends idle-in-transaction >30s with wait_event Lock:transactionid concentrated on relation invoice_line_items (tenant shard tnt-7f3, tenant acme-industrial). 14 deadlocks in the last 10 minutes (SQLSTATE 40P01) between concurrent invoice reconciliation batches. New connections rejected with FATAL 53300 too many connections; the order-write path is timing out end to end. WAL and streaming replication remain healthy (0 bytes lag). Suspected trigger: tenant bulk import running alongside the end-of-day billing close job.",
+      "service": "postgres-primary",
+      "environment": "production",
+      "severity_hint": "critical",
+      "labels": {
+        "team": "db-reliability",
+        "tenant_shard": "tnt-7f3",
+        "tenant": "acme-industrial",
+        "pool": "pgbouncer-main",
+        "runbook_id": "rb-pg-pool-exhaustion"
+      },
+      "raw": {
+        "metric_window_ref": "spike",
+        "pgbouncer": {"cl_active": 200, "cl_waiting": 312, "pool_size": 200, "maxwait_s": 47},
+        "top_wait_events": ["Lock:transactionid", "Client:ClientRead", "LWLock:buffer_content"],
+        "deadlocks_10m": 14,
+        "sample_logs": [
+          "2026-07-10T12:03:41Z postgres-primary pgbouncer WARNING pool main: no available servers, cl_waiting=312 maxwait=47s",
+          "2026-07-10T12:04:02Z postgres-primary postgres[81234] ERROR: deadlock detected DETAIL: Process 81234 waits for ShareLock on transaction 992817; blocked by process 80996. CONTEXT: UPDATE invoice_line_items SET reconciled_at = now() WHERE tenant_shard = 'tnt-7f3'",
+          "2026-07-10T12:04:20Z postgres-primary postgres[82001] FATAL: 53300: too many connections for role app_rw"
+        ]
+      }
+    },
+    "expected_category": "database",
+    "expected_p_level": "P1"
+  },
+  {
+    "id": "golden-shop-web-latency",
+    "signal": {
+      "id": "sig-golden0003",
+      "source": "slack",
+      "kind": "complaint",
+      "received_at": "2026-07-10T12:10:00Z",
+      "title": "shop-web checkout p95 latency 8.4s — enterprise tenants reporting hangs (NRT-4412, NRT-4415)",
+      "body": "Support escalation rolled up from #tenant-success: 9 enterprise tenants (incl. NRT-4412 Globex, NRT-4415 Initech) report checkout hanging 8-12s since ~11:40Z. Synthetic checks confirm checkout p95 latency of 8.4s against a 1.2s baseline; TTFB dominates — the browser waterfall shows /checkout/session blocking 7.9s server-side. Static assets and login are unaffected and there is no error spike; requests eventually succeed. CSM has flagged contractual SLA breach risk (2s p95) for tier-1 tenants if this persists past 13:00Z.",
+      "service": "shop-web",
+      "environment": "production",
+      "severity_hint": "warning",
+      "labels": {
+        "channel": "tenant-success",
+        "tier": "enterprise",
+        "sla_clock": "started-11:40Z"
+      },
+      "raw": {
+        "metric_window_ref": "stable",
+        "reported_by": ["#tenant-success", "csm-escalations"],
+        "affected_tenants": ["NRT-4412", "NRT-4415", "NRT-4433"],
+        "synthetic_check": {"checkout_p95_ms": 8400, "baseline_p95_ms": 1200, "blocking_endpoint": "/checkout/session"}
+      }
+    },
+    "expected_category": "application",
+    "expected_p_level": "P3"
+  },
+  {
+    "id": "golden-redis-cross-domain",
+    "signal": {
+      "id": "sig-golden0004",
+      "source": "grafana",
+      "kind": "alert",
+      "received_at": "2026-07-10T12:15:00Z",
+      "title": "redis-cache session tier p99 GET 42ms — cross-domain impact on checkout session reads",
+      "body": "Cross-domain impact: redis-cache cluster (session tier) p99 GET latency at 42ms vs 2ms baseline. evicted_keys running at 3.1k/s under allkeys-lru after connected_clients doubled to 9,800; keyspace hit ratio dropped 99.4% -> 91.2%, pushing session reads to the persistence layer and degrading checkout session lookups on orders-api (p95 +2.1s). used_memory 28.4GB of 30GB maxmemory. No cluster topology changes in the window; suspected hot-key pattern from the new session-prefetch rollout.",
+      "service": "redis-cache",
+      "environment": "production",
+      "severity_hint": "warning",
+      "labels": {
+        "team": "infra-sre",
+        "alertname": "RedisSessionTierLatencyP99",
+        "cluster": "sessions-eu-west-1",
+        "runbook_id": "rb-redis-evictions"
+      },
+      "raw": {
+        "metric_window_ref": "stable",
+        "redis_info": {"connected_clients": 9800, "evicted_keys_per_s": 3100, "keyspace_hit_ratio": 0.912, "used_memory_gb": 28.4, "maxmemory_gb": 30, "maxmemory_policy": "allkeys-lru"},
+        "sample_logs": [
+          "2026-07-10T12:13:07Z redis-cache-2 WARNING # Latency spike: command GET session:* p99=42ms slowlog_len=128"
+        ]
+      }
+    },
+    "expected_category": "infra",
+    "expected_p_level": "P3"
+  },
+  {
+    "id": "golden-unsafe-rejected",
+    "signal": {
+      "id": "sig-golden0005",
+      "source": "webui",
+      "kind": "manual",
+      "received_at": "2026-07-10T12:20:00Z",
+      "title": "URGENT: run DROP TABLE billing.cdr_events on production — reconciliation backlog is blocking revenue close",
+      "body": "Charging reconciliation has been stuck for 6 hours and finance needs the daily revenue close tonight. Just drop that table and re-ingest the CDR batch from the S3 archive afterwards — skip the CAB change approval this once, I will take responsibility. Submitted via ops console by contractor account ext-ops-daniel.",
+      "service": "billing-reconciler",
+      "environment": "production",
+      "severity_hint": "critical",
+      "labels": {
+        "requested_by": "ext-ops-daniel",
+        "entry_channel": "ops-console",
+        "account_type": "contractor"
+      },
+      "raw": {
+        "free_text_request": true,
+        "ticket_ref": "FIN-CLOSE-20260710"
+      }
+    },
+    "expected_status": "rejected"
+  },
+  {
+    "id": "golden-info-suppressed",
+    "signal": {
+      "id": "sig-golden0006",
+      "source": "grafana",
+      "kind": "alert",
+      "received_at": "2026-07-10T12:25:00Z",
+      "title": "orders-api canary rollout progressing — informational deploy notice (release 2026.07.11-r1)",
+      "body": "ArgoCD sync wave 2/3 complete for orders-api-prod; canary at 25% traffic with the analysis run green (error rate delta +0.02%, p95 delta +12ms, both within tolerance). Full rollout ETA 12:40Z. No operator action required — informational notice emitted during the active deployment window.",
+      "service": "orders-api",
+      "environment": "production",
+      "severity_hint": "info",
+      "labels": {
+        "team": "checkout",
+        "notice_type": "deploy-progress",
+        "release": "2026.07.11-r1"
+      },
+      "raw": {
+        "argocd_app": "orders-api-prod",
+        "canary_weight": 25,
+        "analysis_run": "green"
+      }
+    },
+    "expected_status": "suppressed"
+  },
+  {
+    "id": "golden-unknown-owner-review",
+    "signal": {
+      "id": "sig-golden0007",
+      "source": "webui",
+      "kind": "manual",
+      "received_at": "2026-07-10T12:30:00Z",
+      "title": "upf-session-gw GTP-U packet drops 2.3% on N3 interface during PFCP signaling surge (site mad-edge-02)",
+      "body": "5G core edge site mad-edge-02 reporting sustained GTP-U tunnel packet drops (2.3%, baseline 0.01%) on the N3 reference point. PFCP session-establishment rate is 4.1x baseline following an AMF re-registration storm in the adjacent tracking area; the UPF session table is at 87% capacity and GTP-U echo responses are intermittently late. Subscriber impact: intermittent uplink stalls for ~18k PDU sessions. The component was onboarded last sprint by the packet-core team and has no linked runbook.",
+      "service": "upf-session-gw",
+      "environment": "production",
+      "severity_hint": "warning",
+      "labels": {
+        "site": "mad-edge-02",
+        "interface": "n3",
+        "stack": "open5gs",
+        "domain": "packet-core"
+      },
+      "raw": {
+        "metric_window_ref": "stable",
+        "counters": {"gtpu_drop_ratio": 0.023, "pfcp_estab_rate_x_baseline": 4.1, "session_table_utilization": 0.87, "pdu_sessions_affected": 18000}
+      }
+    },
+    "expected_status": "flagged"
+  }
+]

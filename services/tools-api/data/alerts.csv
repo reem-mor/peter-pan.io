@@ -1,0 +1,9 @@
+alert_id,timestamp,environment,service,severity,title,status,source,affected_users,error_rate_pct,business_impact,recommended_action
+ALERT-20260615-001,2026-06-15T10:03:00Z,production,orders-api,P1,CRITICAL: orders-api error rate 100% following deploy,active,Grafana,18500,100.0,critical revenue and fulfillment exposure,Escalate to App Platform on-call and review recent deploy
+ALERT-20260615-002,2026-06-15T10:06:00Z,production,payments-api,P2,payments-api operational degradation detected,active,Grafana,4200,4.10,operational degradation,Investigate and monitor
+ALERT-20260616-001,2026-06-16T02:09:00Z,staging,shop-web,P3,shop-web operational degradation detected,resolved,CloudWatch,300,2.70,operational degradation,"Group, monitor, and review trend"
+ALERT-20260617-001,2026-06-17T08:12:00Z,production,postgres-primary,P2,postgres-primary connection pool pressure,active,Prometheus,0,3.10,operational degradation,Escalate to Database Reliability on-call
+ALERT-20260618-001,2026-06-18T15:45:00Z,production,redis-cache,P4,redis-cache operational degradation detected,acknowledged,CloudWatch,0,0.40,operational degradation,"Group, monitor, and review trend"
+ALERT-20260619-001,2026-06-19T11:03:00Z,production,k8s-ingress,P2,k8s-ingress operational degradation detected,active,Prometheus,6000,4.60,operational degradation,Escalate to Infra SRE on-call
+ALERT-20260620-001,2026-06-20T19:22:00Z,staging,orders-api,P4,orders-api operational degradation detected,active,CloudWatch,0,0.80,operational degradation,"Group, monitor, and review trend"
+ALERT-20260621-001,2026-06-21T06:51:00Z,production,payments-api,P3,payments-api operational degradation detected,resolved,Grafana,900,1.90,operational degradation,"Group, monitor, and review trend"

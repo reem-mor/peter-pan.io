@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/*secret*)",
+      "Read(**/*credential*)",
+      "Read(**/id_rsa)",
+      "Read(**/*.pem)",
+      "Read(**/.cursor/mcp.json)",
+      "Bash(git push:*)",
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(rm -rf:*)",
+      "Bash(docker compose down -v:*)",
+      "Bash(docker system prune:*)",
+      "Bash(curl 0.0.0.0:*)",
+      "Bash(dropdb:*)",
+      "Bash(aws ec2 terminate-instances:*)",
+      "Bash(aws s3 rb:*)",
+      "Bash(aws s3 rm:*)"
+    ]
+  }
+}

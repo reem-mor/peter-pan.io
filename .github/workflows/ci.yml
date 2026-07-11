@@ -1,3 +1,4 @@
+# PETER PAN CI — lint, tests, schema drift, evaluation dry-run, compose E2E gate
 name: CI
 
 on:
@@ -24,40 +25,216 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements-dev.txt
-      - name: Install ruff
-        run: pip install -r requirements-dev.txt
-      - name: ruff check
-        run: ruff check .
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
 
-  test:
-    name: Tests (${{ matrix.area }})
+  schema-drift:
+    name: Contract schema export
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - area: incident-assistant-rag
-            dir: projects/incident-assistant-rag/backend
-          - area: incident-rag-bedrock
-            dir: projects/incident-rag-bedrock
-          - area: langchain-langgraph-lecture
-            dir: lectures/10_langchain_langgraph
-          - area: hw07-tools-server
-            dir: homework/hw07-openwebui
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: ${{ matrix.dir }}/requirements.txt
-      - name: Install dependencies
-        working-directory: ${{ matrix.dir }}
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: python docs/contracts/export_json_schema.py
+      - run: git diff --exit-code docs/contracts/schema/
+
+  test:
+    name: pytest — ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - ingestion
+          - predictor
+          - rag
+          - guardrails
+          - image-analyzer
+          - tools-api
+          - langgraph-agent
+          - fixture-llm
+          - integration-stubs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements-dev.txt
+            services/${{ matrix.service }}/requirements.txt
+      - run: |
+          pip install -r requirements-dev.txt
+          pip install -r services/${{ matrix.service }}/requirements.txt
+      - run: pytest -q
+        working-directory: services/${{ matrix.service }}
+
+  ui-test:
+    name: Streamlit AppTest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements-dev.txt
+            ui/requirements.txt
+      - run: |
+          pip install -r requirements-dev.txt
+          pip install -r ui/requirements.txt
+      - run: pytest -q
+        working-directory: ui
+
+  n8n-test:
+    name: n8n flow static tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q
+        working-directory: n8n
+
+  # ── Evaluation dry-run (fast preflight — no compose required) ──────────────
+  evaluation:
+    name: Evaluation harness dry-run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Dry-run — validate golden fixtures
+        run: python evaluation/run_e2e.py --dry-run
+      - name: Evaluation unit tests (MockTransport, no HTTP)
+        run: python -m pytest -q
+        working-directory: evaluation
+
+  cfn-validate:
+    name: CloudFormation lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install cfn-lint==1.53.0
+      - run: cfn-lint infra/aws/template.yaml
+
+  # ── Compose-backed E2E gate ─────────────────────────────────────────────────
+  # Runs AFTER lint + service tests pass (lint gate is a hard gate; unit test
+  # matrix uses fail-fast: false so we get full test output before blocking E2E).
+  # This job is expensive (builds all images, starts n8n, runs bootstrap);
+  # it is only triggered on push to main and pull_request (same as above).
+  e2e-compose:
+    name: Compose E2E — n8n entrypoint
+    runs-on: ubuntu-latest
+    needs: [lint, schema-drift, test, ui-test, n8n-test, evaluation, cfn-validate]
+    # Opt out of automatic cancellation: we always want the cleanup step to run.
+    timeout-minutes: 25
+
+    env:
+      COMPOSE_FILE: docker-compose.ci.yml
+      COMPOSE_PROJECT_NAME: peter-pan-ci
+      PETER_N8N_EMAIL: admin@ci.peter
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate isolated CI credentials
+        shell: bash
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run pytest
-        working-directory: ${{ matrix.dir }}
-        env:
-          PYTEST_ADDOPTS: "-q"
-        run: python -m pytest
+          echo "PETER_CI_TOKEN=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+          echo "PETER_CI_SECRET=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+          echo "PETER_N8N_PASSWORD=Aa1!$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+          echo "PETER_N8N_ENC_KEY=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "PETER_N8N_JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install harness dependencies
+        run: pip install -r requirements-dev.txt
+
+      # ── Validate CI compose file (structural check, no images pulled) ────
+      - name: Validate docker-compose.ci.yml
+        run: docker compose -f docker-compose.ci.yml -p peter-pan-ci config --quiet
+
+      # ── Build images in parallel ──────────────────────────────────────────
+      - name: Build CI service images
+        run: |
+          docker compose -f docker-compose.ci.yml -p peter-pan-ci build \
+            --progress=plain
+
+      # ── Start the fixture stack and wait for all healthchecks ─────────────
+      - name: Start CI stack (all services healthy)
+        run: |
+          docker compose -f docker-compose.ci.yml -p peter-pan-ci up -d --wait \
+            --wait-timeout 180
+        # --wait requires all services without a profile to be healthy
+
+      # ── Bootstrap n8n: import workflow, wire credentials, activate webhook ─
+      - name: Bootstrap n8n workflow
+        run: |
+          docker compose -f docker-compose.ci.yml -p peter-pan-ci \
+            --profile bootstrap run --rm n8n-bootstrap
+        timeout-minutes: 5
+
+      # ── Run the E2E harness inside the no-egress Compose network ──────────
+      - name: Run E2E harness (n8n entrypoint)
+        run: |
+          docker compose -f docker-compose.ci.yml -p peter-pan-ci \
+            --profile bootstrap run --rm --no-deps \
+            --entrypoint python n8n-bootstrap \
+            evaluation/run_e2e.py \
+              --entrypoint n8n \
+              --ingestion-url http://ingestion:8000 \
+              --stubs-url http://integration-stubs:8000 \
+              --tools-url http://tools-api:8000 \
+              --poll-timeout 90
+
+      - name: Upload E2E evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage-a-e2e-evidence
+          path: evaluation/results/e2e_latest.json
+          if-no-files-found: error
+
+      # ── On failure: dump useful logs for debugging ────────────────────────
+      - name: Dump service logs on failure
+        if: failure()
+        run: |
+          echo "=== ingestion ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=80 ingestion || true
+          echo "=== n8n ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=100 n8n || true
+          echo "=== langgraph-agent ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=60 langgraph-agent || true
+          echo "=== guardrails ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=40 guardrails || true
+          echo "=== image-analyzer ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=40 image-analyzer || true
+          echo "=== integration-stubs ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=40 integration-stubs || true
+          echo "=== fixture-llm ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci logs --tail=40 fixture-llm || true
+          echo "=== deliveries at failure ===" && docker compose -f docker-compose.ci.yml -p peter-pan-ci exec -T integration-stubs python -c "import json,os,urllib.request; request=urllib.request.Request('http://localhost:8000/deliveries', headers={'Authorization':'Bearer '+os.environ['PETER_SERVICES_TOKEN']}); print(json.dumps(json.load(urllib.request.urlopen(request)), indent=2))" || true
+
+      # ── Always stop containers — do NOT delete developer data ─────────────
+      # `-v` only removes volumes declared in docker-compose.ci.yml (n8n-ci-data).
+      # It does NOT touch the developer's persistent tools-audit or n8n-data
+      # volumes from docker-compose.yml because those belong to a different
+      # compose project (peter-pan).
+      - name: Stop CI containers (always)
+        if: always()
+        run: |
+          docker compose -f docker-compose.ci.yml -p peter-pan-ci down -v --remove-orphans || true

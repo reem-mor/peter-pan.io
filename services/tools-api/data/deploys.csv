@@ -1,0 +1,59 @@
+deploy_id,timestamp,environment,service,version,deployer,status,change_summary,risk_level,rollback_available,rollback_version,related_ticket
+DEP-20260603-053,2026-06-03T15:10:00Z,staging,postgres-primary,v1.0.7,github-actions,success,Configuration refresh and dependency update,medium,true,v1.0.6,REL-2026-0603-9463
+DEP-20260605-058,2026-06-05T11:30:00Z,staging,postgres-primary,v1.0.8,jenkins-prod,success,Database connection pool tuning,high,false,v1.0.7,REL-2026-0605-3839
+DEP-20260605-024,2026-06-05T14:55:00Z,production,redis-cache,v1.0.6,github-actions,failed,Feature flag rollout,medium,true,v1.0.5,REL-2026-0605-5519
+DEP-20260608-015,2026-06-08T01:30:00Z,staging,k8s-ingress,v1.0.3,github-actions,success,Feature flag rollout,high,true,v1.0.2,REL-2026-0608-6785
+DEP-20260609-030,2026-06-09T10:40:00Z,staging,orders-api,v1.0.3,github-actions,success,Feature flag rollout,high,true,v1.0.2,REL-2026-0609-8840
+DEP-20260610-001,2026-06-10T14:30:00Z,production,orders-api,v4.2.0,jenkins-prod,success,Order retry policy baseline release,medium,true,v4.1.9,REL-2026-0610-BASE
+DEP-20260611-006,2026-06-11T23:05:00Z,production,k8s-ingress,v1.0.2,github-actions,success,Database connection pool tuning,medium,true,v1.0.1,REL-2026-0611-4634
+DEP-20260613-052,2026-06-13T16:35:00Z,production,k8s-ingress,v1.0.8,github-actions,failed,Security patch and library upgrade,medium,true,v1.0.7,REL-2026-0613-1447
+DEP-20260614-042,2026-06-14T09:20:00Z,staging,redis-cache,v1.1.0,jenkins-prod,success,Security patch and library upgrade,medium,true,v1.1.0,REL-2026-0614-8193
+DEP-20260615-002,2026-06-15T09:55:00Z,production,orders-api,v4.3.0,jenkins-prod,rolled_back,Order retry policy change - suspected P1 error-rate trigger,high,true,v4.2.0,REL-2026-0615-STORM
+DEP-20260615-011,2026-06-15T15:10:00Z,production,redis-cache,v1.0.2,jenkins-prod,success,Security patch and library upgrade,medium,false,v1.0.1,REL-2026-0615-4274
+DEP-20260615-045,2026-06-15T17:00:00Z,production,orders-api,v1.0.6,platform-release-bot,success,Performance optimization for high-volume traffic,medium,true,v1.0.5,REL-2026-0615-5051
+DEP-20260617-056,2026-06-17T03:30:00Z,staging,orders-api,v1.0.8,platform-release-bot,success,Feature flag rollout,low,true,v1.0.7,REL-2026-0617-5098
+DEP-20260618-055,2026-06-18T10:55:00Z,production,payments-api,v1.0.9,github-actions,failed,Retry policy and timeout adjustment,high,true,v1.0.8,REL-2026-0618-9875
+DEP-20260618-046,2026-06-18T19:15:00Z,production,redis-cache,v1.1.1,jenkins-prod,success,Performance optimization for high-volume traffic,medium,true,v1.1.0,REL-2026-0618-4397
+DEP-20260618-050,2026-06-18T23:20:00Z,staging,postgres-primary,v1.0.6,platform-release-bot,rolled_back,Feature flag rollout,medium,false,v1.0.5,REL-2026-0618-9429
+DEP-20260621-010,2026-06-21T10:40:00Z,production,shop-web,v1.0.1,jenkins-prod,success,Feature flag rollout,medium,false,v1.0.0,REL-2026-0621-4379
+DEP-20260624-014,2026-06-24T23:55:00Z,staging,redis-cache,v1.0.3,github-actions,rolled_back,Feature flag rollout,high,true,v1.0.2,REL-2026-0624-3533
+DEP-20260625-022,2026-06-25T13:20:00Z,staging,orders-api,v1.0.2,github-actions,success,Database connection pool tuning,medium,true,v1.0.1,REL-2026-0625-5836
+DEP-20260627-032,2026-06-27T08:55:00Z,production,payments-api,v1.0.6,github-actions,success,Feature flag rollout,medium,true,v1.0.5,REL-2026-0627-4579
+DEP-20260628-019,2026-06-28T06:15:00Z,production,k8s-ingress,v1.0.4,github-actions,failed,Retry policy and timeout adjustment,high,false,v1.0.3,REL-2026-0628-3932
+DEP-20260701-012,2026-07-01T18:00:00Z,staging,postgres-primary,v1.0.2,platform-release-bot,success,Retry policy and timeout adjustment,low,true,v1.0.1,REL-2026-0701-7965
+DEP-20260701-021,2026-07-01T19:05:00Z,production,postgres-primary,v1.0.3,github-actions,success,Feature flag rollout,medium,true,v1.0.2,REL-2026-0701-4120
+DEP-20260703-005,2026-07-03T11:45:00Z,staging,k8s-ingress,v1.0.1,platform-release-bot,success,Security patch and library upgrade,low,true,v1.0.0,REL-2026-0703-7063
+DEP-20260704-007,2026-07-04T09:45:00Z,production,orders-api,v1.0.1,github-actions,success,Feature flag rollout,high,true,v1.0.0,REL-2026-0704-2607
+DEP-20260704-017,2026-07-04T16:00:00Z,staging,redis-cache,v1.0.4,github-actions,success,Feature flag rollout,medium,true,v1.0.3,REL-2026-0704-4615
+DEP-20260704-026,2026-07-04T21:40:00Z,staging,payments-api,v1.0.4,jenkins-prod,success,Database connection pool tuning,low,false,v1.0.3,REL-2026-0704-6213
+DEP-20260705-034,2026-07-05T09:20:00Z,staging,payments-api,v1.0.7,github-actions,success,Security patch and library upgrade,medium,true,v1.0.6,REL-2026-0705-8667
+DEP-20260705-020,2026-07-05T11:10:00Z,production,k8s-ingress,v1.0.5,jenkins-prod,failed,Retry policy and timeout adjustment,low,true,v1.0.4,REL-2026-0705-3467
+DEP-20260706-033,2026-07-06T01:05:00Z,production,postgres-primary,v1.0.4,jenkins-prod,success,Database connection pool tuning,medium,true,v1.0.3,REL-2026-0706-3920
+DEP-20260708-049,2026-07-08T08:40:00Z,staging,redis-cache,v1.1.4,jenkins-prod,success,Feature flag rollout,low,true,v1.1.3,REL-2026-0708-6052
+DEP-20260708-047,2026-07-08T12:05:00Z,production,redis-cache,v1.1.2,github-actions,failed,Database connection pool tuning,low,false,v1.1.1,REL-2026-0708-5751
+DEP-20260708-036,2026-07-08T23:20:00Z,staging,redis-cache,v1.0.8,github-actions,success,Database connection pool tuning,high,true,v1.0.7,REL-2026-0708-3133
+DEP-20260710-028,2026-07-10T10:50:00Z,production,redis-cache,v1.0.7,jenkins-prod,success,Performance optimization for high-volume traffic,medium,true,v1.0.6,REL-2026-0710-7237
+DEP-20260711-018,2026-07-11T00:20:00Z,staging,shop-web,v1.0.3,github-actions,failed,Performance optimization for high-volume traffic,low,true,v1.0.2,REL-2026-0711-7860
+DEP-20260711-016,2026-07-11T04:00:00Z,production,payments-api,v1.0.3,github-actions,success,Security patch and library upgrade,medium,true,v1.0.2,REL-2026-0711-4207
+DEP-20260711-039,2026-07-11T18:45:00Z,production,shop-web,v1.0.6,platform-release-bot,success,Database connection pool tuning,medium,false,v1.0.5,REL-2026-0711-2989
+DEP-20260713-003,2026-07-13T06:20:00Z,staging,postgres-primary,v1.0.1,platform-release-bot,success,Database connection pool tuning,low,true,v1.0.0,REL-2026-0713-2131
+DEP-20260714-041,2026-07-14T20:55:00Z,staging,redis-cache,v1.0.9,platform-release-bot,rolled_back,Security patch and library upgrade,high,false,v1.0.8,REL-2026-0714-7785
+DEP-20260715-048,2026-07-15T00:25:00Z,production,redis-cache,v1.1.3,platform-release-bot,rolled_back,Performance optimization for high-volume traffic,high,true,v1.1.2,REL-2026-0715-7023
+DEP-20260715-009,2026-07-15T05:50:00Z,production,redis-cache,v1.0.1,github-actions,success,Feature flag rollout,medium,true,v1.0.0,REL-2026-0715-4017
+DEP-20260716-044,2026-07-16T15:25:00Z,production,payments-api,v1.0.8,jenkins-prod,rolled_back,Retry policy and timeout adjustment,low,true,v1.0.7,REL-2026-0716-4330
+DEP-20260716-008,2026-07-16T18:25:00Z,production,payments-api,v1.0.2,jenkins-prod,success,Performance optimization for high-volume traffic,medium,false,v1.0.1,REL-2026-0716-2728
+DEP-20260717-035,2026-07-17T06:40:00Z,production,orders-api,v1.0.4,github-actions,success,Feature flag rollout,high,true,v1.0.3,REL-2026-0717-3253
+DEP-20260718-054,2026-07-18T12:00:00Z,staging,k8s-ingress,v1.0.9,platform-release-bot,success,Retry policy and timeout adjustment,low,true,v1.0.8,REL-2026-0718-4594
+DEP-20260719-040,2026-07-19T14:10:00Z,production,k8s-ingress,v1.0.7,github-actions,success,Feature flag rollout,low,true,v1.0.6,REL-2026-0719-6779
+DEP-20260719-051,2026-07-19T17:05:00Z,production,orders-api,v1.0.7,jenkins-prod,success,Database connection pool tuning,low,true,v1.0.6,REL-2026-0719-4364
+DEP-20260720-029,2026-07-20T07:55:00Z,staging,shop-web,v1.0.5,platform-release-bot,rolled_back,Feature flag rollout,high,true,v1.0.4,REL-2026-0720-5999
+DEP-20260720-027,2026-07-20T13:00:00Z,production,shop-web,v1.0.4,github-actions,success,Feature flag rollout,high,true,v1.0.3,REL-2026-0720-2880
+DEP-20260722-023,2026-07-22T21:00:00Z,production,redis-cache,v1.0.5,github-actions,success,Security patch and library upgrade,low,true,v1.0.4,REL-2026-0722-9815
+DEP-20260724-013,2026-07-24T01:45:00Z,staging,shop-web,v1.0.2,github-actions,success,Retry policy and timeout adjustment,medium,false,v1.0.1,REL-2026-0724-4790
+DEP-20260724-057,2026-07-24T23:05:00Z,production,orders-api,v1.0.9,github-actions,failed,Configuration refresh and dependency update,low,false,v1.0.8,REL-2026-0724-7410
+DEP-20260725-031,2026-07-25T20:35:00Z,production,payments-api,v1.0.5,platform-release-bot,failed,Performance optimization for high-volume traffic,high,true,v1.0.4,REL-2026-0725-7574
+DEP-20260725-038,2026-07-25T22:35:00Z,staging,postgres-primary,v1.0.5,platform-release-bot,success,Configuration refresh and dependency update,low,true,v1.0.4,REL-2026-0725-4581
+DEP-20260727-037,2026-07-27T05:20:00Z,production,orders-api,v1.0.5,platform-release-bot,success,Retry policy and timeout adjustment,medium,true,v1.0.4,REL-2026-0727-2819
+DEP-20260727-004,2026-07-27T20:45:00Z,production,payments-api,v1.0.1,platform-release-bot,success,Feature flag rollout,low,true,v1.0.0,REL-2026-0727-2821
+DEP-20260727-043,2026-07-27T23:10:00Z,production,shop-web,v1.0.7,github-actions,rolled_back,Performance optimization for high-volume traffic,medium,true,v1.0.6,REL-2026-0727-1297
+DEP-20260728-025,2026-07-28T22:40:00Z,production,k8s-ingress,v1.0.6,platform-release-bot,rolled_back,Performance optimization for high-volume traffic,low,true,v1.0.5,REL-2026-0728-2731

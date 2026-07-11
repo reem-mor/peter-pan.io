@@ -1,36 +1,224 @@
-# Local development convenience only.
-# On EC2 we run the container directly via `docker run` from user-data.
-#
-# Credential guide: docs/aws_credentials.md
-#   - Bedrock bearer: AWS_BEARER_TOKEN_BEDROCK (host env or .env)
-#   - IAM profile: host ~/.aws/credentials (mounted read-only below)
-#   - Bedrock IDs + Flask secret: project .env (PITER_* via env_file)
-#
-# Runs OUT OF THE BOX in local (offline) mode — no AWS or .env required:
-#   docker compose up --build   ->  http://localhost:8080/console
-# Live Bedrock: create .env from .env.example and run with
-# PITER_DOCKER_USE_BEDROCK=true when you intentionally want Docker to use AWS.
+# PETER PAN Core + orchestration — local full stack (BUILD_PLAN §4).
+# External integrations use integration-stubs; LLM seam uses fixture-llm.
+name: peter-pan
+
+x-healthcheck: &healthz
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 5s
+
+x-common-env: &common-env
+  PETER_SERVICES_TOKEN: ${PETER_SERVICES_TOKEN:?Set PETER_SERVICES_TOKEN in .env}
+  PETER_WEBHOOK_SECRET: ${PETER_WEBHOOK_SECRET:?Set PETER_WEBHOOK_SECRET in .env}
+  PETER_RUNTIME_MODE: ${PETER_RUNTIME_MODE:-local}
+
 services:
-  web:
-    build: .
-    image: piter-aiops:dev
-    container_name: piter-aiops
-    ports:
-      - "8080:8080"
+  ingestion:
+    build: services/ingestion
+    ports: ["127.0.0.1:8001:8000"]
     environment:
-      # SPA is the default console; ignore legacy FORCE_LEGACY_UI in developer .env.
-      - FORCE_LEGACY_UI=false
-      # Keep Docker local-first even if a developer .env contains live AWS IDs.
-      # Opt in with PITER_DOCKER_USE_BEDROCK=true for live Bedrock Docker tests.
-      - PITER_USE_BEDROCK=${PITER_DOCKER_USE_BEDROCK:-false}
-      - USE_BEDROCK=${PITER_DOCKER_USE_BEDROCK:-false}
-      - AWS_PROFILE=${AWS_PROFILE:-}
-      - AWS_BEARER_TOKEN_BEDROCK=${AWS_BEARER_TOKEN_BEDROCK:-}
-    # .env is OPTIONAL — only needed for Bedrock mode (requires Compose v2.24+).
-    env_file:
-      - path: .env
-        required: false
-    # Locally we forward host AWS creds so boto3 can call Bedrock (Bedrock mode only).
+      <<: *common-env
+      N8N_WEBHOOK_URL: http://n8n:5678/webhook/peter-signal
+    depends_on:
+      n8n:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  predictor:
+    build: services/predictor
+    ports: ["127.0.0.1:8002:8000"]
+    environment:
+      <<: *common-env
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  rag:
+    build: services/rag
+    ports: ["127.0.0.1:8003:8000"]
+    environment:
+      <<: *common-env
+      PETER_VECTOR_BACKEND: tfidf
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  guardrails:
+    build: services/guardrails
+    ports: ["127.0.0.1:8004:8000"]
+    environment:
+      <<: *common-env
+      PETER_TOOLS_URL: http://tools-api:8000
+    depends_on:
+      tools-api:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  image-analyzer:
+    build: services/image-analyzer
+    ports: ["127.0.0.1:8007:8000"]
+    environment:
+      <<: *common-env
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  tools-api:
+    build: services/tools-api
+    ports: ["127.0.0.1:8005:8000"]
+    environment:
+      <<: *common-env
+      TOOLS_AUDIT_DB: /data/audit.sqlite
+      PETER_ENABLE_LIVE_DISPATCH: "false"
     volumes:
-      - ~/.aws:/home/app/.aws:ro
-    restart: unless-stopped
+      - tools-audit:/data
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  langgraph-agent:
+    build: services/langgraph-agent
+    ports: ["127.0.0.1:8006:8000"]
+    environment:
+      <<: *common-env
+      PETER_RAG_URL: http://rag:8000
+      PETER_TOOLS_URL: http://tools-api:8000
+      PETER_IMAGE_ANALYZER_URL: http://image-analyzer:8000
+    depends_on:
+      rag:
+        condition: service_healthy
+      image-analyzer:
+        condition: service_healthy
+      tools-api:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  fixture-llm:
+    build: services/fixture-llm
+    ports: ["127.0.0.1:8010:8000"]
+    environment:
+      <<: *common-env
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  integration-stubs:
+    build: services/integration-stubs
+    ports: ["127.0.0.1:8020:8000"]
+    environment:
+      <<: *common-env
+      PETER_GITHUB_REPO: demo/shop-platform
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  n8n:
+    image: n8nio/n8n:2.29.10
+    ports: ["127.0.0.1:5678:5678"]
+    healthcheck:
+      <<: *healthz
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5678/healthz | grep -q ok"]
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      N8N_SECURE_COOKIE: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_TEMPLATES_ENABLED: "false"
+      WEBHOOK_URL: http://localhost:5678/
+      GENERIC_TIMEZONE: UTC
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Set N8N_ENCRYPTION_KEY in .env}
+      N8N_USER_MANAGEMENT_JWT_SECRET: ${N8N_JWT_SECRET:?Set N8N_JWT_SECRET in .env}
+      N8N_OWNER_EMAIL: ${N8N_OWNER_EMAIL:-admin@local.peter}
+      N8N_OWNER_PASSWORD: ${N8N_OWNER_PASSWORD:?Set N8N_OWNER_PASSWORD in .env}
+      N8N_OWNER_FIRST_NAME: PETER
+      N8N_OWNER_LAST_NAME: PAN
+      PETER_GUARDRAILS_URL: http://guardrails:8000
+      PETER_PREDICTOR_URL: http://predictor:8000
+      PETER_RAG_URL: http://rag:8000
+      PETER_LANGGRAPH_URL: http://langgraph-agent:8000
+      PETER_IMAGE_ANALYZER_URL: http://image-analyzer:8000
+      PETER_TOOLS_URL: http://tools-api:8000
+      PETER_REVIEW_QUEUE_URL: http://integration-stubs:8000/review-queue
+      PETER_DB_TEAM_WEBHOOK: http://integration-stubs:8000/teams/database
+      PETER_INFRA_TEAM_WEBHOOK: http://integration-stubs:8000/teams/infra
+      PETER_APP_TEAM_WEBHOOK: http://integration-stubs:8000/teams/application
+      PETER_TRIAGE_TEAM_WEBHOOK: http://integration-stubs:8000/teams/triage
+      PETER_SLACK_STUB_URL: http://integration-stubs:8000/slack
+      PETER_GITHUB_API: http://integration-stubs:8000
+      PETER_GITHUB_REPO: demo/shop-platform
+      PETER_FIXTURE_LLM_URL: http://fixture-llm:8000/v1
+    volumes:
+      - n8n-data:/home/node/.n8n
+      - ./n8n/peter-flow.json:/import/peter-flow.json:ro
+    depends_on:
+      guardrails:
+        condition: service_healthy
+      predictor:
+        condition: service_healthy
+      rag:
+        condition: service_healthy
+      langgraph-agent:
+        condition: service_healthy
+      image-analyzer:
+        condition: service_healthy
+      tools-api:
+        condition: service_healthy
+      fixture-llm:
+        condition: service_healthy
+      integration-stubs:
+        condition: service_healthy
+
+  n8n-bootstrap:
+    build:
+      context: .
+      dockerfile: scripts/n8n-bootstrap/Dockerfile
+    restart: "no"
+    profiles: ["bootstrap"]
+    working_dir: /workspace
+    volumes:
+      - .:/workspace:ro
+    environment:
+      N8N_BASE_URL: http://n8n:5678
+      N8N_BOOTSTRAP_CLI_IMPORT: "0"
+      N8N_OWNER_EMAIL: ${N8N_OWNER_EMAIL:-admin@local.peter}
+      N8N_OWNER_PASSWORD: ${N8N_OWNER_PASSWORD:?Set N8N_OWNER_PASSWORD in .env}
+      PETER_SERVICES_TOKEN: ${PETER_SERVICES_TOKEN:?Set PETER_SERVICES_TOKEN in .env}
+      PETER_WEBHOOK_SECRET: ${PETER_WEBHOOK_SECRET:?Set PETER_WEBHOOK_SECRET in .env}
+      PETER_FIXTURE_LLM_URL: http://fixture-llm:8000/v1
+      PETER_FIXTURE_LLM_API_KEY: ${PETER_SERVICES_TOKEN:?Set PETER_SERVICES_TOKEN in .env}
+    command: ["python", "scripts/bootstrap_n8n_local.py"]
+    depends_on:
+      n8n:
+        condition: service_healthy
+
+  ui:
+    build: ui
+    ports: ["127.0.0.1:8501:8501"]
+    environment:
+      <<: *common-env
+      PETER_UI_N8N_WEBHOOK_URL: http://n8n:5678/webhook/peter-signal
+      PETER_INGESTION_URL: http://ingestion:8000
+      PETER_GUARDRAILS_URL: http://guardrails:8000
+      PETER_RAG_URL: http://rag:8000
+      PETER_TOOLS_URL: http://tools-api:8000
+      PETER_FIXTURE_LLM_URL: http://fixture-llm:8000/v1
+      PETER_OLLAMA_URL: ${PETER_OLLAMA_URL:-}
+    depends_on:
+      n8n:
+        condition: service_started
+    profiles: ["ui"]
+
+volumes:
+  tools-audit:
+  n8n-data:

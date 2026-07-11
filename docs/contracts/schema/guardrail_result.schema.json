@@ -1,0 +1,28 @@
+{
+  "additionalProperties": false,
+  "description": "Frozen response returned by both Guardrails checks.",
+  "properties": {
+    "passed": {
+      "title": "Passed",
+      "type": "boolean"
+    },
+    "flags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Flags",
+      "type": "array"
+    },
+    "reason": {
+      "default": "",
+      "maxLength": 500,
+      "title": "Reason",
+      "type": "string"
+    }
+  },
+  "required": [
+    "passed"
+  ],
+  "title": "GuardrailResult",
+  "type": "object"
+}

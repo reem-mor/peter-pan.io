@@ -1,0 +1,13 @@
+{
+  "doc_id": "ingress_5xx",
+  "title": "K8s Ingress 5xx Troubleshooting Runbook",
+  "doc_type": "runbook",
+  "services": "k8s-ingress, shop-web, orders-api, payments-api",
+  "environments": "production, staging",
+  "severity_applicable": "P1,P2,P3",
+  "tags": "ingress, 5xx, edge, routing, timeout, kubernetes",
+  "last_updated": "2026-06-20",
+  "author": "Platform Engineering",
+  "version": "1.0",
+  "body": "# K8s Ingress 5xx Troubleshooting Runbook\n\nUse this runbook when k8s-ingress returns 5xx, 502, 503, or 504 errors for production or staging traffic.\n\n## Investigation Steps (read-only)\n\n1. Check ingress controller logs and error rate by route/host (read-only: `kubectl logs`, dashboard query).\n2. Compare ingress 5xx with backend pod health and readiness probes for shop-web, orders-api, and payments-api (`kubectl get pods`, `kubectl describe ingress`).\n3. Check recent ingress or routing configuration changes (`kubectl rollout history` on the ingress controller deployment).\n4. Inspect upstream timeout settings, TLS certificate expiry, and backend connection limits.\n5. Confirm whether synthetic checks fail from multiple regions or only one.\n\n## Triage Decision Tree\n\n- If backend errors mirror ingress errors, follow the backend service's own runbook.\n- If backends are healthy but ingress fails, inspect ingress route/config and TLS certificate state.\n- If only one backend's routes fail, scope the incident to that service and its owner.\n\n## Remediation\n\n1. Roll back the most recent ingress configuration change if it correlates with the failure.\n2. Shift traffic away from an unhealthy backend only if multiple healthy replicas remain.\n3. Renew or reattach an expiring TLS certificate through the approved certificate pipeline.\n4. Avoid deleting or recreating the ingress resource during an active incident.\n\n## Verification\n\n- Ingress 5xx rate drops below 1%.\n- p99 latency returns to baseline.\n- Synthetic checks pass for shop-web, orders-api, and payments-api routes.\n\n## Escalation\n\nEscalate to Infra SRE for ingress/TLS/routing issues, and to the backend service owner (App Platform) when backend errors mirror ingress errors."
+}

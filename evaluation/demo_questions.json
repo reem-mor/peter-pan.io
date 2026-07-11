@@ -1,38 +1,38 @@
 [
   {
     "id": 1,
-    "question": "What should I check when users cannot log in after the latest deployment?",
+    "question": "What should I check when orders-api starts erroring right after the latest deployment?",
     "expect_grounded": true,
-    "expected_source_contains": ["auth_service_login_failure", "deployment_rollback"],
-    "answer_keywords": ["deployment", "auth-service", "Redis", "rollback"]
+    "expected_source_contains": ["orders_api_error_spike", "deployment_rollback"],
+    "answer_keywords": ["deployment", "orders-api", "rollback"]
   },
   {
     "id": 2,
-    "question": "Analyze this alert: high error rate on auth-service in production after deployment.",
+    "question": "Analyze this alert: high error rate on orders-api in production after a deployment.",
     "expect_grounded": true,
-    "expected_source_contains": ["auth_service_login_failure", "piter_workflow"],
-    "answer_keywords": ["Priority", "Investigation", "Triage", "Escalation", "Resolution"]
+    "expected_source_contains": ["orders_api_error_spike", "orders_api_deploy_incident"],
+    "answer_keywords": ["Investigation", "Triage", "Escalation"]
   },
   {
     "id": 3,
-    "question": "Who should I escalate this incident to?",
+    "question": "Who should I escalate a postgres-primary connection pool incident to?",
     "expect_grounded": true,
-    "expected_source_contains": ["escalation_policies", "auth_service"],
-    "answer_keywords": ["primary", "on-call", "safe preview"]
+    "expected_source_contains": ["database_connectivity", "postgres_primary"],
+    "answer_keywords": ["Database Reliability", "on-call"]
   },
   {
     "id": 4,
-    "question": "Are there similar incidents from the past?",
+    "question": "Are there similar past incidents for redis-cache degradation?",
     "expect_grounded": true,
-    "expected_source_contains": ["historical_auth_incidents", "similar_incidents_examples"],
-    "answer_keywords": ["historical", "auth-service", "Redis"]
+    "expected_source_contains": ["redis_cache_degradation"],
+    "answer_keywords": ["eviction", "memory", "redis-cache"]
   },
   {
     "id": 5,
-    "question": "What is the business impact of auth-service login failures in GIB-UKGC production?",
+    "question": "What is the business impact if orders-api or payments-api goes down in production?",
     "expect_grounded": true,
-    "expected_source_contains": ["business_impact", "auth_service"],
-    "answer_keywords": ["tier-0", "login", "revenue"]
+    "expected_source_contains": ["orders_api", "payments_api"],
+    "answer_keywords": ["tier-0", "checkout", "revenue"]
   },
   {
     "id": 6,

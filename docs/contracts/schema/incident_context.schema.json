@@ -1,0 +1,65 @@
+{
+  "$defs": {
+    "DeployRef": {
+      "additionalProperties": false,
+      "properties": {
+        "repo": {
+          "title": "Repo",
+          "type": "string"
+        },
+        "sha": {
+          "title": "Sha",
+          "type": "string"
+        },
+        "deployed_at": {
+          "format": "date-time",
+          "title": "Deployed At",
+          "type": "string"
+        },
+        "service": {
+          "title": "Service",
+          "type": "string"
+        }
+      },
+      "required": [
+        "repo",
+        "sha",
+        "deployed_at",
+        "service"
+      ],
+      "title": "DeployRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Output of the n8n context-enrichment branches (nodes MW/DEP/CMP \u2192 merge).",
+  "properties": {
+    "maintenance_window": {
+      "default": false,
+      "title": "Maintenance Window",
+      "type": "boolean"
+    },
+    "recent_deploys": {
+      "items": {
+        "$ref": "#/$defs/DeployRef"
+      },
+      "title": "Recent Deploys",
+      "type": "array"
+    },
+    "complaint_count": {
+      "default": 0,
+      "title": "Complaint Count",
+      "type": "integer"
+    },
+    "complaint_samples": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "title": "Complaint Samples",
+      "type": "array"
+    }
+  },
+  "title": "IncidentContext",
+  "type": "object"
+}

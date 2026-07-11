@@ -1,0 +1,71 @@
+{
+  "generated_at": "2026-07-11T05:25:31.830220+00:00",
+  "entrypoint": "n8n",
+  "git_sha": "",
+  "golden_signals_sha256": "5b13fc82c0b16bc8be87fb8cc7517af9bd7f9d66fade54ba3b1496ece1c32b3f",
+  "n8n_flow_sha256": "2e51f08c6759f9d9d2373aa76873a7834aa7f4727e42e0076e8cbd27ed6acdce",
+  "layer3_source_sha256": "08e748fc08c94e9d4d586d3d83a1b7ca8ee1f2cd15c054aee05b011d012d18aa",
+  "results": [
+    {
+      "id": "golden-orders-api-errors",
+      "status": "ok",
+      "channel": "team:application",
+      "category": "application",
+      "p_level": "P3",
+      "provider": "fixture-fallback",
+      "evidence": "predictor,rag,service_context"
+    },
+    {
+      "id": "golden-postgres-pool",
+      "status": "ok",
+      "channel": "team:database",
+      "category": "database",
+      "p_level": "P1",
+      "provider": "fixture-fallback",
+      "evidence": "predictor,rag,service_context",
+      "p1_preview": true
+    },
+    {
+      "id": "golden-shop-web-latency",
+      "status": "ok",
+      "channel": "team:application",
+      "category": "application",
+      "p_level": "P3",
+      "provider": "fixture-fallback",
+      "evidence": "predictor,rag,service_context"
+    },
+    {
+      "id": "golden-redis-cross-domain",
+      "status": "ok",
+      "channel": "team:infra",
+      "category": "infra",
+      "p_level": "P3",
+      "provider": "fixture-fallback",
+      "evidence": "langgraph,predictor"
+    },
+    {
+      "id": "golden-unsafe-rejected",
+      "status": "rejected",
+      "reason": "That request involves destructive data operations. PETER PAN will not provide execution steps for FLUSHALL, DROP, TRUNCATE, or mass deletes. Escalate to the database owner and follow the approved runbook with change control."
+    },
+    {
+      "id": "golden-info-suppressed",
+      "status": "suppressed",
+      "reason": "info_alert_inside_deploy_window"
+    },
+    {
+      "id": "golden-unknown-owner-review",
+      "status": "flagged",
+      "channel": "review",
+      "flags": [
+        "insufficient_citations",
+        "owner_unverified",
+        "report_flagged"
+      ],
+      "category": "application",
+      "p_level": "P3",
+      "provider": "fixture-fallback",
+      "evidence": "predictor,rag,service_context"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+---
+title: PETER PAN — n8n Flow
+---
+flowchart TB
+    WH["1 · Webhook Trigger<br/>Grafana alert · draft incident · WebUI form"]:::input
+    GIN["2 · Guardrails — Input<br/>HTTP → EC2 /check/input"]:::guard
+    IF1{"3 · IF<br/>pass?"}:::branch
+    REJ["Rejection response<br/>reason returned to source"]:::rej
+
+    subgraph CTX["Context Enrichment — parallel branches"]
+        MW["Maintenance window?<br/>calendar check"]:::ctx
+        DEP["Deploy in last 2h?<br/>GitHub deployments API"]:::ctx
+        CMP["User complaints?<br/>Slack support channel"]:::ctx
+    end
+    MRG1["Merge → context block"]:::ctx
+    IFS{"Known noise?<br/>e.g. alert inside deploy window"}:::branch
+    SUP["Suppressed<br/>logged · nobody paged"]:::rej
+
+    EXT["4 · Information Extractor<br/>Stage A FixtureLM · optional Stage C Gemini Flash<br/>service · metric · started · impact"]:::ai
+    AGT["5 · AI Agent — incident commander<br/>Stage A FixtureLM · optional Stage C Bedrock Sonnet<br/>tool calls"]:::ai
+    T1["RAG Service<br/>POST /query"]:::svc
+    T2["Incident Predictor<br/>POST /analyse"]:::svc
+    T3["LangGraph Agent<br/>POST /agent/run"]:::svc
+    T4["Tools API<br/>POST /tools/service_context"]:::svc
+    MRG2["Merge tool results"]:::ai
+    CH["6 · LLM Chain → TriageReport<br/>Structured Output Parser · tool-grounded fixture fallback"]:::ai
+    GOUT["7 · Guardrails — Output<br/>/check/output · no invented owners · no destructive steps"]:::guard
+    IF2{"pass?"}:::branch
+    REV["Human review queue<br/>flagged in WebUI"]:::rej
+
+    RT["8 · Router<br/>category + P-level"]:::route
+    INF["Infra team webhook"]:::team
+    DBT["DB team webhook"]:::team
+    APP["App team webhook"]:::team
+    ESC["P1 → escalation dispatch<br/>preview-first"]:::team
+    SLKN["Slack incident channel<br/>auto-created · summary + owner + steps"]:::team
+
+    WH --> GIN --> IF1
+    IF1 -->|fail| REJ
+    IF1 -->|pass| CTX
+    CTX --> MRG1 --> IFS
+    IFS -->|yes| SUP
+    IFS -->|no| EXT --> AGT
+    AGT --> T1
+    AGT --> T2
+    AGT --> T3
+    AGT --> T4
+    T1 --> MRG2
+    T2 --> MRG2
+    T3 --> MRG2
+    T4 --> MRG2
+    MRG2 --> CH --> GOUT --> IF2
+    IF2 -->|fail| REV
+    IF2 -->|pass| RT
+    RT --> INF
+    RT --> DBT
+    RT --> APP
+    RT -->|P1 only| ESC
+    RT --> SLKN
+
+    classDef input fill:#14262e,stroke:#3ec1a7,color:#d6f2ec
+    classDef guard fill:#331d1d,stroke:#e86c6c,color:#f8dcdc
+    classDef branch fill:#182335,stroke:#8aa0bd,color:#d8e3f2
+    classDef rej fill:#241a1a,stroke:#8a5a5a,color:#cbb6b6
+    classDef ctx fill:#2e2a1a,stroke:#d3c04a,color:#f4eecb
+    classDef ai fill:#2b1f33,stroke:#b07ce8,color:#ecdffa
+    classDef svc fill:#1a2438,stroke:#6c8cff,color:#dde5fb
+    classDef route fill:#30251a,stroke:#e8a13c,color:#f7e8d0
+    classDef team fill:#1d2e22,stroke:#63c76f,color:#dcf3e0

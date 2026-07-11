@@ -1,0 +1,13 @@
+{
+  "doc_id": "shop_web",
+  "title": "Shop Web Service Context",
+  "doc_type": "service",
+  "services": "shop-web",
+  "environments": "production, staging",
+  "severity_applicable": "P1,P2,P3",
+  "tags": "service ownership, storefront, frontend, ui",
+  "last_updated": "2026-06-20",
+  "author": "Platform Engineering",
+  "version": "1.0",
+  "body": "# Shop Web Service Context\n\nShop-web is the customer-facing storefront UI: product browsing, cart, and checkout handoff to orders-api and payments-api.\n\n## Owner\n\n- Team: App Platform\n- Primary escalation: Primary App Platform On-Call\n- Secondary escalation: Secondary App Platform On-Call\n- Channel: `#app-platform`\n\n## Dependencies\n\n- orders-api for cart and order creation.\n- payments-api for checkout payment authorization.\n- k8s-ingress for public routing and TLS termination.\n\n## Business Impact\n\nShop-web is tier-1. A degraded storefront blocks browsing and checkout even when orders-api and payments-api are healthy, so always confirm whether the fault is in shop-web or a downstream dependency before escalating."
+}
