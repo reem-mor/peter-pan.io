@@ -1,6 +1,6 @@
 # Repo-level dev tooling only. Per-service runtime requirements land in
 # services/*/requirements.txt during Stage A.
-pytest==8.3.4
+pytest==9.1.1
 pytest-cov==7.1.0
 ruff==0.15.12
 pydantic==2.13.4
