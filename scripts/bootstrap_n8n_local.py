@@ -171,7 +171,12 @@ def _patch_and_activate(
     if workflow is None:
         saved = client.post("/rest/workflows", json={**body, "active": False})
     else:
-        saved = client.patch(f"/rest/workflows/{workflow['id']}", json=body)
+        # versionId is required for optimistic concurrency — without it n8n
+        # returns 200 but silently discards the node changes.
+        saved = client.patch(
+            f"/rest/workflows/{workflow['id']}",
+            json={**body, "versionId": workflow.get("versionId")},
+        )
     if saved.status_code >= 400:
         raise RuntimeError(
             f"workflow sync failed: {saved.status_code} {saved.text}"

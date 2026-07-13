@@ -16,6 +16,12 @@ services:
     ports: !override ["8005:8000"]
   langgraph-agent:
     ports: !override ["8006:8000"]
+  dashboard-generator:
+    ports: !override ["8008:8000"]
+  image-analyzer:
+    ports: !override ["8007:8000"]
+  grafana:
+    ports: !override ["3000:3000"]
   integration-stubs:
     ports: !override ["8020:8000"]
   n8n:

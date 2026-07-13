@@ -1,0 +1,137 @@
+{
+  "test_accuracy": 0.881,
+  "per_class": {
+    "cpu_saturation": {
+      "precision": 0.875,
+      "recall": 1.0,
+      "support": 7
+    },
+    "memory_leak": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 7
+    },
+    "db_lock_contention": {
+      "precision": 0.8571,
+      "recall": 0.8571,
+      "support": 7
+    },
+    "replication_lag": {
+      "precision": 0.8333,
+      "recall": 0.7143,
+      "support": 7
+    },
+    "error_rate_spike": {
+      "precision": 0.875,
+      "recall": 1.0,
+      "support": 7
+    },
+    "normal": {
+      "precision": 0.8333,
+      "recall": 0.7143,
+      "support": 7
+    }
+  },
+  "confusion_matrix": {
+    "class_order": [
+      "cpu_saturation",
+      "memory_leak",
+      "db_lock_contention",
+      "replication_lag",
+      "error_rate_spike",
+      "normal"
+    ],
+    "rows": [
+      [
+        7,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        7,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        6,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        5,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        7,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        1,
+        0,
+        5
+      ]
+    ]
+  },
+  "confidence_threshold": 0.5,
+  "threshold_val_report": {
+    "0.5": {
+      "coverage": 1.0,
+      "accuracy_on_answered": 0.9583
+    },
+    "0.6": {
+      "coverage": 0.9792,
+      "accuracy_on_answered": 0.9574
+    },
+    "0.7": {
+      "coverage": 0.9792,
+      "accuracy_on_answered": 0.9574
+    },
+    "0.8": {
+      "coverage": 0.9583,
+      "accuracy_on_answered": 0.9565
+    }
+  },
+  "seed": 42,
+  "dataset": {
+    "samples_per_class": 50,
+    "classes": [
+      "cpu_saturation",
+      "memory_leak",
+      "db_lock_contention",
+      "replication_lag",
+      "error_rate_spike",
+      "normal"
+    ],
+    "split": "70/15/15 stratified by seed"
+  },
+  "training": {
+    "backbone": "1D-CNN encoder, self-supervised reconstruction pretrain (in-domain transfer), frozen for phase 2",
+    "head": "single linear layer, fine-tuned with cross-entropy",
+    "epochs": {
+      "pretrain": 120,
+      "head": 400
+    },
+    "stop_criterion": "fixed epoch budget (no early stopping)"
+  },
+  "notes": "Synthetic shape-separable windows make this task easy by construction; near-perfect accuracy reflects the data, not model quality. Real accuracy would require real labeled incident windows (out of demo scope)."
+}

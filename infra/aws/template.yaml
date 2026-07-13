@@ -20,6 +20,16 @@ Parameters:
     AllowedPattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/32$"
     ConstraintDescription: Enter one public IPv4 host as a /32 CIDR.
     Description: HTTPS source address for the controlled demo, as your public IP /32
+  AllowedServiceIngressCidr:
+    Type: String
+    Default: ""
+    AllowedPattern: "^$|^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/32$"
+    Description: Optional dev IP /32 for service ports 8001-8008, 3000, 5678 (defaults to AllowedIngressCidr)
+  N8nCloudEgressCidr:
+    Type: String
+    Default: ""
+    AllowedPattern: "^$|^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/32$"
+    Description: Optional n8n Cloud egress /32 for outbound webhook callbacks to the instance
 
 Rules:
   RejectPublicIngress:
@@ -30,6 +40,8 @@ Rules:
 Conditions:
   HasKey: !Not [!Equals [!Ref KeyName, ""]]
   BedrockEnabled: !Equals [!Ref EnableBedrock, "true"]
+  HasServiceIngress: !Not [!Equals [!Ref AllowedServiceIngressCidr, ""]]
+  HasN8nEgress: !Not [!Equals [!Ref N8nCloudEgressCidr, ""]]
 
 Resources:
   PeterPanVpc:
@@ -114,7 +126,7 @@ Resources:
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: PETER PAN demo - HTTPS ingress only
+      GroupDescription: PETER PAN demo - restricted ingress (never 0.0.0.0/0)
       VpcId: !Ref PeterPanVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -122,6 +134,29 @@ Resources:
           ToPort: 443
           CidrIp: !Ref AllowedIngressCidr
           Description: Restricted HTTPS demo ingress
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: !If [HasServiceIngress, !Ref AllowedServiceIngressCidr, !Ref AllowedIngressCidr]
+          Description: Grafana (dev IP only)
+        - IpProtocol: tcp
+          FromPort: 5678
+          ToPort: 5678
+          CidrIp: !If [HasServiceIngress, !Ref AllowedServiceIngressCidr, !Ref AllowedIngressCidr]
+          Description: n8n UI (dev IP only)
+        - IpProtocol: tcp
+          FromPort: 8001
+          ToPort: 8008
+          CidrIp: !If [HasServiceIngress, !Ref AllowedServiceIngressCidr, !Ref AllowedIngressCidr]
+          Description: Layer 3 services (dev IP only)
+        - !If
+          - HasN8nEgress
+          - IpProtocol: tcp
+            FromPort: 443
+            ToPort: 443
+            CidrIp: !Ref N8nCloudEgressCidr
+            Description: n8n Cloud egress for webhook callbacks
+          - !Ref AWS::NoValue
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 443
@@ -177,4 +212,4 @@ Outputs:
   VpcId:
     Value: !Ref PeterPanVpc
   ConnectHint:
-    Value: Use SSM Session Manager; service ports 8001-8006 must remain private
+    Value: Use SSM Session Manager; service ports 8001-8008 and Grafana :3000 restricted to AllowedServiceIngressCidr

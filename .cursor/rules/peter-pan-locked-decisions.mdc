@@ -1,0 +1,46 @@
+---
+description: PETER PAN locked architectural decisions — always apply
+alwaysApply: true
+---
+
+# PETER PAN — Locked Decisions (DO NOT re-litigate)
+
+These decisions are final. Never change, "improve," or reopen them. If a task
+appears to conflict with any of these, STOP and ask — do not pick silently.
+
+## Contracts
+- Guardrail response schema is exactly `{passed: bool, flags: list[str], reason: str}`.
+  Never `{valid, reason}`, never `{pass, ...}`. Pydantic model `GuardrailResult`
+  in `contracts.py` with `extra="forbid"` is the single source of truth.
+- Predictor has exactly **6 incident classes**. The field name is `incident_class`.
+  The 3-way routing category is DERIVED from the 6 classes at the n8n Router
+  (node 8) — it is not a second predictor field and not a class-count change.
+- Severity levels are P1–P4 only. There is no P5.
+
+## Scope (rejected — do not reintroduce)
+- No Twilio / voice integration.
+- No Slack Block Kit HITL flow.
+- No live outage-bridge / call integration.
+- Feedback loop (reviewer queue → retrain) is ROADMAP ONLY — slides, not code.
+
+## Infrastructure
+- IaC: CloudFormation (not Terraform) — locked due to the two-week constraint.
+- Single-node EC2 t3.large with docker-compose. No Kubernetes, no multi-node.
+- Demo-scale synthetic data only. Never real production data, never real
+  customer identifiers.
+
+## LLM tier
+- Fixture-first: every demo scenario must work from deterministic fixtures
+  with zero external API calls. Live LLM paths (Bedrock/Gemini/Ollama) are
+  additive fallbacks, never dependencies of the demo path.
+
+## Secrets & safety
+- Secrets never in committable files. `.env` from the template only; verify
+  `.gitignore` coverage before adding any new config file.
+- Deterministic safety floors override LLM-stated values (the "LLM extracts;
+  the service decides" principle).
+
+## Workflow
+- Audit before action. Phased gates before destructive operations
+  (delete/rename/history rewrite): show the plan, wait for approval.
+- Never merge locally to main — always push branch → PR → merge on green CI.

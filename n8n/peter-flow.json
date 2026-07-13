@@ -73,7 +73,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { signal: $json } }}",
-        "options": { "timeout": 10000 }
+        "options": { "timeout": 30000 }
       },
       "onError": "continueErrorOutput"
     },
@@ -123,7 +123,7 @@
       "position": [896, 768],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { status: \"rejected\", reason: $json.reason ?? \"input failed guardrails\", flags: $json.flags ?? [] } }}",
+        "responseBody": "={{ { status: \"rejected\", passed: false, flags: $json.flags ?? [], reason: $json.reason ?? \"input failed guardrails\" } }}",
         "options": { "responseCode": 200 }
       }
     },
@@ -157,7 +157,7 @@
         "method": "GET",
         "url": "={{ $env.PETER_GITHUB_API }}/github/deployments",
         "sendQuery": false,
-        "options": { "timeout": 8000 }
+        "options": { "timeout": 30000 }
       },
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -267,7 +267,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [2320, 992],
-      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "responsesApiEnabled": false, "options": { "temperature": 0 } }
+      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "responsesApiEnabled": false, "options": { "temperature": 0, "timeout": 60000 } }
     },
     {
       "id": "ef7c0696-00ee-4d93-9eb9-53a116ccf538",
@@ -342,7 +342,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [2816, 992],
-      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "responsesApiEnabled": false, "options": { "temperature": 0 } }
+      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "responsesApiEnabled": false, "options": { "temperature": 0, "timeout": 60000 } }
     },
     {
       "id": "9164c703-33a9-490e-8737-6dfd55a76e0c",
@@ -359,7 +359,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { incident: $('Assemble Incident').item.json, metric_window_ref: $('Normalize Signal').item.json.raw.metric_window_ref ?? null } }}",
-        "options": { "timeout": 15000 }
+        "options": { "timeout": 30000 }
       }
     },
     {
@@ -377,7 +377,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { query: $fromAI(\"query\", \"short incident description to search runbooks and incident history\", \"string\"), limit: 3 } }}",
-        "options": { "timeout": 15000 }
+        "options": { "timeout": 30000 }
       }
     },
     {
@@ -413,7 +413,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { service: $('Assemble Incident').item.json.service, environment: $('Assemble Incident').item.json.environment } }}",
-        "options": { "timeout": 15000 }
+        "options": { "timeout": 30000 }
       }
     },
     {
@@ -443,7 +443,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [3424, 992],
-      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "responsesApiEnabled": false, "options": { "temperature": 0 } }
+      "parameters": { "model": { "__rl": true, "mode": "id", "value": "peter-stage-a-fixture" }, "responsesApiEnabled": false, "options": { "temperature": 0, "timeout": 60000 } }
     },
     {
       "id": "c2307ccc-e30c-462f-8cd7-6ffbd530bf74",
@@ -494,7 +494,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { report: $json, service: $('Assemble Incident').item.json.service, environment: $('Assemble Incident').item.json.environment, require_tool_evidence: true } }}",
-        "options": { "timeout": 10000 }
+        "options": { "timeout": 30000 }
       },
       "onError": "continueErrorOutput"
     },
@@ -550,7 +550,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { report: { ...$('Finalize TriageReport').item.json, guardrail_flags: [...new Set([...( $('Finalize TriageReport').item.json.guardrail_flags ?? [] ), ...( $json.flags ?? ['guardrails_unavailable'] )])] }, flags: $json.flags ?? ['guardrails_unavailable'] } }}",
-        "options": { "timeout": 10000 }
+        "options": { "timeout": 30000 }
       },
       "onError": "continueErrorOutput"
     },
@@ -597,7 +597,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $('Finalize TriageReport').item.json }}",
-        "options": { "timeout": 10000 }
+        "options": { "timeout": 30000 }
       },
       "onError": "continueRegularOutput"
     },
@@ -627,7 +627,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $('Finalize TriageReport').item.json }}",
-        "options": { "timeout": 10000 }
+        "options": { "timeout": 30000 }
       },
       "onError": "continueRegularOutput"
     },
@@ -645,7 +645,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $('Finalize TriageReport').item.json }}",
-        "options": { "timeout": 10000 }
+        "options": { "timeout": 30000 }
       },
       "onError": "continueRegularOutput"
     },
@@ -663,7 +663,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { report: $('Finalize TriageReport').item.json, reason: 'category did not match a known team' } }}",
-        "options": { "timeout": 10000 }
+        "options": { "timeout": 30000 }
       },
       "onError": "continueRegularOutput"
     },
@@ -695,7 +695,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { report: $('Finalize TriageReport').item.json, preview: true, requested_by: 'peter-flow' } }}",
-        "options": { "timeout": 10000 }
+        "options": { "timeout": 30000 }
       },
       "onError": "continueRegularOutput"
     },
@@ -713,7 +713,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { channel: 'incident-' + $('Finalize TriageReport').item.json.incident_id, summary: $('Finalize TriageReport').item.json.summary, owner_team: $('Finalize TriageReport').item.json.owner_team, recommended_steps: $('Finalize TriageReport').item.json.recommended_steps } }}",
-        "options": { "timeout": 10000 }
+        "options": { "timeout": 30000 }
       },
       "onError": "continueRegularOutput"
     }

@@ -38,19 +38,29 @@ _CONTEXT_MARKERS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
     ("error_rate_spike", ("error rate", "5xx", "exception rate", "p95 latency")),
     ("cpu_saturation", ("cpu saturation", "high cpu", "run queue", "load average")),
-    ("memory_leak", ("memory leak", "heap growth", "heap growing", "oom")),
+    ("memory_leak", ("memory leak", "heap growth", "heap growing", "oom", "evicted_keys", "redis-cache", "maxmemory")),
 )
+
+
+def match_context(context: str) -> str | None:
+    """Deterministic incident-class from explicit metric/symptom markers, or
+    ``None`` when the context names nothing — shared by the stub and the
+    trained-model serving path (explicit evidence beats window inference)."""
+    normalized_context = context.lower().replace("_", " ")
+    for incident_class, markers in _CONTEXT_MARKERS:
+        if any(marker in normalized_context for marker in markers):
+            return incident_class
+    return None
 
 
 def predict(window: list[float], *, context: str = "") -> dict:
     """Return a deterministic six-class fixture prediction."""
-    normalized_context = context.lower().replace("_", " ")
-    for incident_class, markers in _CONTEXT_MARKERS:
-        if any(marker in normalized_context for marker in markers):
-            return {
-                "incident_class": incident_class,
-                "confidence": _FIXED_CONFIDENCE[incident_class],
-            }
+    matched = match_context(context)
+    if matched:
+        return {
+            "incident_class": matched,
+            "confidence": _FIXED_CONFIDENCE[matched],
+        }
 
     if not window:
         return {

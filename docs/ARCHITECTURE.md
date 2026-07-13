@@ -55,7 +55,7 @@ TriageReport (returned to caller / rendered in UI)
 
 | Path | Owner | Notes |
 |---|---|---|
-| `services/` | Layer 3 — nine self-contained FastAPI units | No cross-imports; HTTP-only comms |
+| `services/` | Layer 3 — ten self-contained FastAPI units | No cross-imports; HTTP-only comms |
 | `ui/` | Layer 1 — Streamlit WebUI | Stage B |
 | `n8n/` | Layer 2 — n8n flow export | Re-export on every flow change |
 | `docs/contracts/` | Shared contracts | Frozen; ADR required to change |
@@ -73,9 +73,10 @@ TriageReport (returned to caller / rendered in UI)
 | Service dir | Package | Primary endpoint | Status |
 |---|---|---|---|
 | `services/ingestion/` | `ingestion_service` | `POST /signals` | Implemented |
-| `services/predictor/` | `predictor_service` | `POST /analyse` | EWMA floor + typed six-class fixture implemented; trained PyTorch classifier **stubbed** |
-| `services/rag/` | `rag_service` | `POST /query` | TF-IDF retrieval implemented; llama.cpp generation **stubbed** |
+| `services/predictor/` | `predictor_service` | `POST /analyse` | EWMA floor + trained PyTorch classifier (`train.py`, `predictor.pth`, `metrics.json`); stub fallback when artifact missing |
+| `services/rag/` | `rag_service` | `POST /query` | TF-IDF default + ChromaDB backend (`PETER_VECTOR_BACKEND=chroma`); GGUF insight via `GGUF_MODEL_PATH` (fixture-first without model) |
 | `services/guardrails/` | `guardrails_service` | `POST /check/input`, `POST /check/output` | Regex floor implemented; NeMo **stubbed** |
+| `services/dashboard-generator/` | `dashboard_generator` | `POST /dashboard` | Fixture-first Grafana POST; live LLM JSON generation **blocked → Session D** |
 | `services/image-analyzer/` | `image_analyzer_service` | `POST /analyze` | Stage A supporting seam — ResNet scaffold; not invoked by the current n8n flow |
 | `services/tools-api/` | `tools_api` | `POST /escalations`, `GET /audit`, tool routes | Implemented (preview-first, SQLite audit) |
 | `services/langgraph-agent/` | `langgraph_agent` | `POST /agent/run` | Deterministic graph topology implemented; no provider call in Stage A |
@@ -165,14 +166,17 @@ n8n bootstrap profile must be running first.
 | Structured writer parser failure path | **Implemented** — tool-grounded, contract-valid Stage A fallback |
 | Integration stubs (team webhooks, review queue) | **Implemented** |
 | TF-IDF retrieval in RAG | **Implemented** |
+| ChromaDB vector retrieval + populate script | **Implemented** |
+| Dashboard Generator (fixture Grafana POST) | **Implemented** |
 | Contract-identity test | **Implemented** |
-| PyTorch classifier (1D-CNN/GRU dual head) | **Stubbed** — fixed-weight fixture; training is Stage C |
+| PyTorch classifier (`train.py`, `predictor.pth`, `metrics.json`) | **Implemented** — stub fallback when artifact/torch missing |
 | NeMo Guardrails layer | **Stubbed** — regex floor is the active rail |
-| llama.cpp GGUF generation in RAG | **Stubbed** — FixtureLLM is the active seam |
+| llama.cpp GGUF generation in RAG | **Implemented** behind `GGUF_MODEL_PATH` — fixture-first without model |
 | Streamlit WebUI (`ui/`) | **Implemented skeleton** (Stage B wiring pending) |
 | ≥55-doc corpus + `scripts/seed_kb.py` | **Planned** follow-on rubric work |
 | Prompt Engineering Log (5 surfaces × 5 iterations) | **Planned** (Stage A → C) |
 | Real LLM providers (Gemini, Bedrock, Ollama) | **Optional/planned** (Stage C; not required for Layers 2–3) |
 | pgvector / Supabase ingestion | **Planned** (Stage C) |
-| AWS EC2 deployment | **Verified (demo)** — `scripts/provision_ec2.sh` · `scripts/deploy_ec2.sh` · `docker-compose.ec2.yml`; dev-IP-only SG, instance-generated secrets. The Stage A demo EC2 instance is currently running, and the full n8n-path E2E passed 7/7 on EC2 on 2026-07-11. |
-| PyTorch training + dataset (≥200 samples) | **Planned** (Stage C stretch) |
+| AWS EC2 deployment | **Verified (demo)** — `peter-pan-stage-a` at `18.234.123.139`, SG `sg-01c3120dcf290c20c` (dev `/32` only on ports 22, 3000, 5678, 8001–8008, 8020; no `0.0.0.0/0`; n8n runs on-instance so no Cloud egress rule). Deployed via `scripts/deploy_ec2.ps1`; public health + compose E2E **7/7** verified **2026-07-13**. |
+| PyTorch training + dataset (≥200 samples) | **Implemented** — `services/predictor/train.py` |
+| Live LLM dashboard JSON generation | **Blocked → Session D** |

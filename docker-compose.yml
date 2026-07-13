@@ -41,10 +41,43 @@ services:
     ports: ["127.0.0.1:8003:8000"]
     environment:
       <<: *common-env
-      PETER_VECTOR_BACKEND: tfidf
+      PETER_VECTOR_BACKEND: ${PETER_VECTOR_BACKEND:-tfidf}
+      CHROMA_PATH: /data/chroma
+      GGUF_MODEL_PATH: ${GGUF_MODEL_PATH:-}
+    volumes:
+      - rag-chroma:/data/chroma
     healthcheck:
       <<: *healthz
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  dashboard-generator:
+    build: services/dashboard-generator
+    ports: ["127.0.0.1:8008:8000"]
+    environment:
+      <<: *common-env
+      GRAFANA_URL: ${GRAFANA_URL:-http://grafana:3000}
+      GRAFANA_API_TOKEN: ${GRAFANA_API_TOKEN:-}
+      GRAFANA_PROMETHEUS_UID: ${GRAFANA_PROMETHEUS_UID:-}
+    depends_on:
+      grafana:
+        condition: service_started
+    healthcheck:
+      <<: *healthz
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+
+  grafana:
+    image: grafana/grafana-oss:11.4.0
+    ports: ["127.0.0.1:3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    healthcheck:
+      <<: *healthz
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/health | grep -q ok"]
 
   guardrails:
     build: services/guardrails
@@ -222,3 +255,5 @@ services:
 volumes:
   tools-audit:
   n8n-data:
+  grafana-data:
+  rag-chroma:

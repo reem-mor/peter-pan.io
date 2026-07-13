@@ -20,6 +20,7 @@ CORE_PORTS: dict[str, int] = {
     "guardrails": 8004,
     "tools-api": 8005,
     "langgraph-agent": 8006,
+    "dashboard-generator": 8008,
 }
 SUPPORT_PORTS: dict[str, int] = {
     "image-analyzer": 8007,

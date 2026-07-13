@@ -1,0 +1,197 @@
+{
+  "comment": "Synthetic incident-history seed for scripts/populate_vector_store.py. Committed and reviewable per the rag-pipeline-internals skill: deterministic incident_ids make re-runs idempotent upserts. 24 records, all 6 incident classes x4. Demo scenarios (orders-api error spike, postgres pool, shop-web/payments latency, redis degradation, disk pressure) each have at least one strong deliberate match. All data is synthetic.",
+  "incidents": [
+    {
+      "incident_id": "INC-101",
+      "incident_class": "error_rate_spike",
+      "severity": "P2",
+      "service": "orders-api",
+      "resolution_summary": "Rolled back release r3; strict idempotency-key validation rejected legacy clients.",
+      "text": "orders-api HTTP 5xx error rate climbed from 0.4% to 6% within minutes of release 2026.03.14-r3 reaching all pods. Envoy showed upstream resets on POST /v1/orders and charging-gateway timeouts on retry. Error budget burn exceeded 12x. Root cause: the release enabled strict idempotency-key validation on the order-write path, rejecting requests from legacy clients. Resolution: rolled the deployment back, re-enabled compatibility mode, coordinated client upgrade."
+    },
+    {
+      "incident_id": "INC-102",
+      "incident_class": "error_rate_spike",
+      "severity": "P3",
+      "service": "payments-api",
+      "resolution_summary": "Raised charging-gateway client timeout and added retry budget; latency spike from provider maintenance.",
+      "text": "payments-api p95 latency rose from 300ms to 4.2s and timeout errors spiked during the card provider's unannounced maintenance window. Checkout conversions dropped as payment authorizations exceeded the 2500ms deadline. Resolution: increased the charging-gateway client timeout, enabled the fallback provider for new authorizations, and added a retry budget so a slow provider degrades latency instead of failing payments."
+    },
+    {
+      "incident_id": "INC-103",
+      "incident_class": "error_rate_spike",
+      "severity": "P3",
+      "service": "shop-web",
+      "resolution_summary": "Reverted checkout session middleware; blocking session lookup caused 8s TTFB hangs.",
+      "text": "shop-web checkout p95 latency reached 8.4s against a 1.2s baseline with enterprise tenants reporting checkout hangs. The browser waterfall showed /checkout/session blocking server-side; timeout errors accumulated behind it. Root cause: new session middleware performed a synchronous cross-region session lookup per request. Resolution: reverted the middleware and moved session prefetch behind an async cache warm path."
+    },
+    {
+      "incident_id": "INC-104",
+      "incident_class": "error_rate_spike",
+      "severity": "P2",
+      "service": "k8s-ingress",
+      "resolution_summary": "Renewed expired TLS certificate on the ingress controller; 5xx cleared immediately.",
+      "text": "k8s ingress returned 502/503 for shop-web and orders-api virtual hosts. Upstream health checks failed with TLS handshake errors after the wildcard certificate expired; cert-manager renewal had silently stalled on a misconfigured DNS challenge. Resolution: renewed the certificate manually, fixed the DNS challenge credentials, and alerted on certificate age."
+    },
+    {
+      "incident_id": "INC-111",
+      "incident_class": "db_lock_contention",
+      "severity": "P1",
+      "service": "postgres-primary",
+      "resolution_summary": "Paused tenant bulk import; deadlocks and pool exhaustion cleared after lock queue drained.",
+      "text": "postgres-primary connection pool exhausted: pgbouncer cl_waiting exceeded 300 with maxwait 45s and new connections rejected with FATAL 53300 too many connections. pg_stat_activity showed dozens of backends idle-in-transaction waiting on Lock:transactionid against invoice_line_items, plus repeated deadlocks (SQLSTATE 40P01) between invoice reconciliation batches. Root cause: a tenant bulk import ran alongside the end-of-day billing close, holding row locks across long transactions. Resolution: paused the bulk import, killed idle-in-transaction sessions per runbook, staggered the batch schedules."
+    },
+    {
+      "incident_id": "INC-112",
+      "incident_class": "db_lock_contention",
+      "severity": "P2",
+      "service": "postgres-primary",
+      "resolution_summary": "Split the migration into batched updates with lock_timeout; blocking DDL lock released.",
+      "text": "A schema migration adding a column with a table rewrite took an ACCESS EXCLUSIVE lock on orders, blocking all reads and writes. Application queries queued behind the lock until statement timeouts cascaded into the API tier. Resolution: cancelled the migration, re-ran it as batched updates with lock_timeout and a non-rewriting default, added a migration review checklist."
+    },
+    {
+      "incident_id": "INC-113",
+      "incident_class": "db_lock_contention",
+      "severity": "P3",
+      "service": "postgres-primary",
+      "resolution_summary": "Hot-row contention on a counters table; moved to sharded counters with batched flush.",
+      "text": "Checkout writes slowed as concurrent transactions serialized on a single hot row in the inventory_counters table. Lock waits on Lock:tuple grew during the flash sale and deadlock retries amplified write load. Resolution: replaced the single-row counter with sharded counter rows flushed in batches, cutting lock contention."
+    },
+    {
+      "incident_id": "INC-114",
+      "incident_class": "db_lock_contention",
+      "severity": "P3",
+      "service": "billing-reconciler",
+      "resolution_summary": "Advisory locks added so overlapping reconciliation jobs no longer deadlock.",
+      "text": "Two overlapping billing reconciliation cron jobs processed the same tenant shard and deadlocked repeatedly on invoice_line_items updates, leaving the nightly close stuck. pgbouncer pool usage climbed as retries piled up. Resolution: introduced a per-shard advisory lock so only one reconciliation job runs per shard, added deadlock alerting on SQLSTATE 40P01 frequency."
+    },
+    {
+      "incident_id": "INC-121",
+      "incident_class": "replication_lag",
+      "severity": "P2",
+      "service": "postgres-replica",
+      "resolution_summary": "Throttled the analytics batch; replica applied WAL backlog and lag returned to <1s.",
+      "text": "postgres streaming replica lag grew in steps from under 1 second to 14 minutes during a nightly analytics batch that saturated replica disk I/O. Read-your-writes queries served stale data and the reporting dashboard drifted. Resolution: throttled the analytics batch, moved it to a dedicated replica, alerted on pg_last_wal_replay_lsn delta."
+    },
+    {
+      "incident_id": "INC-122",
+      "incident_class": "replication_lag",
+      "severity": "P3",
+      "service": "postgres-replica",
+      "resolution_summary": "Dropped an abandoned logical replication slot that pinned WAL and bloated the primary disk.",
+      "text": "An abandoned logical replication slot from a decommissioned consumer pinned WAL on postgres-primary. Disk usage climbed while the slot's restart_lsn stalled; replica lag alerts fired as WAL segments accumulated. Resolution: dropped the orphaned slot, reclaimed disk, added monitoring for inactive slots older than one hour."
+    },
+    {
+      "incident_id": "INC-123",
+      "incident_class": "replication_lag",
+      "severity": "P2",
+      "service": "postgres-replica",
+      "resolution_summary": "Cross-region replica fell behind after a network partition; rebuilt from base backup.",
+      "text": "The cross-region disaster-recovery replica fell behind by hours after an inter-region network partition; when connectivity returned, catch-up saturated the WAN link and lag kept growing in staircase steps. Resolution: re-seeded the replica from a fresh base backup, capped catch-up bandwidth, documented the RPO impact."
+    },
+    {
+      "incident_id": "INC-124",
+      "incident_class": "replication_lag",
+      "severity": "P4",
+      "service": "redis-cache",
+      "resolution_summary": "Redis replica sync loop from oversized replication backlog; tuned repl-backlog-size.",
+      "text": "A redis-cache replica entered a full-sync loop: the replication backlog was too small for the write burst, so partial resync failed and each full sync evicted the working set. Replica lag oscillated and session reads occasionally hit stale data. Resolution: increased repl-backlog-size, staggered replica syncs, alerted on master_repl_offset delta."
+    },
+    {
+      "incident_id": "INC-131",
+      "incident_class": "cpu_saturation",
+      "severity": "P2",
+      "service": "api-gateway",
+      "resolution_summary": "Rate-limited a misbehaving batch client; gateway CPU returned below 60%.",
+      "text": "api-gateway worker CPU climbed to a sustained 95-100% plateau and the run queue grew as a partner batch client retried aggressively without backoff. Request latency rose across all routes behind the gateway. Resolution: applied a per-client rate limit, returned 429 with Retry-After to the offending client, added autoscaling headroom."
+    },
+    {
+      "incident_id": "INC-132",
+      "incident_class": "cpu_saturation",
+      "severity": "P3",
+      "service": "web-node-pool",
+      "resolution_summary": "Disk pressure drove iowait CPU saturation; expanded volume and moved logs off the root disk.",
+      "text": "Nodes in the web pool hit disk pressure: the root volume filled to 96% with unrotated debug logs, kubelet began evicting pods, and CPU iowait saturated as the disk thrashed. Node load average tripled while actual application throughput fell. Resolution: expanded the volume, enforced log rotation, moved container logs to a dedicated disk, alerted on node filesystem usage at 80%."
+    },
+    {
+      "incident_id": "INC-133",
+      "incident_class": "cpu_saturation",
+      "severity": "P3",
+      "service": "batch-worker",
+      "resolution_summary": "Capped worker concurrency; regex backtracking hot loop fixed in parser.",
+      "text": "batch-worker CPU pinned at 100% for hours and the job queue backlog grew. Profiling showed catastrophic regex backtracking in the CSV parser on a malformed vendor file. Resolution: bounded the regex, added input validation and a per-job CPU timeout, capped worker concurrency so one bad job cannot saturate the pool."
+    },
+    {
+      "incident_id": "INC-134",
+      "incident_class": "cpu_saturation",
+      "severity": "P4",
+      "service": "orders-api",
+      "resolution_summary": "HPA maxReplicas too low for the sale peak; raised limits before traffic doubled again.",
+      "text": "During the seasonal sale, orders-api pods reached their CPU limits and the horizontal pod autoscaler saturated at maxReplicas. Throttling kept CPU at a plateau near the limit and p95 latency crept up. Resolution: raised HPA maxReplicas and pod CPU limits, pre-scaled ahead of the marketing push, added a capacity-planning checklist."
+    },
+    {
+      "incident_id": "INC-141",
+      "incident_class": "memory_leak",
+      "severity": "P2",
+      "service": "orders-api",
+      "resolution_summary": "Reverted the caching library upgrade that leaked per-request buffers; heap growth stopped.",
+      "text": "orders-api resident memory grew monotonically from 800MB to 3.5GB over six hours with no plateau, ending in OOMKilled restarts that rippled into 5xx bursts. Heap profiles showed per-request buffers retained by an interceptor added in a caching library upgrade. Resolution: reverted the upgrade, added heap-growth alerting and a soak test that fails on monotonic RSS growth."
+    },
+    {
+      "incident_id": "INC-142",
+      "incident_class": "memory_leak",
+      "severity": "P3",
+      "service": "payments-api",
+      "resolution_summary": "Fixed unbounded in-memory idempotency cache; added TTL eviction.",
+      "text": "payments-api JVM old-gen usage climbed steadily and full GC pauses lengthened until the service missed its authorization deadline. The in-memory idempotency-key cache had no TTL and grew without bound across the sale weekend. Resolution: added TTL-based eviction and a maximum entry count, moved long-lived keys to redis."
+    },
+    {
+      "incident_id": "INC-143",
+      "incident_class": "memory_leak",
+      "severity": "P3",
+      "service": "redis-cache",
+      "resolution_summary": "Memory fragmentation after mass eviction cycle; enabled activedefrag and right-sized maxmemory.",
+      "text": "redis-cache used_memory approached the 30GB maxmemory while the dataset was only 19GB: the fragmentation ratio reached 1.6 after repeated mass-eviction cycles under allkeys-lru. Evictions accelerated, the keyspace hit ratio fell from 99% to 91%, and session lookups spilled to the persistence layer, degrading checkout reads. Resolution: enabled activedefrag, right-sized maxmemory, and split the session tier from the content cache."
+    },
+    {
+      "incident_id": "INC-144",
+      "incident_class": "memory_leak",
+      "severity": "P4",
+      "service": "shop-web",
+      "resolution_summary": "Sidecar log-shipper leaked file handles and buffers; pinned to a patched version.",
+      "text": "shop-web pods restarted every few hours as the log-shipper sidecar leaked file descriptors and heap buffers when the upstream log endpoint flapped. The main container was healthy but shared pod memory limits triggered evictions. Resolution: pinned the sidecar to the patched release, isolated its memory limit, alerted on per-container restart counts."
+    },
+    {
+      "incident_id": "INC-151",
+      "incident_class": "normal",
+      "severity": "P4",
+      "service": "orders-api",
+      "resolution_summary": "No action: canary analysis green, informational deploy notice only.",
+      "text": "Deployment progress notice for orders-api canary rollout: sync wave completed, canary at 25% traffic with error-rate delta +0.02% and p95 delta +12ms, both within tolerance. No operator action required; the rollout completed on schedule. Recorded to distinguish benign deploy telemetry from real incidents."
+    },
+    {
+      "incident_id": "INC-152",
+      "incident_class": "normal",
+      "severity": "P4",
+      "service": "postgres-primary",
+      "resolution_summary": "No action: planned failover drill inside the announced maintenance window.",
+      "text": "Planned maintenance window: quarterly failover drill for postgres-primary executed as announced. Brief connection resets were expected and covered by client retry policies; no SLO impact was measured. Alerts raised during the window were acknowledged and suppressed per the maintenance calendar."
+    },
+    {
+      "incident_id": "INC-153",
+      "incident_class": "normal",
+      "severity": "P4",
+      "service": "web-node-pool",
+      "resolution_summary": "No action: autoscaling responded to the morning traffic ramp as designed.",
+      "text": "Morning traffic ramp triggered node-pool autoscaling from 6 to 10 nodes; CPU and latency stayed within targets throughout. The scale-up alert is informational and confirms capacity automation is working. No intervention performed."
+    },
+    {
+      "incident_id": "INC-154",
+      "incident_class": "normal",
+      "severity": "P4",
+      "service": "monitoring",
+      "resolution_summary": "Alert flapping from an over-tight threshold; tuned the rule, no service impact.",
+      "text": "A latency alert for shop-web flapped repeatedly overnight while user-facing metrics stayed flat. Investigation confirmed the alert threshold sat inside normal daily variance; there was no incident. Resolution: widened the threshold and added a for-duration clause to the alert rule."
+    }
+  ]
+}
