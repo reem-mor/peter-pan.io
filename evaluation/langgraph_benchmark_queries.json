@@ -1,0 +1,54 @@
+[
+  {
+    "id": "lg-01-slo-remediation",
+    "query": "What remediation brings this service back to SLO and which signals need attention first?",
+    "expected_tools": ["rag", "service_context", "similar_incidents"],
+    "notes": "Crosswalk of course renovation-to-condition question; multi-tool."
+  },
+  {
+    "id": "lg-02-postgres-pool",
+    "query": "Postgres connection pool is exhausted with deadlocks — what should on-call check before escalating?",
+    "expected_tools": ["rag", "service_context", "similar_incidents"]
+  },
+  {
+    "id": "lg-03-orders-deploy",
+    "query": "orders-api 5xx spiked right after a deploy — is rollback justified and who owns the service?",
+    "expected_tools": ["rag", "service_context", "similar_incidents"]
+  },
+  {
+    "id": "lg-04-redis-cross-domain",
+    "query": "redis-cache eviction storm is degrading checkout on orders-api — which domain owns triage first?",
+    "expected_tools": ["rag", "service_context", "similar_incidents"]
+  },
+  {
+    "id": "lg-05-replication-lag",
+    "query": "Streaming replication lag is climbing on postgres-primary — what similar incidents exist and what is the escalation path?",
+    "expected_tools": ["rag", "service_context", "similar_incidents"]
+  },
+  {
+    "id": "lg-06-ingress-5xx",
+    "query": "k8s-ingress is returning 5xx for shop-web — summarise grounded next steps with citations.",
+    "expected_tools": ["rag", "service_context", "similar_incidents"]
+  },
+  {
+    "id": "lg-07-memory-pressure",
+    "query": "Node memory pressure and OOMKill risk on payments-api pods — what past incidents match?",
+    "expected_tools": ["rag", "similar_incidents"]
+  },
+  {
+    "id": "lg-08-insufficient-context",
+    "query": "Something feels slow somewhere in the platform — invent a root cause if needed.",
+    "expected_tools": ["rag"],
+    "expected_behavior": "Must not invent root cause; degrade to insufficient data / low confidence"
+  },
+  {
+    "id": "lg-09-owner-escalation",
+    "query": "Who owns shop-web in production and what is the on-call escalation chain?",
+    "expected_tools": ["service_context"]
+  },
+  {
+    "id": "lg-10-disk-pressure",
+    "query": "Disk pressure on the logging volume — which signals confirm the class and what remediation is safe?",
+    "expected_tools": ["rag", "service_context", "similar_incidents"]
+  }
+]

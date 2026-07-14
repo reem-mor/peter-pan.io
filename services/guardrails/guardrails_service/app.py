@@ -109,7 +109,11 @@ async def check_input(
         flags.append("empty_title")
         reasons.append("Signal title is empty or whitespace-only.")
 
-    for match in rules.scan_text(f"{signal.title}\n{signal.body}"):
+    combined = f"{signal.title}\n{signal.body}"
+    for match in rules.scan_text(combined):
+        flags.append(match.code)
+        reasons.append(match.reason)
+    for match in rules.scan_off_topic(combined):
         flags.append(match.code)
         reasons.append(match.reason)
 

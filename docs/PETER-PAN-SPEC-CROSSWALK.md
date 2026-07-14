@@ -168,3 +168,9 @@ wrong-tool selection. 5 iterations against the same 10 benchmark queries.
 3. Guardrail schema: `{pass, reason, safe_text}` → `{passed, flags, reason}`.
 4. Instance: t3.medium+ → t3.large (GGUF inference headroom).
 5. Extension implemented: Monitoring Dashboard → **Dynamic Grafana Dashboard Generator** (beyond spec: LLM-generated dashboard JSON per incident).
+6. RAG I/O field names: `{query, limit}` → `{answer, citations, refused}` instead of `{description}` → `{similar_incidents, insight}` (`citations`≈similar incidents, `answer`≈insight; n8n already uses `{query, limit}`).
+7. Predictor endpoint: `POST /analyse` instead of `/predict` (same ML objectives; frozen contract).
+8. LangGraph response: validated `TriageReport` instead of `{answer, tools_used, reasoning_steps}` (richer incident brief; graph still planner→tools→synthesiser).
+9. LangGraph specialists call RAG + Tools API; Predictor is invoked by n8n Node 5 (Incident Commander), not inside the LangGraph HTTP service.
+10. RAG uses custom prompt assembly (`generator.py`) instead of LangChain chains; ChromaDB + sentence-transformers + optional llama.cpp GGUF remain the retrieval/generation stack.
+11. Guardrails runtime: custom deterministic regex floor (+ `NoopPolicyEngine` seam for NeMo later) instead of NeMo Guardrails at Stage A.

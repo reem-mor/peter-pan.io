@@ -20,8 +20,8 @@ Format contract: `.cursor/skills/prompt-log-format/SKILL.md`.
 |---|---------|----------------|-----|--------|
 | 1 | n8n Information Extractor (Node 4) | `prompts/surface-1-extractor.systemprompt.txt` | [surface-1-extractor.md](surface-1-extractor.md) | V1 baseline run (live Gemini) |
 | 2 | n8n AI Agent / Incident Commander (Node 5) | `prompts/surface-2-agent.systemmessage.txt`, `prompts/surface-2-agent.tools.json` | [surface-2-agent.md](surface-2-agent.md) | suite defined; live baseline BLOCKED → Layer 4 |
-| 3 | RAG retrieval prompt (RAG service) | — | — | Layer 3 session |
-| 4 | Guardrails rail prompts (Guardrails service) | — | — | Layer 3 session |
+| 3 | RAG retrieval prompt (RAG service) | `prompts/surface-3-rag.systemprompt.txt` | — (no V1–V5 log yet) | suite defined (`test-suites/surface-3-rag.cases.json`); prompt wired in RAG generator |
+| 4 | Guardrails rail prompts (Guardrails service) | `prompts/surface-4-topic-detection.txt`, `prompts/surface-4-output-auditor.txt` | — (no V1–V5 log yet) | suite defined (`test-suites/surface-4-guardrails.cases.json`); rails not yet wired to live service (regex floor active) |
 | 5 | Ollama system prompt (Streamlit assistant) | — | — | Layer 1 session |
 
 ## Honesty rules (from the skill — binding)

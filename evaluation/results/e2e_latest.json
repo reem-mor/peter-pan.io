@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-13T18:07:20.184816+00:00",
+  "generated_at": "2026-07-14T17:40:30.914845+00:00",
   "entrypoint": "n8n",
   "git_sha": "",
   "golden_signals_sha256": "5b13fc82c0b16bc8be87fb8cc7517af9bd7f9d66fade54ba3b1496ece1c32b3f",
   "n8n_flow_sha256": "4a6996349308435cc661ae02b0c7140c0315d5b0b410b85bcf4afe50c8ccd2d2",
-  "layer3_source_sha256": "10448b5de7daea39466f1928345b1bf43a0dd25606c2eb1bdf368ba3164acf83",
+  "layer3_source_sha256": "3c0e157b66258b282332215c966edf692163874ce11bd554fc56561556ee59fe",
   "results": [
     {
       "id": "golden-orders-api-errors",

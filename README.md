@@ -51,6 +51,23 @@ contract-valid fixture fallback when the local OpenAI-compatible parser path fai
 | `infra/aws/` | CloudFormation demo stack |
 | `docs/` | Contracts, ADRs, audits, architecture reference |
 
+## Documentation
+
+| Doc | Purpose |
+|-----|---------|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Runtime flow, service status, health commands |
+| [setup.md](docs/setup.md) | Prerequisites and `.env` configuration |
+| [local-development.md](docs/local-development.md) | Docker Compose startup workflow |
+| [aws-deployment.md](docs/aws-deployment.md) | EC2 demo deployment |
+| [n8n-workflow.md](docs/n8n-workflow.md) | 8-node orchestration spine |
+| [api.md](docs/api.md) | Endpoint reference |
+| [testing.md](docs/testing.md) | Test commands and rubric metrics |
+| [security.md](docs/security.md) | Secrets, network, container policy |
+| [demo-guide.md](docs/demo-guide.md) | 5–8 minute demonstration script |
+| [IMPLEMENTATION-CHECKLIST.md](docs/IMPLEMENTATION-CHECKLIST.md) | Course spec audit status |
+
+Postman: [postman/peter-pan-core-apis.postman_collection.json](postman/peter-pan-core-apis.postman_collection.json)
+
 ## Development tooling
 
 MCP servers, CI commands, and available skills: [docs/AGENT-TOOLING.md](docs/AGENT-TOOLING.md)

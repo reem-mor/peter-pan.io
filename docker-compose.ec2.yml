@@ -10,6 +10,9 @@ services:
     ports: !override ["8002:8000"]
   rag:
     ports: !override ["8003:8000"]
+    volumes: !override
+      - rag-chroma:/data/chroma
+      - /home/ubuntu/models:/models:ro
   guardrails:
     ports: !override ["8004:8000"]
   tools-api:
