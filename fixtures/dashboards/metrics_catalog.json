@@ -1,0 +1,64 @@
+{
+  "metrics": [
+    {
+      "name": "http_requests_total",
+      "description": "HTTP request counter by service, method, and status code",
+      "unit": "reqps",
+      "labels": ["service", "code", "method", "instance"]
+    },
+    {
+      "name": "http_request_duration_seconds",
+      "description": "HTTP request latency histogram",
+      "unit": "s",
+      "labels": ["service", "le", "instance"]
+    },
+    {
+      "name": "http_request_errors_total",
+      "description": "HTTP 5xx error counter",
+      "unit": "short",
+      "labels": ["service", "code", "instance"]
+    },
+    {
+      "name": "checkout_latency_seconds",
+      "description": "Checkout path end-to-end latency",
+      "unit": "s",
+      "labels": ["service", "tenant", "instance"]
+    },
+    {
+      "name": "pgbouncer_cl_waiting",
+      "description": "Clients waiting for a pgbouncer server connection",
+      "unit": "short",
+      "labels": ["pool", "instance"]
+    },
+    {
+      "name": "pg_stat_activity_count",
+      "description": "Active postgres backends by state",
+      "unit": "short",
+      "labels": ["state", "instance"]
+    },
+    {
+      "name": "node_cpu_seconds_total",
+      "description": "Node CPU time by mode",
+      "unit": "percent",
+      "labels": ["mode", "instance"]
+    },
+    {
+      "name": "node_memory_MemAvailable_bytes",
+      "description": "Available system memory",
+      "unit": "bytes",
+      "labels": ["instance"]
+    },
+    {
+      "name": "node_filesystem_avail_bytes",
+      "description": "Filesystem space available",
+      "unit": "bytes",
+      "labels": ["mountpoint", "instance"]
+    },
+    {
+      "name": "node_disk_io_time_seconds_total",
+      "description": "Disk IO time",
+      "unit": "s",
+      "labels": ["device", "instance"]
+    }
+  ]
+}

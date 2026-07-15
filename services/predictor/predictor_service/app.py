@@ -2,11 +2,20 @@
 Engine row).
 
 ``POST /analyse`` combines the deterministic EWMA severity floor
-(``ewma.py``, real) with a fixed-weight classifier stub (``classifier.py``,
-Stage-A fixture — real training is out of scope, BUILD_PLAN §6) and a
-typed six-class ``incident_class`` response. The routing layer maps that class
-to ``TriageReport.category`` deterministically. No ML frameworks; everything
-here is unit-tested arithmetic per the deterministic-floor principle.
+(``ewma.py``, real) with a three-tier classifier and a typed six-class
+``incident_class`` response. Tiers, in order:
+
+1. explicit context markers (``classifier.match_context``) — deterministic
+   evidence beats window inference;
+2. the trained PyTorch checkpoint (``torch_classifier``, produced by
+   ``train.py``) — softmax max below its confidence threshold keeps the argmax
+   class but surfaces the ``uncertain`` fallback (the six-class enum is frozen;
+   there is no seventh class);
+3. the fixed-weight stub (``classifier.py``) when torch or the artifact is
+   unavailable — the fixture-first demo path never depends on the model.
+
+The routing layer maps the class to ``TriageReport.category`` deterministically;
+severity always comes from the EWMA floor, never the model.
 """
 
 from __future__ import annotations
@@ -20,9 +29,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .auth import require_bearer_token
 from .category import classification_context
-from .classifier import predict as classify
+from .classifier import match_context, predict as classify
 from .ewma import score as ewma_score
 from .fixtures import fixture_window
+from .torch_classifier import load_classifier
 
 SERVICE_NAME = "predictor"
 INCIDENT_CLASSES = frozenset(
@@ -82,6 +92,16 @@ async def request_validation_error(
     return JSONResponse(status_code=422, content={"detail": detail})
 
 
+def _run_classifier(window: list[float], context: str) -> dict[str, Any]:
+    """Tiered classification: context markers -> trained model -> stub."""
+    if match_context(context):
+        return {**classify(window, context=context), "engine": "context"}
+    torch_model = load_classifier()
+    if torch_model is not None:
+        return torch_model.predict(window)
+    return {**classify(window, context=context), "engine": "stub"}
+
+
 @app.get("/healthz")
 async def healthz() -> dict:
     return {"status": "ok", "service": SERVICE_NAME}
@@ -98,9 +118,9 @@ async def analyse(payload: AnalyseRequest) -> AnalyseResponse:
     )
 
     ewma_result = ewma_score(window)
-    classifier_result = classify(
+    classifier_result = _run_classifier(
         window,
-        context=classification_context(payload.incident, payload.metric_window_ref),
+        classification_context(payload.incident, payload.metric_window_ref),
     )
     incident_class = classifier_result.get("incident_class")
     confidence = classifier_result.get("confidence", 0.0)
@@ -120,6 +140,10 @@ async def analyse(payload: AnalyseRequest) -> AnalyseResponse:
             "confidence": confidence,
             "fallback": "severity_conflict",
         }
+    elif classifier_result.get("below_threshold"):
+        # Locked decision: never a 7th class — surface uncertainty as a
+        # fallback marker + sub-threshold confidence for the review branch.
+        classifier_result = {**classifier_result, "fallback": "uncertain"}
 
     return AnalyseResponse(
         incident_class=incident_class,

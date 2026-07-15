@@ -1,0 +1,6 @@
+{
+  "Predictor Tool": "Classifies the metric window into one objective six-way INCIDENT_CLASS plus a SEVERITY score and confidence. Do NOT convert incident_class to a routing category or guess severity — always call this first.",
+  "RAG Query Tool": "Retrieves similar PAST INCIDENTS and matching RUNBOOK sections with citations (source_id, source_type, quote). Input: a short natural-language description of the current incident.",
+  "LangGraph Agent Tool": "Runs deep multi-step Planner-Specialists-Synthesiser reasoning across infra, database and application specialists. Call ONLY for complex cross-domain incidents. Returns findings, owner_team and escalation_path grounded in the Tools API.",
+  "Service Context Tool": "Returns the deterministic owner_team and escalation_path for the incident service. Call for routable, non-complex single-domain incidents after Predictor and RAG."
+}

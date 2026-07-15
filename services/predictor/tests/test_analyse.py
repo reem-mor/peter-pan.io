@@ -17,6 +17,13 @@ def _clean_env(monkeypatch):
     monkeypatch.delenv("PETER_SERVICES_TOKEN", raising=False)
 
 
+@pytest.fixture()
+def _stub_engine(monkeypatch):
+    """Pin the fixed-weight stub for tests asserting stub-specific
+    window-shape behaviour (the torch checkpoint would answer otherwise)."""
+    monkeypatch.setenv("PETER_PREDICTOR_ENGINE", "stub")
+
+
 def test_healthz():
     response = client.get("/healthz")
     assert response.status_code == 200
@@ -88,7 +95,9 @@ def test_analyse_openapi_response_model_uses_incident_class_enum():
     assert "category" not in response_schema["properties"]
 
 
-def test_analyse_rejects_unknown_model_class_to_normal_low_confidence(monkeypatch):
+def test_analyse_rejects_unknown_model_class_to_normal_low_confidence(
+    monkeypatch, _stub_engine
+):
     monkeypatch.setattr(
         "predictor_service.app.classify",
         lambda _window, *, context: {
@@ -105,7 +114,7 @@ def test_analyse_rejects_unknown_model_class_to_normal_low_confidence(monkeypatc
     assert response.json()["scores"]["classifier"]["fallback"] == "unknown_class"
 
 
-def test_analyse_marks_normal_class_with_anomalous_ewma_as_conflict():
+def test_analyse_marks_normal_class_with_anomalous_ewma_as_conflict(_stub_engine):
     response = client.post(
         "/analyse",
         json={"window": [10.0] * 9 + [11.3]},

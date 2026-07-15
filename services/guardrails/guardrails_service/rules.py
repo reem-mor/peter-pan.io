@@ -100,6 +100,38 @@ _POLICY_BYPASS_PATTERNS: tuple[tuple[re.Pattern[str], str, str], ...] = (
 
 _ALL_TEXT_PATTERNS = _DANGEROUS_PATTERNS + _POLICY_BYPASS_PATTERNS
 
+# Off-topic / junk: reject only when non-ops chatter is present AND no
+# operational markers appear. Golden valid alerts always carry ops markers,
+# so the false-positive rate on that set stays at 0.
+_OFF_TOPIC_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(
+        r"\b(recipe|recipes|pasta|carbonara|cooking|cookbook|restaurant|"
+        r"dinner\s+tonight|best\s+pasta)\b",
+        re.I,
+    ),
+    re.compile(
+        r"\b((football|soccer|basketball)\s+score|movie\s+recommendation|"
+        r"vacation\s+ideas|horoscope)\b",
+        re.I,
+    ),
+)
+
+_OPS_MARKERS = re.compile(
+    r"\b(alert|error|errors|latency|cpu|memory|deploy|deployment|postgres|"
+    r"redis|ingress|pod|pods|slo|5xx|p95|p99|runbook|incident|metric|"
+    r"metrics|timeout|oom|replication|deadlock|evict|eviction|cache|api|"
+    r"service|production|staging|outage|spike|saturated|exhaust|"
+    r"exhausted|grafana|checkout|http|envoy|pgbouncer|k8s|kubernetes|"
+    r"rollback|on-?call|severity|p[1-4])\b",
+    re.I,
+)
+
+_OFF_TOPIC_REASON = (
+    "Input does not look like a genuine operational alert. PETER PAN only "
+    "accepts production/staging incident descriptions (errors, latency, "
+    "deploys, databases, caches). Off-topic or junk text is rejected."
+)
+
 
 def scan_text(text: str) -> list[RuleMatch]:
     """Return every disallowed-operational-action match found in ``text``."""
@@ -111,6 +143,18 @@ def scan_text(text: str) -> list[RuleMatch]:
         for pattern, code, reason in _ALL_TEXT_PATTERNS
         if pattern.search(haystack)
     ]
+
+
+def scan_off_topic(text: str) -> list[RuleMatch]:
+    """Flag junk/off-topic text that lacks any operational markers."""
+    haystack = (text or "").strip()
+    if not haystack:
+        return []
+    if _OPS_MARKERS.search(haystack):
+        return []
+    if any(pattern.search(haystack) for pattern in _OFF_TOPIC_PATTERNS):
+        return [RuleMatch(code="off_topic", reason=_OFF_TOPIC_REASON)]
+    return []
 
 
 def check_operator_guardrails(text: str) -> None:

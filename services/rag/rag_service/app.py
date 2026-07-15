@@ -1,9 +1,13 @@
-"""FastAPI app for the RAG microservice (Stage A: TF-IDF retrieval, extractive answers).
+"""FastAPI app for the RAG microservice.
 
-Retrieval is real TF-IDF cosine similarity over the corpus; the answer is
-extractive (top passages stitched together) — no LLM call in Stage A
-(BUILD_PLAN §3 RAG row). Answers are never returned without citations: below
-``MIN_SCORE`` the service refuses instead of guessing.
+Retrieval backends (``PETER_VECTOR_BACKEND``): ``tfidf`` (default,
+fixture-first — real TF-IDF cosine similarity over the corpus) or ``chroma``
+(``vector_rag.py`` — ChromaDB + sentence-transformers over the populated
+incident store, degrading back to TF-IDF if unavailable). The answer is
+extractive (top passages stitched together) unless a GGUF model is configured
+via ``GGUF_MODEL_PATH`` (``generator.py``), in which case a grounded llama.cpp
+insight replaces it. Answers are never returned without citations: with no
+grounded hits the service refuses instead of guessing.
 """
 
 from __future__ import annotations
@@ -16,8 +20,10 @@ from pydantic import BaseModel, Field
 
 from rag_service.contracts import Citation
 from rag_service.errors import QueryValidationError
+from rag_service.generator import get_generator
 from rag_service.local_rag import get_retriever
 from rag_service.validators import validate_question
+from rag_service.vector_rag import get_vector_retriever
 
 SERVICE_NAME = "rag"
 REFUSAL_ANSWER = "insufficient data"
@@ -51,6 +57,16 @@ async def require_bearer_token(
         raise HTTPException(status_code=401, detail="missing or invalid bearer token")
 
 
+def _search(question: str, limit: int):
+    """Backend-selected retrieval; chroma degrades to TF-IDF when unavailable
+    (missing libs/store or embedding-model mismatch — logged in vector_rag)."""
+    if os.environ.get("PETER_VECTOR_BACKEND", "tfidf") == "chroma":
+        retriever = get_vector_retriever()
+        if retriever is not None:
+            return retriever.search(question, top_k=limit)
+    return get_retriever().search(question, top_k=limit)
+
+
 @app.get("/healthz")
 async def healthz() -> dict[str, str]:
     return {"status": "ok", "service": SERVICE_NAME}
@@ -67,7 +83,7 @@ async def query(request: QueryRequest) -> QueryResponse:
             status_code=422, detail={"code": exc.code, "message": exc.message}
         ) from exc
 
-    hits = get_retriever().search(question, top_k=request.limit)
+    hits = _search(question, request.limit)
     if not hits:
         return QueryResponse(answer=REFUSAL_ANSWER, citations=[], refused=True)
 
@@ -78,4 +94,9 @@ async def query(request: QueryRequest) -> QueryResponse:
         for hit in hits
     ]
     answer = "\n\n".join(hit.excerpt.strip() for hit in hits)[:MAX_ANSWER_CHARS]
+    generator = get_generator()
+    if generator is not None:
+        insight = generator.generate(question, [hit.excerpt for hit in hits])
+        if insight:
+            answer = insight[:MAX_ANSWER_CHARS]
     return QueryResponse(answer=answer, citations=citations, refused=False)

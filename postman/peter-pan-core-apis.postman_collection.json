@@ -1,0 +1,120 @@
+{
+  "info": {
+    "name": "PETER PAN — Core APIs",
+    "description": "Layer 3 FastAPI services for incident triage (course property-triage crosswalk). Set `base_url` and `bearer_token` collection variables.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "base_url", "value": "http://localhost"},
+    {"key": "bearer_token", "value": ""}
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{"key": "token", "value": "{{bearer_token}}", "type": "string"}]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {"name": "Ingestion healthz", "request": {"method": "GET", "url": "{{base_url}}:8001/healthz"}},
+        {"name": "Predictor healthz", "request": {"method": "GET", "url": "{{base_url}}:8002/healthz"}},
+        {"name": "RAG healthz", "request": {"method": "GET", "url": "{{base_url}}:8003/healthz"}},
+        {"name": "Guardrails healthz", "request": {"method": "GET", "url": "{{base_url}}:8004/healthz"}},
+        {"name": "Tools API healthz", "request": {"method": "GET", "url": "{{base_url}}:8005/healthz"}},
+        {"name": "LangGraph healthz", "request": {"method": "GET", "url": "{{base_url}}:8006/healthz"}}
+      ]
+    },
+    {
+      "name": "RAG",
+      "item": [
+        {
+          "name": "POST /query",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"orders API 5xx error spike runbook\",\n  \"limit\": 3\n}"
+            },
+            "url": "{{base_url}}:8003/query"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Predictor",
+      "item": [
+        {
+          "name": "POST /analyse",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"service\": \"orders-api\",\n  \"metric_window\": {\"values\": [1.0, 1.2, 2.5, 4.0, 5.1]},\n  \"context\": {\"alert_name\": \"HighErrorRate\"}\n}"
+            },
+            "url": "{{base_url}}:8002/analyse"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Guardrails",
+      "item": [
+        {
+          "name": "POST /check/input — valid",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Orders API 5xx rate above SLO for 10 minutes on prod\"\n}"
+            },
+            "url": "{{base_url}}:8004/check/input"
+          }
+        },
+        {
+          "name": "POST /check/input — off-topic",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"How to make pasta carbonara step by step\"\n}"
+            },
+            "url": "{{base_url}}:8004/check/input"
+          }
+        },
+        {
+          "name": "POST /check/output",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Probable cause: cache eviction storm (per INC-101). Owner: Infra SRE.\"\n}"
+            },
+            "url": "{{base_url}}:8004/check/output"
+          }
+        }
+      ]
+    },
+    {
+      "name": "LangGraph",
+      "item": [
+        {
+          "name": "POST /agent/run",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"incident_id\": \"INC-101\",\n  \"question\": \"What similar incidents and remediation steps apply to orders-api 5xx spikes?\"\n}"
+            },
+            "url": "{{base_url}}:8006/agent/run"
+          }
+        }
+      ]
+    }
+  ]
+}

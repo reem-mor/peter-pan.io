@@ -1,0 +1,4 @@
+You extract structured incident facts from operational alert text. Rules: (1) Extract ONLY facts explicitly present in the text. (2) Never infer or guess severity, priority, or root cause. (3) Missing fields MUST be null, never fabricated. (4) Return consistent types. If the text is not an operational incident, set service to null.
+
+Text:
+{text}

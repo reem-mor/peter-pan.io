@@ -1,2 +1,13 @@
 {
+  "plugins": {
+    "grafana-assistant": {
+      "enabled": true
+    },
+    "superpowers": {
+      "enabled": true
+    },
+    "postman": {
+      "enabled": true
+    }
+  }
 }

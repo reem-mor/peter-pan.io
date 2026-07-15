@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-11T05:25:31.830220+00:00",
+  "generated_at": "2026-07-14T17:40:30.914845+00:00",
   "entrypoint": "n8n",
   "git_sha": "",
   "golden_signals_sha256": "5b13fc82c0b16bc8be87fb8cc7517af9bd7f9d66fade54ba3b1496ece1c32b3f",
-  "n8n_flow_sha256": "2e51f08c6759f9d9d2373aa76873a7834aa7f4727e42e0076e8cbd27ed6acdce",
-  "layer3_source_sha256": "08e748fc08c94e9d4d586d3d83a1b7ca8ee1f2cd15c054aee05b011d012d18aa",
+  "n8n_flow_sha256": "4a6996349308435cc661ae02b0c7140c0315d5b0b410b85bcf4afe50c8ccd2d2",
+  "layer3_source_sha256": "3c0e157b66258b282332215c966edf692163874ce11bd554fc56561556ee59fe",
   "results": [
     {
       "id": "golden-orders-api-errors",
@@ -62,7 +62,7 @@
         "owner_unverified",
         "report_flagged"
       ],
-      "category": "application",
+      "category": "database",
       "p_level": "P3",
       "provider": "fixture-fallback",
       "evidence": "predictor,rag,service_context"

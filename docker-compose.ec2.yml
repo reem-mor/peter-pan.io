@@ -10,12 +10,21 @@ services:
     ports: !override ["8002:8000"]
   rag:
     ports: !override ["8003:8000"]
+    volumes: !override
+      - rag-chroma:/data/chroma
+      - /home/ubuntu/models:/models:ro
   guardrails:
     ports: !override ["8004:8000"]
   tools-api:
     ports: !override ["8005:8000"]
   langgraph-agent:
     ports: !override ["8006:8000"]
+  dashboard-generator:
+    ports: !override ["8008:8000"]
+  image-analyzer:
+    ports: !override ["8007:8000"]
+  grafana:
+    ports: !override ["3000:3000"]
   integration-stubs:
     ports: !override ["8020:8000"]
   n8n:

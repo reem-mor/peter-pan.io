@@ -3,11 +3,11 @@
 Working memory for Claude Code on this repo. Read before acting.
 
 ## What this is
-PETER PAN — a self-hostable, predictive, agentic incident-response platform (AIOps triage).
+PETER PAN — a self-hostable, guarded, agentic incident-response platform (AIOps triage).
 Built as a 1:1 crosswalk of the AI Property Triage final-project guideline into the incident-ops domain: same graded capabilities, same rubric lines, AIOps instead of real estate.
 
 PETER = Priority · Enrichment · Triage · Escalation · Resolution
-PAN = Predictive · Agentic · Navigator
+PAN = the Panoramic view of your incidents (PITER connected Knowledge → RAG; PETER PAN connects Observability → Monitoring)
 
 ## Golden rules (apply to every task)
 1. **Audit before action.** Read the relevant code/config and state a plan before editing. No edits on assumption.
@@ -16,7 +16,30 @@ PAN = Predictive · Agentic · Navigator
 4. **Contracts are frozen.** Canonical schemas live in `docs/contracts/`; changing one requires an ADR. Never break a service contract silently.
 5. **Synthetic data only.** No real PII, secrets, customer incidents. Ever. Not in code, fixtures, commits, or logs.
 6. **Secrets via `.env` + Secrets Manager.** Never hardcode keys. Never commit `.env`. `.env.example` stays key-less.
-7. **Be brief.** Short, direct answers. Concrete diffs over prose. Decide autonomously where context allows rather than asking.
+7. **Branch flow only.** Feature branch → PR → merge on green CI. Never merge locally to main.
+8. **Be brief.** Short, direct answers. Concrete diffs over prose. Decide autonomously where context allows rather than asking.
+
+## Locked decisions & scope
+- Guardrail schema: `{passed, flags, reason}` (documented deviation from the course's `{pass, reason, safe_text}`).
+- Predictor: 6 classes, field `incident_class`; the 6→3 routing mapping lives only in the n8n Router. Severity P1–P4 only — no P5.
+- Fixture-first: the demo path never depends on a live LLM or external API.
+- Python 3.12 is the target (venv + CI).
+- **Out of scope — do not scaffold, even "for later":** Redis/caching, feedback-loop code (roadmap slide only), voice/bridge/live-call integration, PagerDuty/Opsgenie, Kubernetes, Terraform.
+
+## Skills (load the relevant one before working on its area)
+| Area | Skill |
+|---|---|
+| Alerts, incidents, logs, metrics, enrichment, routing | observability-incidents-domain |
+| Any FastAPI service (incl. performance rules) | fastapi-service-conventions |
+| Predictor model, training, evaluation | pytorch-predictor |
+| Streamlit UI, UX, demo polish | streamlit-demo-ui |
+| n8n flow, nodes, expressions, merges, export | n8n-flow-conventions |
+| RAG internals: embeddings, vector store, GGUF, ingestion | rag-pipeline-internals |
+| Grafana JSON, Dashboard Generator | grafana-dashboard-json |
+| EC2, CloudFormation, deploy, security groups | aws-deployment |
+| Prompt Engineering Log (25% deliverable) | prompt-log-format |
+| Demo prep and recording (freeze window) | demo-script-guard |
+| Explanations for lecturer/employers/README | caveman-explainer |
 
 ## Karpathy-inspired coding behavior
 
@@ -48,6 +71,7 @@ contracts, security rules, and required resilience paths always take precedence.
 - Build sequence and milestone gates: [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md)
 - Frozen schemas: [docs/contracts/](docs/contracts/)
 - Rubric and prompt-engineering requirements: [docs/PROJECT-PLAN.md](docs/PROJECT-PLAN.md)
+- Course-spec crosswalk and deviations register: [docs/SPEC-CROSSWALK.md](docs/SPEC-CROSSWALK.md)
 - Agent tooling, MCP setup, and CI commands: [docs/AGENT-TOOLING.md](docs/AGENT-TOOLING.md)
 
 ## Verification and evidence
@@ -82,8 +106,10 @@ local parser incompatibility; do not describe that fallback as a real-provider r
 
 ## Declared deviations (state upfront, never hide)
 1. AIOps domain instead of real estate.
-2. Time-series metric windows instead of images for the classifier (vision fallback available).
-3. Bedrock Claude alongside Gemini/GPT-4o; pgvector alongside ChromaDB — one-node swaps.
+2. Time-series metric windows instead of images for the classifier (vision fallback implemented: `services/image-analyzer`).
+3. Guardrail schema `{passed, flags, reason}` instead of `{pass, reason, safe_text}`.
+4. Bedrock Claude alongside Gemini/GPT-4o; pgvector alongside ChromaDB — one-node swaps.
+Full register: docs/SPEC-CROSSWALK.md.
 
 ## Definition of done (per change)
 - Typed request/response schemas, error handling, fail-safe path.

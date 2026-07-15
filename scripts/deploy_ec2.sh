@@ -79,7 +79,7 @@ docker compose -f docker-compose.yml -f docker-compose.ec2.yml --profile bootstr
 
 echo "--- on-instance health check ---"
 fails=0
-for port in 8001 8002 8003 8004 8005 8006 8007 8010 8020 5678; do
+for port in 8001 8002 8003 8004 8005 8006 8007 8008 8010 8020 3000 5678; do
   code="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${port}/healthz" || echo 000)"
   echo "port ${port}: ${code}"
   [ "$code" = "200" ] || fails=$((fails+1))

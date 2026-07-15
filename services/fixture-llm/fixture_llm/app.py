@@ -178,14 +178,25 @@ def _commander_evidence(messages: list[ChatMessage]) -> dict[str, Any] | None:
     return None
 
 
-_INCIDENT_CLASS_TO_CATEGORY: dict[str, str | None] = {
-    "cpu_saturation": "infra",
-    "memory_leak": "infra",
-    "db_lock_contention": "database",
-    "replication_lag": "database",
-    "error_rate_spike": "application",
-    "normal": None,
-}
+def _predictor_policy(messages: list[ChatMessage]) -> dict[str, Any] | None:
+    """Parse the deterministic predictor policy the flow injects into the prompt.
+
+    The 6→3 class-to-category mapping lives only in the n8n flow (Apply
+    Predictor Policy); this fixture copies routing_category from the policy,
+    exactly as the Write TriageReport system message instructs the model to.
+    """
+    marker = "Predictor policy:"
+    for message in reversed(messages):
+        content = message.content or ""
+        if marker not in content:
+            continue
+        candidate = content.split(marker, 1)[1].lstrip()
+        try:
+            parsed, _end = json.JSONDecoder().raw_decode(candidate)
+        except json.JSONDecodeError:
+            return None
+        return parsed if isinstance(parsed, dict) else None
+    return None
 
 
 def _tool_grounded_report(
@@ -208,10 +219,11 @@ def _tool_grounded_report(
         severity, deep.get("p_level", "P3")
     )
     incident_class = predictor.get("incident_class")
-    category = _INCIDENT_CLASS_TO_CATEGORY.get(incident_class)
-    if category is None:
+    policy = _predictor_policy(messages) or {}
+    category = policy.get("routing_category")
+    if category not in {"infra", "database", "application"}:
         raise ValueError(
-            "predictor incident_class is missing, unknown, or normal; "
+            "predictor_policy.routing_category is missing or unroutable; "
             "routing policy must stop before synthesis"
         )
 

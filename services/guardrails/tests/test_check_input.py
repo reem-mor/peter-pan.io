@@ -108,6 +108,33 @@ def test_rejects_whitespace_only_title_even_though_schema_allows_it() -> None:
     assert "empty_title" in body["flags"]
 
 
+def test_rejects_off_topic_pasta_recipe() -> None:
+    signal = {
+        **_VALID_SIGNAL,
+        "title": "Best pasta recipe for dinner tonight",
+        "body": "I want carbonara tips, not ops.",
+    }
+    resp = client.post("/check/input", json={"signal": signal})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["passed"] is False
+    assert "off_topic" in body["flags"]
+
+
+def test_ops_alert_with_food_metaphor_still_passes() -> None:
+    """Ops markers in the text must keep FP rate low even if a food word appears."""
+    signal = {
+        **_VALID_SIGNAL,
+        "title": "orders-api error rate spike after deploy",
+        "body": "Checkout latency p95 elevated; on-call compares to the dinner-rush baseline.",
+    }
+    resp = client.post("/check/input", json={"signal": signal})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["passed"] is True
+    assert body["flags"] == []
+
+
 def test_multiple_violations_preserve_flags_and_bound_reason() -> None:
     signal = {
         **_VALID_SIGNAL,

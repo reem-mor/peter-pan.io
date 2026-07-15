@@ -197,6 +197,9 @@ def test_synthesis_prefers_commander_tool_evidence_over_service_guessing():
                     "role": "user",
                     "content": (
                         'Incident: {"id":"inc-toolground01","service":"orders-api"}\n\n'
+                        'Predictor policy: {"incident_class":"db_lock_contention",'
+                        '"severity":5,"p_level":"P1","routing_category":"database",'
+                        '"outcome":"routable"}\n\n'
                         f"Commander findings: {json.dumps(commander_evidence)}"
                     ),
                 },
@@ -209,6 +212,37 @@ def test_synthesis_prefers_commander_tool_evidence_over_service_guessing():
     assert report["p_level"] == "P1"
     assert report["owner_team"] == "Database Reliability"
     assert report["model_meta"]["predictor_severity"] == "5"
+
+
+def test_tool_grounded_synthesis_requires_flow_routing_category():
+    """The 6→3 mapping lives only in the n8n flow — the fixture must copy
+    predictor_policy.routing_category, never derive category from the class."""
+    commander_evidence = {
+        "predictor": {
+            "incident_class": "db_lock_contention",
+            "severity": 5,
+            "confidence": 0.93,
+        },
+    }
+    with pytest.raises(ValueError, match="routing_category"):
+        client.post(
+            "/v1/chat/completions",
+            json={
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "Write a TriageReport structured output.",
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            'Incident: {"id":"inc-toolground02","service":"orders-api"}\n\n'
+                            f"Commander findings: {json.dumps(commander_evidence)}"
+                        ),
+                    },
+                ]
+            },
+        )
 
 
 def test_synthesis_populates_parsed_message_for_json_schema_requests():
