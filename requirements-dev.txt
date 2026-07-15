@@ -2,7 +2,7 @@
 # services/*/requirements.txt during Stage A.
 pytest==8.3.4
 pytest-cov==7.1.0
-ruff==0.15.12
+ruff==0.15.21
 pydantic==2.13.4
 httpx==0.28.1
 streamlit==1.44.1
