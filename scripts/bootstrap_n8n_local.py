@@ -14,7 +14,7 @@ import httpx
 
 ROOT = Path(__file__).resolve().parent.parent
 WORKFLOW_PATH = ROOT / "n8n" / "peter-flow.json"
-WORKFLOW_NAME = "PETER PAN — PETER Flow (Stage A)"
+WORKFLOW_NAME = "PETER PAN — Observability Triage"
 
 N8N_BASE_URL = os.environ.get("N8N_BASE_URL", "http://127.0.0.1:5678").rstrip("/")
 OWNER_EMAIL = os.environ.get("N8N_OWNER_EMAIL", "admin@local.peter")
@@ -25,9 +25,14 @@ FIXTURE_LLM_API_KEY = os.environ.get(
     "PETER_FIXTURE_LLM_API_KEY",
     SERVICES_TOKEN,
 ).strip()
+# n8n runs inside Compose — credential base URL must use service DNS.
+# Host .env often sets PETER_FIXTURE_LLM_URL=http://localhost:8010/v1 for the
+# UI/scripts; that address is unreachable from the n8n container and surfaces
+# as lmChatOpenAi "Connection error" with empty webhook bodies.
 FIXTURE_LLM_INTERNAL_URL = os.environ.get(
-    "PETER_FIXTURE_LLM_URL", "http://fixture-llm:8000/v1"
-)
+    "PETER_FIXTURE_LLM_INTERNAL_URL",
+    "http://fixture-llm:8000/v1",
+).strip()
 
 
 def _wait_for_n8n(client: httpx.Client, timeout_s: int = 120) -> None:
@@ -103,6 +108,50 @@ def _find_workflow(client: httpx.Client) -> dict[str, Any] | None:
     detail = client.get(f"/rest/workflows/{summary['id']}")
     detail.raise_for_status()
     return detail.json().get("data") or detail.json()
+
+
+def _archive_conflicting_peter_workflows(client: httpx.Client) -> None:
+    """Deactivate + archive non-canonical PETER flows that steal peter-signal.
+
+    Local n8n volumes often retain an older \"PETER Flow (Stage A)\" workflow
+    that auto-activates on restart and conflicts with Observability Triage,
+    producing empty webhook responses. Bootstrap only manages WORKFLOW_NAME;
+    this clears other PETER* drafts so the webhook has a single owner.
+    """
+    listing = client.get("/rest/workflows")
+    listing.raise_for_status()
+    for item in listing.json().get("data", []):
+        name = str(item.get("name") or "")
+        if item.get("isArchived"):
+            continue
+        if name == WORKFLOW_NAME:
+            continue
+        if not name.upper().startswith("PETER"):
+            continue
+        workflow_id = item.get("id")
+        if not workflow_id:
+            continue
+        if item.get("active"):
+            deactivated = client.post(f"/rest/workflows/{workflow_id}/deactivate")
+            if deactivated.status_code not in {200, 400}:
+                raise RuntimeError(
+                    "conflicting workflow deactivate failed: "
+                    f"{name} {deactivated.status_code} {deactivated.text}"
+                )
+        archived = client.post(f"/rest/workflows/{workflow_id}/archive")
+        if archived.status_code not in {200, 201, 400}:
+            # Some n8n builds use PATCH isArchived instead of /archive.
+            patched = client.patch(
+                f"/rest/workflows/{workflow_id}",
+                json={"isArchived": True, "versionId": item.get("versionId")},
+            )
+            if patched.status_code >= 400:
+                raise RuntimeError(
+                    "conflicting workflow archive failed: "
+                    f"{name} archive={archived.status_code} "
+                    f"patch={patched.status_code} {patched.text}"
+                )
+        print(f"Archived conflicting workflow: {name} ({workflow_id})")
 
 
 def _publish_workflow(
@@ -244,6 +293,9 @@ def main() -> int:
                 },
             },
         )
+
+        print("Archiving conflicting PETER workflows ...")
+        _archive_conflicting_peter_workflows(client)
 
         print("Synchronizing tracked workflow export ...")
         _patch_and_activate(

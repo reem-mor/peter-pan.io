@@ -29,6 +29,18 @@ This starts:
 
 The `bootstrap` profile runs `scripts/bootstrap_n8n_local.py` once to import and activate `n8n/peter-flow.json`.
 
+Host `.env` may set `PETER_FIXTURE_LLM_URL=http://localhost:8010/v1` for scripts/UI on the host. Bootstrap binds the **n8n** Mock LLM credential with `PETER_FIXTURE_LLM_INTERNAL_URL` (default `http://fixture-llm:8000/v1`) so the container can reach the seam.
+
+Local Layer 1→4 validation report: [`docs/LAYER-LOCAL-VALIDATION.md`](LAYER-LOCAL-VALIDATION.md).
+
+## Playwright smokes (UI + n8n login)
+
+Requires the stack up and `.env` loaded into the process (credentials never hardcoded):
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest ui/tests/playwright -q
+```
+
 ## Populate ChromaDB (optional, chroma backend)
 
 ```powershell
@@ -91,6 +103,9 @@ docker compose --profile bootstrap --profile ui down
 
 | Symptom | Fix |
 |---------|-----|
-| n8n webhook 404 | Re-run bootstrap: `docker compose --profile bootstrap up n8n-bootstrap` |
+| n8n webhook 404 / empty 200 body | Archive old Stage A flow + re-bootstrap: `.\.venv\Scripts\python.exe scripts\bootstrap_n8n_local.py` (archives non-canonical `PETER*` workflows, rebinds Mock LLM to `fixture-llm` DNS) |
+| Mock LLM "Connection error" | Credential URL must be `http://fixture-llm:8000/v1` inside n8n — not `localhost:8010` |
 | Service unhealthy | `docker compose logs <service>` |
 | E2E token rejected | Match `PETER_SERVICES_TOKEN` in `.env` and `--token` flag |
+| UI Assistant 401 to fixture-llm | UI must send Bearer token (`PETER_SERVICES_TOKEN`); rebuild/restart `ui` after pull |
+| Unknown service → review queue | Prefer catalog slugs (`orders-api`, `postgres-primary`); `api-gateway` flags for review |

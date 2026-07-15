@@ -8,6 +8,9 @@
     },
     "postman": {
       "enabled": true
+    },
+    "langfuse": {
+      "enabled": true
     }
   }
 }

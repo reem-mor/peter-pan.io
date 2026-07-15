@@ -54,17 +54,21 @@ Playwright is the only default project server because it supports the Stage B UI
 smoke test without external credentials.
 
 n8n MCP is optional. Use the separate `.cursor/mcp.n8n.json.example` only with a
-trusted development instance. n8n's built-in instance-level MCP must be enabled by
-an owner, workflow access must be explicitly scoped, and credentials must come from
-`N8N_MCP_URL` and `N8N_MCP_TOKEN`.
+trusted development or cloud instance. n8n's built-in instance-level MCP must be
+enabled by an owner, workflow access must be explicitly scoped, and connection
+details come from `N8N_MCP_URL` / `N8N_MCP_TOKEN` (or Cursor `mcp_auth` for the
+hosted HTTP MCP endpoint).
 
 Before any n8n MCP call:
 
 - Load the `n8n-flow-guardian` subagent guidance.
-- Never call `test_workflow` on a live webhook-triggered flow.
-- Prefer read-only discovery first.
+- If server status is `error`, call `mcp_auth` then retry a read-only tool.
+- Prefer read-only discovery first, then mutate/publish/execute as the user requests.
+- Prefer `execute_workflow` for full runs; use `test_workflow` for pin-data isolation.
+- On active webhook/Telegram flows, avoid bare `test_workflow` (can deregister the
+  webhook) — unpublish first or use `execute_workflow` instead.
 - Use operation-based updates and explicit credential bindings.
-- Re-export approved flow changes to `n8n/peter-flow.json`.
+- Re-export approved PETER flow changes to `n8n/peter-flow.json`.
 
 ## Verification
 

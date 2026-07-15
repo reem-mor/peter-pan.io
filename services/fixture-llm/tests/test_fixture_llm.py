@@ -21,6 +21,14 @@ def test_healthz():
     assert client.get("/healthz").json()["service"] == "fixture-llm"
 
 
+def test_list_models():
+    response = client.get("/v1/models")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["object"] == "list"
+    assert body["data"][0]["id"] == "peter-stage-a-fixture"
+
+
 def test_extract_task_detection():
     response = client.post(
         "/v1/chat/completions",

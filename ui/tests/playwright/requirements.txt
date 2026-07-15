@@ -1,0 +1,4 @@
+# Playwright smoke (Layer 1 UI + n8n login). Not installed by default CI image.
+playwright>=1.49
+pytest-playwright>=0.6
+httpx>=0.28

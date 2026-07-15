@@ -87,8 +87,18 @@ three golden signals on 2026-07-11. It requires the compose stack and explicit n
 bootstrap profile. The Stage A writer has a deterministic contract-valid fallback for
 local parser incompatibility; do not describe that fallback as a real-provider result.
 
-## n8n MCP safety (hard rules — violating these breaks production)
-- **Never** call `test_workflow` on a live webhook/Telegram-triggered flow — it deregisters the production webhook.
+## n8n MCP (cloud account — full control when connected)
+Create, update, publish, unpublish, execute, and pin-data test are all allowed on the
+connected n8n Cloud account when the user has enabled the n8n MCP server.
+
+- Prefer `execute_workflow` with `executionMode: "manual"` to exercise draft/node logic.
+- Prefer `execute_workflow` with `executionMode: "production"` after `publish_workflow`.
+- Prefer `test_workflow` + `prepare_test_pin_data` for isolated node/path tests that should
+  not hit live credentials/HTTP.
+- **Webhook caveat:** `test_workflow` on an *active* webhook/Telegram-triggered flow can
+  deregister the production webhook. For those flows: unpublish → test → republish, or use
+  `execute_workflow` (`manual`/`production`) instead. Do not refuse a user-requested test —
+  use the safer path first and state which path you took.
 - Use `update_workflow` with an `operations` array as the safe modification path.
 - Credential bindings do **not** inherit — set explicitly via `setNodeCredential`.
 - `create_workflow_from_code` cooks escape sequences in template literals — use `String.fromCharCode()` / `\uXXXX` for any Hebrew in Code nodes.
@@ -96,6 +106,7 @@ local parser incompatibility; do not describe that fallback as a real-provider r
 - Perplexity node v2 needs an explicit `operation` discriminator alongside `resource: "search"`.
 - Project-scope credential mismatch is the most common `publish_workflow` failure — check scope first.
 - `get_execution` needs both `executionId` and `workflowId`; use `includeData: true` with filtered `nodeNames` to avoid response-size limits.
+- If the n8n MCP server status is `error` / tools unavailable, call `mcp_auth` then retry.
 
 ## Deployment safety (portfolio / demo)
 - Canonical deployment constraints and procedures: [infra/aws/README.md](infra/aws/README.md).

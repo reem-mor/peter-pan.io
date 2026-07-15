@@ -78,8 +78,21 @@ def test_publish_workflow_uses_authenticated_rest_version():
 def test_bootstrap_updates_in_place_without_delete_or_archive():
     source = SCRIPT_PATH.read_text(encoding="utf-8")
     assert ".delete(" not in source
-    assert "/archive" not in source
     assert "_purge_named_workflows" not in source
+    # Non-canonical PETER* drafts may be archived so peter-signal has one owner.
+    assert "_archive_conflicting_peter_workflows" in source
+    assert 'name == WORKFLOW_NAME' in source or "name == WORKFLOW_NAME" in source
+    assert "/archive" in source
+
+
+def test_bootstrap_binds_compose_internal_fixture_llm_url():
+    source = SCRIPT_PATH.read_text(encoding="utf-8")
+    assert "PETER_FIXTURE_LLM_INTERNAL_URL" in source
+    assert "http://fixture-llm:8000/v1" in source
+    # Host localhost URL must not be the n8n credential default.
+    assert 'os.environ.get(\n    "PETER_FIXTURE_LLM_URL"' not in source
+    assert 'get(\n    "PETER_FIXTURE_LLM_URL"' not in source
+    assert 'environ.get("PETER_FIXTURE_LLM_URL"' not in source
 
 
 def test_bootstrap_does_not_skip_an_active_stale_export():

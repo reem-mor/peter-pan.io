@@ -10,6 +10,7 @@ imports are forbidden — the UI vendors only the fields it touches.
 
 from __future__ import annotations
 
+import os
 import uuid
 from datetime import datetime
 from typing import Any, Literal
@@ -52,6 +53,58 @@ class SubmissionResult(BaseModel):
     status_code: int = 0
     detail: str = ""
     signal_id: str = ""
+    body: dict[str, Any] | None = None
+    kind: Literal[
+        "triage_report",
+        "rejected",
+        "flagged_for_review",
+        "suppressed",
+        "predictor_invalid",
+        "error",
+        "unreachable",
+        "misconfigured",
+    ] = "error"
+
+
+def classify_webhook_body(
+    status_code: int, payload: dict[str, Any] | None
+) -> tuple[str, bool]:
+    """Map HTTP status + JSON body to a UI result kind and ok flag."""
+    if payload is None:
+        return "error", False
+
+    status = str(payload.get("status") or "").lower()
+    if status == "rejected" or payload.get("passed") is False:
+        return "rejected", True  # handled path, not a transport failure
+    if status == "flagged_for_review":
+        return "flagged_for_review", True
+    if status == "suppressed":
+        return "suppressed", True
+    if status == "predictor_invalid":
+        return "predictor_invalid", True
+    if status_code == 200 and (
+        "category" in payload or "incident_id" in payload or "summary" in payload
+    ):
+        return "triage_report", True
+    if status_code == 202 and isinstance(payload.get("report"), dict):
+        return "flagged_for_review", True
+    if 200 <= status_code < 300:
+        return "triage_report", True
+    return "error", False
+
+
+def extract_triage_report(payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Return the TriageReport object from a webhook payload when present."""
+    if not isinstance(payload, dict):
+        return None
+    report = payload.get("report")
+    if isinstance(report, dict) and (
+        "incident_id" in report or "category" in report or "summary" in report
+    ):
+        return report
+    if "incident_id" in payload or "category" in payload or "summary" in payload:
+        return payload
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -117,8 +170,16 @@ def new_sig_id() -> str:
 def call_fixture_llm(messages: list[dict[str, str]], base_url: str) -> str:
     """POST to an OpenAI-compatible /chat/completions endpoint (fixture LLM)."""
     url = f"{base_url.rstrip('/')}/chat/completions"
-    payload: dict[str, Any] = {"model": "fixture", "messages": messages, "stream": False}
-    resp = httpx.post(url, json=payload, timeout=30.0)
+    payload: dict[str, Any] = {
+        "model": "peter-stage-a-fixture",
+        "messages": messages,
+        "stream": False,
+    }
+    headers: dict[str, str] = {}
+    token = os.environ.get("PETER_SERVICES_TOKEN", "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    resp = httpx.post(url, json=payload, headers=headers, timeout=30.0)
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
 
@@ -169,14 +230,18 @@ def submit_signal(
     signal: Signal,
     webhook_url: str,
     secret: str = "",
+    timeout_s: float = 180.0,
 ) -> SubmissionResult:
     """POST a validated Signal JSON to the n8n webhook.
 
     Returns a SubmissionResult describing success or failure; never raises.
+    Parses JSON body when present so the UI can render TriageReport / rejects.
     """
     if not webhook_url:
         return SubmissionResult(
-            ok=False, detail="PETER_UI_N8N_WEBHOOK_URL not configured"
+            ok=False,
+            detail="PETER_UI_N8N_WEBHOOK_URL not configured",
+            kind="misconfigured",
         )
 
     headers: dict[str, str] = {"Content-Type": "application/json"}
@@ -186,18 +251,49 @@ def submit_signal(
     try:
         resp = httpx.post(
             webhook_url,
-            json=signal.model_dump(mode="json"),
+            json=signal.model_dump(mode="json", exclude_none=True),
             headers=headers,
-            timeout=10.0,
-        )
-        return SubmissionResult(
-            ok=resp.status_code < 400,
-            status_code=resp.status_code,
-            detail=resp.text[:500],
-            signal_id=signal.id,
+            timeout=timeout_s,
         )
     except httpx.HTTPError as exc:
-        return SubmissionResult(ok=False, detail=str(exc), signal_id=signal.id)
+        return SubmissionResult(
+            ok=False,
+            detail=str(exc),
+            signal_id=signal.id,
+            kind="unreachable",
+        )
+
+    payload: dict[str, Any] | None = None
+    try:
+        parsed = resp.json()
+        if isinstance(parsed, dict):
+            payload = parsed
+    except Exception:  # noqa: BLE001 — keep raw text in detail
+        payload = None
+
+    kind, ok = classify_webhook_body(resp.status_code, payload)
+    if payload is None and resp.status_code < 400:
+        kind, ok = "error", False
+
+    detail = ""
+    if payload is not None:
+        detail = str(
+            payload.get("reason")
+            or payload.get("summary")
+            or payload.get("detail")
+            or ""
+        )[:500]
+    if not detail:
+        detail = (resp.text or "")[:500]
+
+    return SubmissionResult(
+        ok=ok,
+        status_code=resp.status_code,
+        detail=detail,
+        signal_id=signal.id,
+        body=payload,
+        kind=kind,  # type: ignore[arg-type]
+    )
 
 
 # ---------------------------------------------------------------------------

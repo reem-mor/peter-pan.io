@@ -17,13 +17,26 @@ Playwright is the only default project server. The AWS deployment plugin enabled
 ### Optional n8n MCP
 
 n8n provides an instance-level MCP server. It is intentionally opt-in because it can
-discover, edit, and execute workflows. Enable it only on a trusted development instance,
-then merge [`.cursor/mcp.n8n.json.example`](../.cursor/mcp.n8n.json.example) into the
-gitignored `.cursor/mcp.json` and set `N8N_MCP_URL` and `N8N_MCP_TOKEN` as user
+discover, edit, publish, execute, and test workflows. Enable it on a trusted
+development or n8n Cloud instance, then merge **one** entry from
+[`.cursor/mcp.n8n.json.example`](../.cursor/mcp.n8n.json.example) into the
+gitignored `.cursor/mcp.json` and set `N8N_MCP_URL` / `N8N_MCP_TOKEN` as user
 environment variables.
 
-Before using n8n MCP, invoke `n8n-flow-guardian`. Never use `test_workflow` on the
-live PETER webhook flow, and re-export every approved change to `n8n/peter-flow.json`.
+Prefer the `n8n-mcp` **stdio** entry (`npx mcp-remote` → `…/mcp-server/http`). Cursor’s
+direct Streamable HTTP transport can fail with `Failed to open SSE stream` against
+n8n Cloud even when a manual `initialize` POST returns HTTP 200. Use the
+`n8n-mcp-http` block only if HTTP is stable in your Cursor build; `n8n-supergateway`
+is a second stdio fallback. Do not point Cursor at an MCP Server Trigger URL
+(`/mcp/...`); instance-level MCP is `/mcp-server/http` only.
+
+Before using n8n MCP, invoke `n8n-flow-guardian`. Prefer `execute_workflow` for full
+runs and `test_workflow` for pin-data isolation. On an *active* webhook/Telegram flow,
+unpublish before `test_workflow` (or use `execute_workflow`) so the production webhook
+is not deregistered. Re-export every approved PETER change to `n8n/peter-flow.json`.
+
+If the server shows discovery errors after a config change, fully restart Cursor so it
+picks up User env vars, then retry `search_workflows`.
 
 ## Project skills
 

@@ -1,5 +1,5 @@
 # =============================================================================
-# PETER PAN — local artifacts only (secrets, caches, generated output)
+# PETER PAN â€” local artifacts only (secrets, caches, generated output)
 # =============================================================================
 
 # --- Secrets & credentials (never commit) ---
@@ -7,6 +7,7 @@
 .env.*
 !.env.example
 .cursor/mcp.json
+.cursor/mcp.json.bak*
 .claude/settings.local.json
 n8n/bootstrap-credentials.json
 *.pem
@@ -44,7 +45,7 @@ build/
 *.egg
 pip-wheel-metadata/
 
-# --- Node / frontend (removed — Streamlit UI in ui/) ---
+# --- Node / frontend (removed â€” Streamlit UI in ui/) ---
 node_modules/
 
 # --- Logs & debug captures ---
@@ -59,7 +60,7 @@ evaluation/pytest_output.txt
 *.sqlite
 *.sqlite3
 *.db
-# Large model blobs — never in git. Track the deliverable .pth via Git LFS if needed,
+# Large model blobs â€” never in git. Track the deliverable .pth via Git LFS if needed,
 # otherwise ship the training script + repro instructions (guideline allows either).
 *.gguf
 # --- Predictor/Ingestion demo fixtures (regenerate via predictive/datagen) ---

@@ -11,9 +11,9 @@ flow, export the current version — every structural change gets a fresh export
 committed alongside it.
 
 ## The 8 nodes (fixed — do not add/remove without explicit approval)
-1. **Webhook** — POST from Streamlit. Respond mode: "When Last Node Finishes"
-   (the UI waits for the full brief; an immediate-respond webhook returns an
-   empty result and the UI shows nothing).
+1. **Webhook** — POST from Streamlit. Respond mode: `responseNode`
+   (Respond to Webhook nodes return the TriageReport / reject / suppress
+   payload; immediate-respond returns empty and the UI shows nothing).
 2. **Guardrails Input** — HTTP Request → EC2 `/check/input`.
 3. **IF** — condition on `{{ $json.passed }}` (boolean true). Fail branch →
    Reject node returning `{passed: false, flags, reason}` verbatim to the UI.
@@ -61,7 +61,7 @@ the Extractor prompt's input description.
 - Service base URLs come from n8n variables/credentials — never hardcode the
   EC2 IP in nodes (it changes on stop/start without an Elastic IP).
 - Deliverable: flow exported as importable JSON, committed at
-  `n8n/flow-export.json`. Strip credentials before commit (export never
+  `n8n/peter-flow.json`. Strip credentials before commit (export never
   includes secrets, but verify — grep the JSON for the EC2 IP and tokens).
 - Test the flow with `curl` against the webhook BEFORE testing via the UI —
   isolates flow bugs from UI bugs.

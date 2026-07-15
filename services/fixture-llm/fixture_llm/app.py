@@ -472,6 +472,25 @@ async def readyz() -> dict[str, bool]:
     return {"ready": True}
 
 
+@app.get("/v1/models")
+async def list_models(
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    """OpenAI-compatible model list — n8n lmChatOpenAi probes this on connect."""
+    _require_token(authorization)
+    return {
+        "object": "list",
+        "data": [
+            {
+                "id": "peter-stage-a-fixture",
+                "object": "model",
+                "created": 0,
+                "owned_by": "peter-pan",
+            }
+        ],
+    }
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(
     payload: ChatCompletionRequest,

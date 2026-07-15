@@ -14,12 +14,15 @@ Env vars consumed (all optional with safe defaults):
   PETER_RAG_URL               RAG service base URL (health check)
   PETER_GUARDRAILS_URL        Guardrails service base URL (health check)
   PETER_TOOLS_URL             Tools API base URL (health check)
+  PETER_LLM_PROVIDER          fixture | ollama | … (badge only)
+  GRAFANA_URL                 optional dashboard deep-link base
 """
 
 from __future__ import annotations
 
 import os
 from datetime import datetime, timezone
+from typing import Any
 
 import streamlit as st
 
@@ -30,6 +33,7 @@ from lib import (
     SubmissionResult,
     check_health,
     chat_sync,
+    extract_triage_report,
     health_url,
     is_off_topic,
     new_sig_id,
@@ -45,6 +49,8 @@ _WEBHOOK_SECRET: str = os.environ.get("PETER_WEBHOOK_SECRET", "")
 _FIXTURE_LLM_URL: str = os.environ.get("PETER_FIXTURE_LLM_URL", "")
 _OLLAMA_URL: str = os.environ.get("PETER_OLLAMA_URL", "")
 _OLLAMA_MODEL: str = os.environ.get("PETER_OLLAMA_MODEL", "llama3")
+_LLM_PROVIDER: str = os.environ.get("PETER_LLM_PROVIDER", "fixture").strip().lower()
+_GRAFANA_URL: str = os.environ.get("GRAFANA_URL", "").rstrip("/")
 
 _HEALTH_ENDPOINTS: dict[str, str] = {
     "ingestion": health_url(os.environ.get("PETER_INGESTION_URL", "")),
@@ -75,14 +81,154 @@ if "messages" not in st.session_state:
     st.session_state["messages"]: list[dict[str, str]] = []
 if "review_queue" not in st.session_state:
     st.session_state["review_queue"]: list[dict] = []
+if "last_submission" not in st.session_state:
+    st.session_state["last_submission"]: dict[str, Any] | None = None
+
+
+def _render_triage_report(report: dict[str, Any]) -> None:
+    """Structured TriageReport blocks (metrics + citations + steps)."""
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Category", str(report.get("category") or "—"))
+    m2.metric("Severity", str(report.get("p_level") or "—"))
+    m3.metric("Owner", str(report.get("owner_team") or "—"))
+    conf = report.get("confidence")
+    m4.metric(
+        "Confidence",
+        f"{float(conf):.0%}" if isinstance(conf, (int, float)) else "—",
+    )
+
+    st.markdown("**Summary**")
+    st.write(report.get("summary") or "—")
+    st.markdown("**Probable cause**")
+    st.write(report.get("probable_cause") or "—")
+
+    citations = report.get("citations") or []
+    if citations:
+        with st.expander(f"Citations ({len(citations)})", expanded=True):
+            for cite in citations:
+                if not isinstance(cite, dict):
+                    continue
+                st.markdown(
+                    f"- `{cite.get('source_id', '?')}` "
+                    f"({cite.get('source_type', '?')}): "
+                    f"{cite.get('quote', '')}"
+                )
+
+    steps = report.get("recommended_steps") or []
+    if steps:
+        st.markdown("**Recommended steps**")
+        for step in steps:
+            st.markdown(f"- {step}")
+
+    flags = report.get("guardrail_flags") or []
+    if flags:
+        st.warning("Guardrail flags: " + ", ".join(str(f) for f in flags))
+
+    if _GRAFANA_URL:
+        st.link_button("Open Grafana", _GRAFANA_URL, use_container_width=False)
+
+    with st.expander("Raw response", expanded=False):
+        st.json(report)
+
+
+def _render_guardrail_card(payload: dict[str, Any], title: str) -> None:
+    st.error(title)
+    c1, c2 = st.columns(2)
+    c1.write(f"**passed:** `{payload.get('passed')}`")
+    c2.write(f"**status:** `{payload.get('status', '—')}`")
+    flags = payload.get("flags") or []
+    st.write("**flags:** " + (", ".join(str(f) for f in flags) if flags else "—"))
+    st.write("**reason:** " + str(payload.get("reason") or "—"))
+    with st.expander("Raw response", expanded=False):
+        st.json(payload)
+
+
+def _handle_submission(result: SubmissionResult, signal: Signal) -> None:
+    """Render webhook outcome and update review queue when flagged."""
+    st.session_state["last_submission"] = {
+        "kind": result.kind,
+        "status_code": result.status_code,
+        "signal_id": signal.id,
+    }
+    body = result.body if isinstance(result.body, dict) else {}
+
+    if result.kind == "triage_report":
+        report = extract_triage_report(body) or body
+        st.success(
+            f"Triage complete for `{signal.id}` (HTTP {result.status_code})"
+        )
+        _render_triage_report(report)
+        return
+
+    if result.kind == "rejected":
+        _render_guardrail_card(body or {"reason": result.detail}, "Signal rejected")
+        return
+
+    if result.kind == "flagged_for_review":
+        report = extract_triage_report(body) or body.get("report") or body
+        if isinstance(report, dict):
+            st.session_state["review_queue"].insert(0, report)
+        st.warning(
+            f"Flagged for human review (HTTP {result.status_code}). "
+            "See Review Queue below."
+        )
+        if isinstance(report, dict) and (
+            "incident_id" in report or "summary" in report
+        ):
+            _render_triage_report(report)
+        else:
+            _render_guardrail_card(
+                body or {"reason": result.detail}, "Flagged for review"
+            )
+        return
+
+    if result.kind == "suppressed":
+        st.info(
+            f"Signal suppressed: {body.get('reason') or result.detail or 'known noise'}"
+        )
+        with st.expander("Raw response", expanded=False):
+            st.json(body or {"detail": result.detail})
+        return
+
+    if result.kind == "predictor_invalid":
+        st.error(
+            body.get("reason")
+            or result.detail
+            or "Predictor returned an invalid classification."
+        )
+        with st.expander("Raw response", expanded=False):
+            st.json(body or {"detail": result.detail})
+        return
+
+    if result.kind == "unreachable":
+        st.warning(
+            f"Webhook unreachable — signal NOT forwarded.\n\n{result.detail}"
+        )
+        st.info("Signal JSON (retain for manual retry):")
+        st.json(signal.model_dump(mode="json"))
+        return
+
+    if result.kind == "misconfigured":
+        st.error(result.detail or "Webhook URL not configured")
+        return
+
+    st.error(f"Submission failed (HTTP {result.status_code}): {result.detail}")
+    if body:
+        with st.expander("Raw response", expanded=False):
+            st.json(body)
+
 
 # ---------------------------------------------------------------------------
 # Sidebar: service health
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
-    st.title("🪝 PETER PAN")
+    st.title("PETER PAN")
     st.caption("Layer 1 — Incident Response WebUI")
+    if _LLM_PROVIDER in {"", "fixture"}:
+        st.caption("demo data · fixture LLM")
+    else:
+        st.caption(f"LLM provider: `{_LLM_PROVIDER}`")
     st.divider()
     st.subheader("Service Health")
 
@@ -95,17 +241,17 @@ with st.sidebar:
     st.divider()
     _webhook_ok = bool(_N8N_WEBHOOK_URL)
     st.caption(
-        "🟢 webhook configured" if _webhook_ok else "⚠️ PETER_UI_N8N_WEBHOOK_URL not set"
+        "webhook configured" if _webhook_ok else "PETER_UI_N8N_WEBHOOK_URL not set"
     )
 
-    if st.button("↺ Refresh health", use_container_width=True, key="refresh_health"):
+    if st.button("Refresh health", use_container_width=True, key="refresh_health"):
         st.rerun()
 
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
 
-tab_assistant, tab_submit = st.tabs(["💬 Assistant", "📋 Incident Submission"])
+tab_assistant, tab_submit = st.tabs(["Assistant", "Incident Submission"])
 
 # ============================================================
 # Tab 1: SRE Assistant
@@ -132,7 +278,7 @@ with tab_assistant:
                 _reply = OFF_TOPIC_REPLY
                 st.markdown(_reply)
             else:
-                with st.spinner("Thinking…"):
+                with st.status("Consulting fixture LLM…", expanded=False) as _status:
                     _msgs_to_send = [
                         {"role": "system", "content": SYSTEM_PROMPT},
                         *st.session_state["messages"],
@@ -144,8 +290,10 @@ with tab_assistant:
                             ollama_url=_OLLAMA_URL,
                             ollama_model=_OLLAMA_MODEL,
                         )
+                        _status.update(label="Reply ready", state="complete")
                     except RuntimeError as exc:
-                        _reply = f"⚠️ LLM unavailable: {exc}"
+                        _reply = f"LLM unavailable: {exc}"
+                        _status.update(label="LLM unavailable", state="error")
                 st.markdown(_reply)
 
         st.session_state["messages"].append({"role": "assistant", "content": _reply})
@@ -170,7 +318,7 @@ with tab_submit:
             _title_input = st.text_input(
                 "Title *",
                 max_chars=300,
-                placeholder="High error rate on checkout service",
+                placeholder="orders-api HTTP 5xx surge after deploy",
             )
             _body_input = st.text_area(
                 "Description",
@@ -179,7 +327,11 @@ with tab_submit:
                 placeholder="Symptoms, timeline, initial impact…",
             )
 
-            _svc_input = st.text_input("Service slug", placeholder="checkout-api")
+            _svc_input = st.text_input(
+                "Service slug",
+                placeholder="orders-api",
+                help="Use a catalog service: orders-api, postgres-primary, shop-web, …",
+            )
             _env_input = st.selectbox(
                 "Environment", ["", "production", "staging", "development"]
             )
@@ -192,10 +344,10 @@ with tab_submit:
             with _lk_col:
                 _label_key = st.text_input("Label key", placeholder="team")
             with _lv_col:
-                _label_val = st.text_input("Label value", placeholder="platform")
+                _label_val = st.text_input("Label value", placeholder="checkout")
 
             _form_submitted = st.form_submit_button(
-                "Submit Signal →",
+                "Submit Signal",
                 use_container_width=True,
                 type="primary",
             )
@@ -219,41 +371,40 @@ with tab_submit:
                     environment=_env_input or None,
                     severity_hint=_sev_input or None,
                     labels=_labels,
+                    raw={"metric_window_ref": "spike"},
                 )
 
-                _result: SubmissionResult = submit_signal(
-                    _signal, _N8N_WEBHOOK_URL, _WEBHOOK_SECRET
-                )
+                with st.status(
+                    "Submitting to n8n — enriching, classifying, writing brief…",
+                    expanded=True,
+                ) as _sub_status:
+                    _result: SubmissionResult = submit_signal(
+                        _signal, _N8N_WEBHOOK_URL, _WEBHOOK_SECRET
+                    )
+                    _sub_status.update(
+                        label=f"Done (HTTP {_result.status_code or 0})",
+                        state="complete" if _result.ok else "error",
+                    )
 
-                if _result.ok:
-                    st.success(
-                        f"Signal `{_signal.id}` submitted (HTTP {_result.status_code})"
-                    )
-                    st.json(_signal.model_dump(mode="json"))
-                elif _result.status_code == 0:
-                    st.warning(
-                        f"⚠️ Webhook unreachable — signal NOT forwarded.\n\n{_result.detail}"
-                    )
-                    st.info("Signal JSON (retain for manual retry):")
-                    st.json(_signal.model_dump(mode="json"))
-                else:
-                    st.error(
-                        f"Submission failed (HTTP {_result.status_code}): {_result.detail}"
-                    )
+                _handle_submission(_result, _signal)
 
     with _col_info:
         st.subheader("Signal Contract")
         st.caption("webui → n8n (Signal JSON)")
         st.code(
-            'source: "webui"\nkind:   "manual"\nid:     sig-<12-hex>\nreceived_at: ISO-8601 UTC\ntitle:  1–300 chars\nbody:   0–8000 chars\nservice: slug | null\nenvironment: str | null\nseverity_hint: critical|warning|info|null',
+            'source: "webui"\nkind:   "manual"\nid:     sig-<12-hex>\n'
+            "received_at: ISO-8601 UTC\ntitle:  1–300 chars\n"
+            "body:   0–8000 chars\nservice: catalog slug | null\n"
+            "environment: str | null\n"
+            "severity_hint: critical|warning|info|null",
             language="yaml",
         )
 
     # ---- Review Queue ------------------------------------------------
     st.divider()
-    st.subheader("🔍 Review Queue")
+    st.subheader("Review Queue")
     st.caption(
-        "TriageReports with non-empty ``guardrail_flags`` — "
+        "TriageReports flagged by output guardrails — "
         "requires human review before routing."
     )
 
@@ -272,10 +423,10 @@ with tab_submit:
             ):
                 _rc, _ac = st.columns([3, 1])
                 with _rc:
-                    st.json(_report)
+                    _render_triage_report(_report)
                 with _ac:
                     if st.button(
-                        "✓ Dismiss",
+                        "Dismiss",
                         key=f"dismiss_{_idx}_{_inc_id}",
                         help="Remove from review queue",
                     ):
@@ -285,7 +436,7 @@ with tab_submit:
         st.info("Review queue is empty.")
 
     if st.button(
-        "➕ Inject test report (dev)",
+        "Inject test report (dev)",
         key="inject_report",
         help="Insert a mock flagged TriageReport for UI testing",
     ):
@@ -304,12 +455,12 @@ with tab_submit:
                     "quote": "Check pool size via /metrics endpoint.",
                 }
             ],
-            "owner_team": "platform",
+            "owner_team": "App Platform",
             "escalation_path": ["on-call-sre", "platform-lead"],
             "recommended_steps": [
                 "Check /metrics for pool exhaustion",
                 "Review pool config",
-                "Initiate rollback if degradation > 5 min",
+                "Initiate rollback if degradation exceeds change window",
             ],
             "confidence": 0.72,
             "guardrail_flags": ["low_confidence", "missing_deploy_context"],

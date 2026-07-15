@@ -7,7 +7,9 @@ import sys
 
 import httpx
 
-IP = sys.argv[1] if len(sys.argv) > 1 else "18.234.123.139"
+IP = sys.argv[1] if len(sys.argv) > 1 else __import__("os").environ.get("EC2_PUBLIC_IP", "").strip()
+if not IP:
+    raise SystemExit("Usage: python scripts/test_ec2_public_health.py <EC2_PUBLIC_IP>")
 BASE = f"http://{IP}"
 KEY = __import__("os").path.expanduser("~/.ssh/peter-pan-key.pem")
 
@@ -24,11 +26,15 @@ PORTS: dict[str, int] = {
     "fixture-llm": 8010,
 }
 
+# Services intentionally bound to loopback on the demo host (n8n reaches them
+# on the compose network). Public health probes use SSH instead.
+LOOPBACK_ONLY = frozenset({"fixture-llm", "rag"})
+
 failures = 0
 with httpx.Client(timeout=10.0) as client:
     for name, port in PORTS.items():
-        if name == "fixture-llm":
-            continue  # loopback-only on EC2 — checked via SSH below
+        if name in LOOPBACK_ONLY:
+            continue
         url = f"{BASE}:{port}/healthz"
         try:
             resp = client.get(url)
@@ -55,7 +61,7 @@ with httpx.Client(timeout=10.0) as client:
         failures += 1
         print(f"[FAIL] grafana            {grafana_url} -> {exc}")
 
-# fixture-llm: loopback-only per docker-compose.ec2.yml
+# fixture-llm + rag: loopback-only on the demo host (n8n uses compose DNS).
 ssh_cmd = [
     "ssh",
     "-i",
@@ -63,21 +69,29 @@ ssh_cmd = [
     "-o",
     "StrictHostKeyChecking=accept-new",
     f"ubuntu@{IP}",
-    "curl -s -o /dev/null -w '%{http_code}' http://localhost:8010/healthz",
+    "printf 'fixture-llm='; curl -s -o /dev/null -w '%{http_code}' "
+    "http://localhost:8010/healthz; printf ' rag='; "
+    "curl -s -o /dev/null -w '%{http_code}' http://localhost:8003/healthz",
 ]
 try:
-    code = subprocess.check_output(ssh_cmd, text=True).strip()
-    if code == "200":
-        print(
-            "[ OK ] fixture-llm        "
-            "http://localhost:8010/healthz (on-instance loopback) -> 200"
-        )
-    else:
-        failures += 1
-        print(
-            f"[FAIL] fixture-llm        "
-            f"http://localhost:8010/healthz (on-instance loopback) -> {code}"
-        )
+    codes = subprocess.check_output(ssh_cmd, text=True).strip()
+    parts = dict(
+        item.split("=", 1) for item in codes.split() if "=" in item
+    )
+    for name in ("fixture-llm", "rag"):
+        code = parts.get(name, "missing")
+        port = PORTS[name]
+        if code == "200":
+            print(
+                f"[ OK ] {name:18s}"
+                f"http://localhost:{port}/healthz (on-instance loopback) -> 200"
+            )
+        else:
+            failures += 1
+            print(
+                f"[FAIL] {name:18s}"
+                f"http://localhost:{port}/healthz (on-instance loopback) -> {code}"
+            )
 except (subprocess.CalledProcessError, FileNotFoundError) as exc:
     failures += 1
     print(f"[FAIL] fixture-llm        on-instance loopback check -> {exc}")
