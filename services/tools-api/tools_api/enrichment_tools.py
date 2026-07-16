@@ -185,7 +185,6 @@ def find_similar_incidents(
     environment: str = "",
     limit: int = 5,
     top_k: int | None = None,
-    history_path: Path | None = None,  # accepted for backward compat; unused
     data_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Find past incidents similar to the current symptom for a service."""

@@ -90,9 +90,8 @@ var/
 **/test-results/
 .playwright-mcp/
 
-# Graphify — commit the map; skip machine-local / regenerable noise
-graphify-out/cost.json
-graphify-out/manifest.json
-graphify-out/cache/
-graphify-out/.graphify_python
-graphify-out/memory/
+# Graphify — regenerated locally; not source of truth in git
+graphify-out/
+
+# Stage 2 audit throwaway venv
+.audit-venv/

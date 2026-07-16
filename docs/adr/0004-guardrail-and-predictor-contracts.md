@@ -41,4 +41,4 @@
 ## Related decisions
 
 - [ADR 0003 — System boundaries and service inventory](0003-system-boundaries.md)
-- [Documentation reconciliation F2–F3](../DOCS-RECONCILIATION.md)
+- [Documentation reconciliation F2–F3](../archive/DOCS-RECONCILIATION.md)
