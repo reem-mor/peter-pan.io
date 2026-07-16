@@ -97,6 +97,27 @@ class TestHasPytestSuite:
 # ---------------------------------------------------------------------------
 
 
+class TestResolvePython:
+    def test_prefers_repo_venv_when_present(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        venv_dir = tmp_path / ".venv" / "Scripts"
+        venv_dir.mkdir(parents=True)
+        venv_python = venv_dir / "python.exe"
+        venv_python.write_text("", encoding="utf-8")
+
+        monkeypatch.setattr(run_all_tests, "_REPO_ROOT", tmp_path)
+        monkeypatch.setattr(run_all_tests.sys, "executable", "C:/other/python.exe")
+
+        assert run_all_tests._resolve_python() == str(venv_python)
+
+    def test_falls_back_to_sys_executable_without_venv(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(run_all_tests, "_REPO_ROOT", tmp_path)
+        monkeypatch.setattr(run_all_tests.sys, "executable", "C:/other/python.exe")
+
+        assert run_all_tests._resolve_python() == "C:/other/python.exe"
+
+
 class TestIterSuites:
     def test_discovers_services_with_pytest_ini(self, tmp_path: Path) -> None:
         services = tmp_path / "services"
@@ -254,7 +275,7 @@ class TestMain:
 
         assert len(captured) == 1
         cmd = captured[0]
-        assert cmd[0] == sys.executable
+        assert cmd[0] == run_all_tests._resolve_python()
         assert "-m" in cmd
         assert "pytest" in cmd
 

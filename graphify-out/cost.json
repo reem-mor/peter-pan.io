@@ -1,0 +1,21 @@
+{
+  "note": "Logged Gemini extraction runs only; label/cluster runs and one un-logged re-extraction excluded, so totals are a floor.",
+  "runs": [
+    {
+      "date": "2026-07-16",
+      "kind": "full extraction (78 docs)",
+      "input_tokens": 95196,
+      "output_tokens": 4858,
+      "est_cost_usd": 0.0622
+    },
+    {
+      "date": "2026-07-16",
+      "kind": "retry extraction (34 docs)",
+      "input_tokens": 17901,
+      "output_tokens": 2141,
+      "est_cost_usd": 0.0154
+    }
+  ],
+  "total_input_tokens": 113097,
+  "total_output_tokens": 6999
+}

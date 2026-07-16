@@ -29,6 +29,18 @@ EXTRA_SUITE_DIRS: list[Path] = [
 ]
 
 
+def _resolve_python() -> str:
+    """Prefer the repo .venv interpreter so bare `python scripts/...` works."""
+    if sys.platform == "win32":
+        candidates = (_REPO_ROOT / ".venv" / "Scripts" / "python.exe",)
+    else:
+        candidates = (_REPO_ROOT / ".venv" / "bin" / "python",)
+    for candidate in candidates:
+        if candidate.is_file():
+            return str(candidate)
+    return sys.executable
+
+
 def _has_pytest_suite(p: Path) -> bool:
     """Return True if *p* looks like a pytest suite (pytest.ini or tests/ dir present)."""
     if not p.exists():
@@ -75,11 +87,12 @@ def main(
         return 1
 
     failures: list[str] = []
+    python = _resolve_python()
 
     for suite in suites:
         print(f"=== {suite.name} ===", flush=True)
         result = subprocess.run(
-            [sys.executable, "-m", "pytest", "-q"],
+            [python, "-m", "pytest", "-q"],
             cwd=suite,
             check=False,
         )
