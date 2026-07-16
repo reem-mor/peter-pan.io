@@ -23,8 +23,9 @@ The workflow that makes the AI maximally useful here — repeat per rubric line:
 5. **Log prompt changes immediately** (§6). A prompt edited without a logged result is a lost 25%-grade data point.
 6. **Never let the session commit/push/deploy** — Cursor doesn't honor your Claude-Code deny-floor.
 
-Skills available to the agent: `incident-triage`, `rag-evaluation`, `guardrails-testing`,
-`prompt-engineering-log`, `ec2-deploy`, `mcp-integration`, `frontend-design`, `peter-evaluation`.
+Skills available to the agent (canonical root `.claude/skills/`): `incident-triage`,
+`rag-evaluation`, `guardrails-testing`, `prompt-engineering-log`, `ec2-deploy`,
+`mcp-integration`, `frontend-design`, `peter-evaluation`, `graphify`.
 
 ---
 

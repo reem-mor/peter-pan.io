@@ -130,7 +130,7 @@ Status: `[x]` verified · `[~]` partial · `[ ]` missing · `[!]` blocked
 
 | Item | Status | Evidence |
 |------|--------|----------|
-| t3.large instance | `[x]` | `18.234.123.139` per COMPLIANCE-MATRIX |
+| t3.large instance | `[x]` | `<demo-public-ip>` per COMPLIANCE-MATRIX |
 | Docker on EC2 | `[x]` | compose deployed |
 | SG restricted /32 | `[x]` | No `0.0.0.0/0` |
 | Chroma on EBS volume | `[x]` | count 24 verified |

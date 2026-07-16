@@ -1,9 +1,13 @@
 # Deploy PETER PAN to EC2 (Windows wrapper around SCP + remote bash script).
 param(
-    [string]$IP = "18.234.123.139",
+    [Parameter(Mandatory = $true)]
+    [string]$IP,
     [string]$KeyFile = "$env:USERPROFILE\.ssh\peter-pan-key.pem"
 )
 $ErrorActionPreference = "Stop"
+if ([string]::IsNullOrWhiteSpace($IP)) {
+    throw "IP is required (demo public IP). Do not hardcode live addresses in the script."
+}
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 

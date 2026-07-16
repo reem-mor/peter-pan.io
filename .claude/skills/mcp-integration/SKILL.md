@@ -70,6 +70,18 @@ Before any n8n MCP call:
 - Use operation-based updates and explicit credential bindings.
 - Re-export approved PETER flow changes to `n8n/peter-flow.json`.
 
+## n8n flow conventions (migrated from n8n-flow-conventions)
+
+8 nodes fixed (do not add/remove without approval): Webhook → Guardrails Input → IF →
+Information Extractor → AI Agent → LLM Chain (+ Structured Output Parser) → Guardrails
+Output → Router (Switch). Router owns the 6→3 `incident_class` → category map — only there.
+
+Expression gotchas: `$('Node Name').item.json.field` after merges; HTTP body type JSON
+explicitly (422 from FastAPI often means form-encoded); timeouts 30s/60s; IF compares
+booleans not strings. Parallel branches reconverge via Merge (Combine by position) before
+the Chain. Never hardcode EC2 IP in nodes. Re-export to `n8n/peter-flow.json` after every
+approved structural change; strip/verify no tokens or live IPs in the JSON.
+
 ## Verification
 
 1. Copy `.cursor/mcp.json.example` to `.cursor/mcp.json`.

@@ -2,6 +2,9 @@
 ### AIOps Incident Triage Platform · AI Engineering Final Project
 **Re'em Mor · Branch: `feat/stage-a-enterprise-stabilization` · Demo: ~2 weeks**
 
+Canonical product narrative (PITER → PETER PAN, competitors, sell story):
+**[`PRODUCT-STORY.md`](PRODUCT-STORY.md)**. Canonical layers: **[`ARCHITECTURE.md`](ARCHITECTURE.md)**.
+
 ---
 
 ## 1. The Idea in One Sentence (for the lecturer)
@@ -143,7 +146,7 @@ Five surfaces, 5 iterations each, 10+ test cases per surface:
 
 ## 8. Cursor Skills — What to Add and Why, by Phase
 
-The principle: a skill = instructions the agent loads only when relevant, instead of a giant prompt every time. Structure: `.cursor/skills/<name>/SKILL.md` (or rules in `.cursor/rules/*.mdc`).
+The principle: a skill = instructions the agent loads only when relevant, instead of a giant prompt every time. Structure: `.claude/skills/<name>/SKILL.md` (or rules in `.cursor/rules/*.mdc`).
 
 ### Infrastructure — always active
 | Skill/Rule | Source | Why |

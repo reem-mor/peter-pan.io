@@ -1,4 +1,6 @@
-# n8n — Layer 2 orchestration (the PETER flow)
+# Layer 2 — Orchestration (n8n · the PETER flow)
+
+Architecture context: [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) §4.
 
 `peter-flow.json` is the versioned export of the Stage A workflow. **Re-export it on every
 flow change** (BUILD_PLAN §3) — the n8n instance is not the source of record, this repo is.

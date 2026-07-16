@@ -1,7 +1,7 @@
 # PETER PAN — Layer 3 Spec-Compliance Matrix
 
 **Session:** A.6 · **Date:** 2026-07-13 · **Evidence window:** this session only  
-**EC2:** `i-00179f890ae161552` / `18.234.123.139` · **Crosswalk:** [`docs/PETER-PAN-SPEC-CROSSWALK.md`](PETER-PAN-SPEC-CROSSWALK.md)
+**EC2:** `<demo-instance-id>` / `<demo-public-ip>` · **Crosswalk:** [`docs/PETER-PAN-SPEC-CROSSWALK.md`](PETER-PAN-SPEC-CROSSWALK.md)
 
 Status legend: **PASS** · **PASS-with-deviation** (declared in register or newly noted) · **GAP** · **GAP-scheduled** (Session D)
 
@@ -73,7 +73,7 @@ Every evidence cell is from a command run on 2026-07-13. Prior docs are not cite
 | Requirement | Where implemented | Evidence (this session) | Status |
 |---|---|---|---|
 | Every service: FastAPI + Dockerfile + own `requirements.txt` | `services/*` | Inventory: all **10** dirs have both (`dashboard-generator`, `fixture-llm`, `guardrails`, `image-analyzer`, `ingestion`, `integration-stubs`, `langgraph-agent`, `predictor`, `rag`, `tools-api`). | **PASS** |
-| Deployed on EC2; ports exposed; SG restricted | [`docker-compose.ec2.yml`](../docker-compose.ec2.yml); SG `sg-01c3120dcf290c20c` | `test_ec2_public_health.py` → **all 10 + Grafana healthy**. `aws ec2 describe-security-groups`: every inbound rule `62.56.234.234/32`; **no `0.0.0.0/0`**. Ports: 22, 3000, 5678, 8001–8008, 8020. | **PASS** |
+| Deployed on EC2; ports exposed; SG restricted | [`docker-compose.ec2.yml`](../docker-compose.ec2.yml); SG `<demo-sg-id>` | `test_ec2_public_health.py` → **all 10 + Grafana healthy**. `aws ec2 describe-security-groups`: every inbound rule `<dev-ip>/32`; **no `0.0.0.0/0`**. Ports: 22, 3000, 5678, 8001–8008, 8020. | **PASS** |
 | Dashboard Generator: validator green; POST creates dashboard; Playwright panels | [`services/dashboard-generator/`](../services/dashboard-generator/) | Local pytest green. **Post-fix:** `GRAFANA_API_TOKEN` set; POST creates real dashboard; Grafana search finds `pp-orders-api-errors` (3 panels). Playwright screenshot shows panels **5xx error rate / Request rate / Error budget burn** rendered (values "No data" without scrape targets — layout proof). | **PASS** |
 | `/healthz` suite 10/10 + Grafana | scripts | Public: 10/10 + Grafana. Local `--include-support`: 10/10. `docker compose config --quiet` silent. | **PASS** |
 

@@ -41,7 +41,12 @@ with deterministic safety floors that override the LLM when it matters.
 
 Built from a NOC / ops background: alert fatigue is real, and LLM triage without hard floors is unsafe in production.
 
-This repo maps a graded AI-engineering rubric onto **incident ops** (AIOps). Same capabilities employers score — RAG, classification, guardrails, agent orchestration — on synthetic checkout-tier incidents. No real customer PII.
+**Mid-term → final:** [PITER](docs/PRODUCT-STORY.md) connected **Knowledge → RAG**.
+**PETER PAN** connects **Observability → Monitoring** — a full four-layer triage
+product (UI · n8n · FastAPI · models). The course real-estate guideline is only a
+**capability map**; the product domain is AIOps.
+
+→ Full narrative + competitive landscape: **[Product story](docs/PRODUCT-STORY.md)**
 
 | Constraint | Choice |
 |:---|:---|
@@ -64,9 +69,10 @@ This repo maps a graded AI-engineering rubric onto **incident ops** (AIOps). Sam
 
 ---
 
-## Architecture
+## Architecture — four layers
 
-Four layers. n8n is the conductor — it plays no instrument; FastAPI services own the logic.
+n8n is the conductor — it plays no instrument; FastAPI services own the logic.
+Canonical write-up: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
 ```mermaid
 flowchart LR
@@ -83,17 +89,19 @@ flowchart LR
 
 | Layer | What | Where |
 |:---|:---|:---|
-| 1 · UI | Streamlit operator console | [`ui/`](ui/) |
-| 2 · Orchestration | 8-node PETER flow | [`n8n/peter-flow.json`](n8n/peter-flow.json) |
-| 3 · Services | Graded FastAPI units + support seams | [`services/`](services/) |
-| 4 · Models | Task-routed `LLMClient` (fixture → Bedrock / Gemini / Ollama) | [`docs/llm_client/`](docs/llm_client/) |
+| 1 · Experience | Streamlit operator console | [`ui/`](ui/README.md) |
+| 2 · Orchestration | 8-node PETER flow | [`n8n/`](n8n/README.md) |
+| 3 · Platform services | Graded FastAPI + support seams | [`services/`](services/README.md) |
+| 4 · Model tier | Task-routed `LLMClient` (fixture → Bedrock / Gemini / Ollama / Llama.cpp) | [`docs/llm_client/`](docs/llm_client/README.md) |
 
-**Graded:** RAG · Predictor · Guardrails · LangGraph agent  
-**Supporting:** Ingestion · Tools API · Dashboard Generator · Image Analyzer · Fixture LLM
+**Graded L3:** RAG · Predictor · Guardrails · LangGraph agent  
+**Supporting L3:** Ingestion · Tools API · Dashboard Generator · Image Analyzer · Fixture LLM
 
 <details>
 <summary><strong>Source-of-truth diagrams & ADRs</strong></summary>
 
+- [Architecture](docs/ARCHITECTURE.md)
+- [Product story — PITER → PETER PAN](docs/PRODUCT-STORY.md)
 - [System topology](docs/peter-pan-system.mmd)
 - [n8n flow](docs/peter-pan-n8n-flow.mmd)
 - [Build plan](docs/BUILD_PLAN.md)
@@ -119,18 +127,19 @@ flowchart LR
 
 ---
 
-## Repository layout
+## Repository layout (by layer)
 
 ```text
-services/       FastAPI deployment units (one folder = one service)
-ui/             Streamlit WebUI
-n8n/            PETER flow export + bootstrap
-evaluation/     Golden sets, E2E harness, rubric metrics
-docs/           Contracts, ADRs, runbooks, diagrams, assets
-infra/aws/      CloudFormation demo stack
-scripts/        Test runner, health checks, deploy helpers
-fixtures/       Shared Grafana / demo assets
-predictive/     Predictor training & synthetic metric windows
+ui/                 Layer 1 — Experience (Streamlit)
+n8n/                Layer 2 — Orchestration (PETER flow export + bootstrap)
+services/           Layer 3 — FastAPI deployment units (one folder = one service)
+docs/llm_client/    Layer 4 — LLMClient protocol (fixture + live providers)
+evaluation/         Golden sets, E2E harness, rubric metrics
+docs/               Architecture, contracts, ADRs, product story, diagrams
+infra/aws/          CloudFormation demo stack (single EC2)
+scripts/            Test runner, health checks, deploy helpers
+fixtures/           Shared Grafana / demo assets
+predictive/         Predictor training & synthetic metric windows
 ```
 
 Each service under `services/` is self-contained — no cross-imports. Contracts are vendored copies with a parity test.
@@ -186,7 +195,10 @@ docker compose --profile bootstrap up --build -d
 
 | Doc | Purpose |
 |:---|:---|
+| [PRODUCT-STORY.md](docs/PRODUCT-STORY.md) | PITER → PETER PAN · market · competitors |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Four layers, inventory, safety posture |
 | [BUILD_PLAN.md](docs/BUILD_PLAN.md) | Stages, frozen contracts, build order |
+| [PETER-PAN-SPEC-CROSSWALK.md](docs/PETER-PAN-SPEC-CROSSWALK.md) | Guideline → AIOps mapping + deviations |
 | [setup.md](docs/setup.md) | Prerequisites and `.env` |
 | [api.md](docs/api.md) | Service endpoints |
 | [n8n-workflow.md](docs/n8n-workflow.md) | 8-node spine |

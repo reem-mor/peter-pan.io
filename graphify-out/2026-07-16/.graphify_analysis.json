@@ -59,273 +59,6 @@
       "services_dashboard_generator_dashboard_generator_validator_validate_dashboard_payload"
     ],
     "1": [
-      "docs_contracts_contracts_rationale_82",
-      "docs_contracts_contracts_triagereport",
-      "services_tools_api_tools_api_app",
-      "services_tools_api_tools_api_app_audit",
-      "services_tools_api_tools_api_app_escalation_preview",
-      "services_tools_api_tools_api_app_escalationpreviewrequest",
-      "services_tools_api_tools_api_app_escalationrequest",
-      "services_tools_api_tools_api_app_escalationresponse",
-      "services_tools_api_tools_api_app_healthz",
-      "services_tools_api_tools_api_app_ok_or_404",
-      "services_tools_api_tools_api_app_post_escalation",
-      "services_tools_api_tools_api_app_py_any",
-      "services_tools_api_tools_api_app_py_basemodel",
-      "services_tools_api_tools_api_app_py_httpauthorizationcredentials",
-      "services_tools_api_tools_api_app_rationale_1",
-      "services_tools_api_tools_api_app_rationale_31",
-      "services_tools_api_tools_api_app_recent_deployments",
-      "services_tools_api_tools_api_app_recentdeploymentsrequest",
-      "services_tools_api_tools_api_app_require_bearer_token",
-      "services_tools_api_tools_api_app_service_context",
-      "services_tools_api_tools_api_app_servicecontextrequest",
-      "services_tools_api_tools_api_app_similar_incidents",
-      "services_tools_api_tools_api_app_similarincidentsrequest",
-      "services_tools_api_tools_api_enrichment_tools",
-      "services_tools_api_tools_api_enrichment_tools_correlate_deployments",
-      "services_tools_api_tools_api_enrichment_tools_enrich_triage_demo",
-      "services_tools_api_tools_api_enrichment_tools_find_similar_incidents",
-      "services_tools_api_tools_api_enrichment_tools_lookup_owner",
-      "services_tools_api_tools_api_enrichment_tools_lookup_owner_and_escalation",
-      "services_tools_api_tools_api_enrichment_tools_py_any",
-      "services_tools_api_tools_api_enrichment_tools_py_path",
-      "services_tools_api_tools_api_enrichment_tools_rationale_1",
-      "services_tools_api_tools_api_enrichment_tools_rationale_107",
-      "services_tools_api_tools_api_enrichment_tools_rationale_145",
-      "services_tools_api_tools_api_enrichment_tools_rationale_191",
-      "services_tools_api_tools_api_enrichment_tools_rationale_219",
-      "services_tools_api_tools_api_enrichment_tools_rationale_28",
-      "services_tools_api_tools_api_enrichment_tools_rationale_41",
-      "services_tools_api_tools_api_enrichment_tools_rationale_85",
-      "services_tools_api_tools_api_enrichment_tools_resolve_source_dir",
-      "services_tools_api_tools_api_enrichment_tools_score_business_impact",
-      "services_tools_api_tools_api_escalation_message_enrich_escalation_context",
-      "services_tools_api_tools_api_escalation_message_rationale_170",
-      "services_tools_api_tools_api_incident_analysis_find_service_owner"
-    ],
-    "2": [
-      "predictive_datagen_validate_data",
-      "predictive_datagen_validate_data_check_files",
-      "predictive_datagen_validate_data_check_schemas",
-      "predictive_datagen_validate_data_load_csv",
-      "predictive_datagen_validate_data_load_json",
-      "predictive_datagen_validate_data_main",
-      "predictive_datagen_validate_data_py_any",
-      "services_tools_api_tools_api_escalation_message",
-      "services_tools_api_tools_api_escalation_message_format_escalation_messages",
-      "services_tools_api_tools_api_escalation_message_lines_actions",
-      "services_tools_api_tools_api_escalation_message_py_any",
-      "services_tools_api_tools_api_escalation_message_rationale_1",
-      "services_tools_api_tools_api_escalation_message_rationale_32",
-      "services_tools_api_tools_api_escalation_message_render_html",
-      "services_tools_api_tools_api_escalation_message_war_room_channel",
-      "services_tools_api_tools_api_escalation_service",
-      "services_tools_api_tools_api_escalation_service_audit_connection",
-      "services_tools_api_tools_api_escalation_service_audit_db_path",
-      "services_tools_api_tools_api_escalation_service_build_escalation_preview",
-      "services_tools_api_tools_api_escalation_service_create_escalation",
-      "services_tools_api_tools_api_escalation_service_escalationserviceerror",
-      "services_tools_api_tools_api_escalation_service_find_owner_by_team_or_service",
-      "services_tools_api_tools_api_escalation_service_first_env",
-      "services_tools_api_tools_api_escalation_service_list_audit_entries",
-      "services_tools_api_tools_api_escalation_service_mask_recipient",
-      "services_tools_api_tools_api_escalation_service_py_any",
-      "services_tools_api_tools_api_escalation_service_py_path",
-      "services_tools_api_tools_api_escalation_service_py_runtimeerror",
-      "services_tools_api_tools_api_escalation_service_py_triagereport",
-      "services_tools_api_tools_api_escalation_service_rationale_1",
-      "services_tools_api_tools_api_escalation_service_rationale_118",
-      "services_tools_api_tools_api_escalation_service_rationale_204",
-      "services_tools_api_tools_api_escalation_service_rationale_231",
-      "services_tools_api_tools_api_escalation_service_rationale_255",
-      "services_tools_api_tools_api_escalation_service_rationale_35",
-      "services_tools_api_tools_api_escalation_service_rationale_39",
-      "services_tools_api_tools_api_escalation_service_rationale_48",
-      "services_tools_api_tools_api_escalation_service_rationale_57",
-      "services_tools_api_tools_api_escalation_service_rationale_88",
-      "services_tools_api_tools_api_escalation_service_rationale_96",
-      "services_tools_api_tools_api_escalation_service_record_audit_entry",
-      "services_tools_api_tools_api_escalation_service_resolve_demo_recipient",
-      "services_tools_api_tools_api_escalation_service_resolve_demo_recipients",
-      "valueerror"
-    ],
-    "3": [
-      "scripts_populate_vector_store",
-      "scripts_populate_vector_store_load_seed",
-      "scripts_populate_vector_store_main",
-      "scripts_populate_vector_store_rationale_1",
-      "scripts_smoke_rag",
-      "scripts_smoke_rag_main",
-      "scripts_smoke_rag_rationale_1",
-      "services_rag_rag_service_generator",
-      "services_rag_rag_service_generator_build_prompt",
-      "services_rag_rag_service_generator_completionmodel",
-      "services_rag_rag_service_generator_completionmodel_call",
-      "services_rag_rag_service_generator_get_generator",
-      "services_rag_rag_service_generator_llamagenerator",
-      "services_rag_rag_service_generator_llamagenerator_generate",
-      "services_rag_rag_service_generator_llamagenerator_init",
-      "services_rag_rag_service_generator_load",
-      "services_rag_rag_service_generator_py_any",
-      "services_rag_rag_service_generator_py_protocol",
-      "services_rag_rag_service_generator_rationale_1",
-      "services_rag_rag_service_generator_rationale_40",
-      "services_rag_rag_service_generator_rationale_67",
-      "services_rag_rag_service_generator_rationale_92",
-      "services_rag_rag_service_generator_system_prompt",
-      "services_rag_rag_service_vector_rag",
-      "services_rag_rag_service_vector_rag_build_retriever",
-      "services_rag_rag_service_vector_rag_chroma_path",
-      "services_rag_rag_service_vector_rag_chromaretriever",
-      "services_rag_rag_service_vector_rag_chromaretriever_init",
-      "services_rag_rag_service_vector_rag_chromaretriever_search",
-      "services_rag_rag_service_vector_rag_embedder",
-      "services_rag_rag_service_vector_rag_embedder_encode",
-      "services_rag_rag_service_vector_rag_embedding_model_matches",
-      "services_rag_rag_service_vector_rag_excerpt",
-      "services_rag_rag_service_vector_rag_get_vector_retriever",
-      "services_rag_rag_service_vector_rag_py_any",
-      "services_rag_rag_service_vector_rag_py_path",
-      "services_rag_rag_service_vector_rag_py_protocol",
-      "services_rag_rag_service_vector_rag_rationale_1",
-      "services_rag_rag_service_vector_rag_rationale_110",
-      "services_rag_rag_service_vector_rag_rationale_119",
-      "services_rag_rag_service_vector_rag_rationale_43",
-      "services_rag_rag_service_vector_rag_rationale_58",
-      "services_rag_rag_service_vector_rag_rationale_96",
-      "services_rag_rag_service_vector_rag_vectorhit"
-    ],
-    "4": [
-      "services_rag_corpus_incidents_orders_api_deploy_incident",
-      "services_rag_corpus_incidents_orders_api_deploy_incident_resolution",
-      "services_rag_corpus_incidents_orders_api_deploy_incident_reuse_guidance",
-      "services_rag_corpus_incidents_orders_api_deploy_incident_root_cause",
-      "services_rag_corpus_incidents_orders_api_deploy_incident_summary",
-      "services_rag_corpus_incidents_orders_api_deploy_incident_timeline",
-      "services_rag_corpus_incidents_postgres_pool_exhaustion_incident",
-      "services_rag_corpus_incidents_postgres_pool_exhaustion_incident_resolution",
-      "services_rag_corpus_incidents_postgres_pool_exhaustion_incident_reuse_guidance",
-      "services_rag_corpus_incidents_postgres_pool_exhaustion_incident_root_cause",
-      "services_rag_corpus_incidents_postgres_pool_exhaustion_incident_summary",
-      "services_rag_corpus_incidents_postgres_pool_exhaustion_incident_timeline",
-      "services_rag_corpus_incidents_redis_cache_degradation_incident",
-      "services_rag_corpus_incidents_redis_cache_degradation_incident_resolution",
-      "services_rag_corpus_incidents_redis_cache_degradation_incident_reuse_guidance",
-      "services_rag_corpus_incidents_redis_cache_degradation_incident_root_cause",
-      "services_rag_corpus_incidents_redis_cache_degradation_incident_summary",
-      "services_rag_corpus_incidents_redis_cache_degradation_incident_timeline",
-      "services_rag_corpus_runbooks_database_connectivity",
-      "services_rag_corpus_runbooks_database_connectivity_escalation",
-      "services_rag_corpus_runbooks_database_connectivity_investigation_steps_read_only",
-      "services_rag_corpus_runbooks_database_connectivity_remediation",
-      "services_rag_corpus_runbooks_database_connectivity_triage_decision_tree",
-      "services_rag_corpus_runbooks_database_connectivity_verification",
-      "services_rag_corpus_runbooks_deployment_rollback",
-      "services_rag_corpus_runbooks_deployment_rollback_escalation",
-      "services_rag_corpus_runbooks_deployment_rollback_investigation_steps_read_only",
-      "services_rag_corpus_runbooks_deployment_rollback_remediation",
-      "services_rag_corpus_runbooks_deployment_rollback_triage_decision_tree",
-      "services_rag_corpus_runbooks_deployment_rollback_verification",
-      "services_rag_corpus_runbooks_orders_api_error_spike",
-      "services_rag_corpus_runbooks_orders_api_error_spike_escalation",
-      "services_rag_corpus_runbooks_orders_api_error_spike_investigation_steps_read_only",
-      "services_rag_corpus_runbooks_orders_api_error_spike_remediation",
-      "services_rag_corpus_runbooks_orders_api_error_spike_triage_decision_tree",
-      "services_rag_corpus_runbooks_orders_api_error_spike_verification",
-      "services_rag_corpus_runbooks_redis_cache_degradation",
-      "services_rag_corpus_runbooks_redis_cache_degradation_escalation",
-      "services_rag_corpus_runbooks_redis_cache_degradation_investigation_steps_read_only",
-      "services_rag_corpus_runbooks_redis_cache_degradation_remediation",
-      "services_rag_corpus_runbooks_redis_cache_degradation_triage_decision_tree",
-      "services_rag_corpus_runbooks_redis_cache_degradation_verification"
-    ],
-    "5": [
-      "services_tools_api_tools_api_notification_dispatch",
-      "services_tools_api_tools_api_notification_dispatch_allowlist_count",
-      "services_tools_api_tools_api_notification_dispatch_aws_region",
-      "services_tools_api_tools_api_notification_dispatch_boto3_client",
-      "services_tools_api_tools_api_notification_dispatch_check_sms_account_ready",
-      "services_tools_api_tools_api_notification_dispatch_check_sms_account_ready_cached",
-      "services_tools_api_tools_api_notification_dispatch_check_sms_topic_route",
-      "services_tools_api_tools_api_notification_dispatch_check_sms_voice_v2_ready",
-      "services_tools_api_tools_api_notification_dispatch_confirmed_sms_subscriptions",
-      "services_tools_api_tools_api_notification_dispatch_dispatch_email",
-      "services_tools_api_tools_api_notification_dispatch_dispatch_live",
-      "services_tools_api_tools_api_notification_dispatch_dispatch_live_safe",
-      "services_tools_api_tools_api_notification_dispatch_dispatch_sms",
-      "services_tools_api_tools_api_notification_dispatch_dispatch_sms_voice_v2",
-      "services_tools_api_tools_api_notification_dispatch_dispatch_whatsapp",
-      "services_tools_api_tools_api_notification_dispatch_dispatch_whatsapp_callmebot",
-      "services_tools_api_tools_api_notification_dispatch_dispatch_whatsapp_cloud",
-      "services_tools_api_tools_api_notification_dispatch_email_configured",
-      "services_tools_api_tools_api_notification_dispatch_http_json",
-      "services_tools_api_tools_api_notification_dispatch_live_dispatch_enabled",
-      "services_tools_api_tools_api_notification_dispatch_notificationdispatcherror",
-      "services_tools_api_tools_api_notification_dispatch_notificationdispatcherror_init",
-      "services_tools_api_tools_api_notification_dispatch_pinpoint_not_enabled",
-      "services_tools_api_tools_api_notification_dispatch_py_exception",
-      "services_tools_api_tools_api_notification_dispatch_rationale_1",
-      "services_tools_api_tools_api_notification_dispatch_rationale_156",
-      "services_tools_api_tools_api_notification_dispatch_rationale_208",
-      "services_tools_api_tools_api_notification_dispatch_rationale_220",
-      "services_tools_api_tools_api_notification_dispatch_rationale_286",
-      "services_tools_api_tools_api_notification_dispatch_rationale_33",
-      "services_tools_api_tools_api_notification_dispatch_rationale_412",
-      "services_tools_api_tools_api_notification_dispatch_rationale_756",
-      "services_tools_api_tools_api_notification_dispatch_rationale_96",
-      "services_tools_api_tools_api_notification_dispatch_sms_configured",
-      "services_tools_api_tools_api_notification_dispatch_sms_message_attributes",
-      "services_tools_api_tools_api_notification_dispatch_sms_preflight_enabled",
-      "services_tools_api_tools_api_notification_dispatch_sms_publish_route",
-      "services_tools_api_tools_api_notification_dispatch_sms_use_topic",
-      "services_tools_api_tools_api_notification_dispatch_sms_use_voice_v2",
-      "services_tools_api_tools_api_notification_dispatch_whatsapp_configured",
-      "services_tools_api_tools_api_notification_dispatch_whatsapp_provider"
-    ],
-    "6": [
-      "docs_adr_0004_guardrail_and_predictor_contracts_adr_0004",
-      "jsonresponse",
-      "requestvalidationerror",
-      "services_predictor_predictor_service_app",
-      "services_predictor_predictor_service_app_analyse",
-      "services_predictor_predictor_service_app_analyserequest",
-      "services_predictor_predictor_service_app_analyseresponse",
-      "services_predictor_predictor_service_app_healthz",
-      "services_predictor_predictor_service_app_py_any",
-      "services_predictor_predictor_service_app_py_basemodel",
-      "services_predictor_predictor_service_app_py_request",
-      "services_predictor_predictor_service_app_rationale_1",
-      "services_predictor_predictor_service_app_rationale_83",
-      "services_predictor_predictor_service_app_rationale_96",
-      "services_predictor_predictor_service_app_request_validation_error",
-      "services_predictor_predictor_service_app_run_classifier",
-      "services_predictor_predictor_service_auth",
-      "services_predictor_predictor_service_auth_py_httpauthorizationcredentials",
-      "services_predictor_predictor_service_auth_rationale_1",
-      "services_predictor_predictor_service_auth_require_bearer_token",
-      "services_predictor_predictor_service_category",
-      "services_predictor_predictor_service_category_classification_context",
-      "services_predictor_predictor_service_category_rationale_1",
-      "services_predictor_predictor_service_category_rationale_14",
-      "services_predictor_predictor_service_classifier",
-      "services_predictor_predictor_service_classifier_match_context",
-      "services_predictor_predictor_service_classifier_predict",
-      "services_predictor_predictor_service_classifier_rationale_1",
-      "services_predictor_predictor_service_classifier_rationale_46",
-      "services_predictor_predictor_service_classifier_rationale_57",
-      "services_predictor_predictor_service_ewma",
-      "services_predictor_predictor_service_ewma_rationale_1",
-      "services_predictor_predictor_service_ewma_rationale_38",
-      "services_predictor_predictor_service_ewma_rationale_75",
-      "services_predictor_predictor_service_ewma_score",
-      "services_predictor_predictor_service_ewma_severity_band",
-      "services_predictor_predictor_service_fixtures",
-      "services_predictor_predictor_service_fixtures_fixture_window",
-      "services_predictor_predictor_service_fixtures_rationale_1",
-      "services_predictor_predictor_service_fixtures_rationale_24"
-    ],
-    "7": [
       "datetime",
       "services_predictor_predictor_service_contracts",
       "services_predictor_predictor_service_contracts_citation",
@@ -380,114 +113,274 @@
       "ui_lib_submissionresult",
       "ui_lib_submit_signal"
     ],
+    "2": [
+      "docs_contracts_contracts_rationale_82",
+      "docs_contracts_contracts_triagereport",
+      "services_tools_api_tools_api_app",
+      "services_tools_api_tools_api_app_audit",
+      "services_tools_api_tools_api_app_escalation_preview",
+      "services_tools_api_tools_api_app_escalationpreviewrequest",
+      "services_tools_api_tools_api_app_escalationrequest",
+      "services_tools_api_tools_api_app_escalationresponse",
+      "services_tools_api_tools_api_app_healthz",
+      "services_tools_api_tools_api_app_ok_or_404",
+      "services_tools_api_tools_api_app_post_escalation",
+      "services_tools_api_tools_api_app_py_any",
+      "services_tools_api_tools_api_app_py_basemodel",
+      "services_tools_api_tools_api_app_py_httpauthorizationcredentials",
+      "services_tools_api_tools_api_app_rationale_1",
+      "services_tools_api_tools_api_app_rationale_31",
+      "services_tools_api_tools_api_app_recent_deployments",
+      "services_tools_api_tools_api_app_recentdeploymentsrequest",
+      "services_tools_api_tools_api_app_require_bearer_token",
+      "services_tools_api_tools_api_app_service_context",
+      "services_tools_api_tools_api_app_servicecontextrequest",
+      "services_tools_api_tools_api_app_similar_incidents",
+      "services_tools_api_tools_api_app_similarincidentsrequest",
+      "services_tools_api_tools_api_enrichment_tools",
+      "services_tools_api_tools_api_enrichment_tools_correlate_deployments",
+      "services_tools_api_tools_api_enrichment_tools_enrich_triage_demo",
+      "services_tools_api_tools_api_enrichment_tools_find_similar_incidents",
+      "services_tools_api_tools_api_enrichment_tools_lookup_owner",
+      "services_tools_api_tools_api_enrichment_tools_lookup_owner_and_escalation",
+      "services_tools_api_tools_api_enrichment_tools_py_any",
+      "services_tools_api_tools_api_enrichment_tools_py_path",
+      "services_tools_api_tools_api_enrichment_tools_rationale_1",
+      "services_tools_api_tools_api_enrichment_tools_rationale_107",
+      "services_tools_api_tools_api_enrichment_tools_rationale_145",
+      "services_tools_api_tools_api_enrichment_tools_rationale_191",
+      "services_tools_api_tools_api_enrichment_tools_rationale_219",
+      "services_tools_api_tools_api_enrichment_tools_rationale_28",
+      "services_tools_api_tools_api_enrichment_tools_rationale_41",
+      "services_tools_api_tools_api_enrichment_tools_rationale_85",
+      "services_tools_api_tools_api_enrichment_tools_resolve_source_dir",
+      "services_tools_api_tools_api_enrichment_tools_score_business_impact",
+      "services_tools_api_tools_api_escalation_message_enrich_escalation_context",
+      "services_tools_api_tools_api_escalation_message_rationale_170",
+      "services_tools_api_tools_api_incident_analysis_find_service_owner"
+    ],
+    "3": [
+      "predictive_datagen_validate_data",
+      "predictive_datagen_validate_data_check_files",
+      "predictive_datagen_validate_data_check_schemas",
+      "predictive_datagen_validate_data_load_csv",
+      "predictive_datagen_validate_data_load_json",
+      "predictive_datagen_validate_data_main",
+      "predictive_datagen_validate_data_py_any",
+      "services_tools_api_tools_api_escalation_message",
+      "services_tools_api_tools_api_escalation_message_format_escalation_messages",
+      "services_tools_api_tools_api_escalation_message_lines_actions",
+      "services_tools_api_tools_api_escalation_message_py_any",
+      "services_tools_api_tools_api_escalation_message_rationale_1",
+      "services_tools_api_tools_api_escalation_message_rationale_32",
+      "services_tools_api_tools_api_escalation_message_render_html",
+      "services_tools_api_tools_api_escalation_message_war_room_channel",
+      "services_tools_api_tools_api_escalation_service",
+      "services_tools_api_tools_api_escalation_service_audit_connection",
+      "services_tools_api_tools_api_escalation_service_audit_db_path",
+      "services_tools_api_tools_api_escalation_service_build_escalation_preview",
+      "services_tools_api_tools_api_escalation_service_create_escalation",
+      "services_tools_api_tools_api_escalation_service_escalationserviceerror",
+      "services_tools_api_tools_api_escalation_service_find_owner_by_team_or_service",
+      "services_tools_api_tools_api_escalation_service_first_env",
+      "services_tools_api_tools_api_escalation_service_list_audit_entries",
+      "services_tools_api_tools_api_escalation_service_mask_recipient",
+      "services_tools_api_tools_api_escalation_service_py_any",
+      "services_tools_api_tools_api_escalation_service_py_path",
+      "services_tools_api_tools_api_escalation_service_py_runtimeerror",
+      "services_tools_api_tools_api_escalation_service_py_triagereport",
+      "services_tools_api_tools_api_escalation_service_rationale_1",
+      "services_tools_api_tools_api_escalation_service_rationale_118",
+      "services_tools_api_tools_api_escalation_service_rationale_204",
+      "services_tools_api_tools_api_escalation_service_rationale_231",
+      "services_tools_api_tools_api_escalation_service_rationale_255",
+      "services_tools_api_tools_api_escalation_service_rationale_35",
+      "services_tools_api_tools_api_escalation_service_rationale_39",
+      "services_tools_api_tools_api_escalation_service_rationale_48",
+      "services_tools_api_tools_api_escalation_service_rationale_57",
+      "services_tools_api_tools_api_escalation_service_rationale_88",
+      "services_tools_api_tools_api_escalation_service_rationale_96",
+      "services_tools_api_tools_api_escalation_service_record_audit_entry",
+      "services_tools_api_tools_api_escalation_service_resolve_demo_recipient",
+      "services_tools_api_tools_api_escalation_service_resolve_demo_recipients",
+      "valueerror"
+    ],
+    "4": [
+      "scripts_populate_vector_store",
+      "scripts_populate_vector_store_load_seed",
+      "scripts_populate_vector_store_main",
+      "scripts_populate_vector_store_rationale_1",
+      "scripts_smoke_rag",
+      "scripts_smoke_rag_main",
+      "scripts_smoke_rag_rationale_1",
+      "services_rag_rag_service_generator",
+      "services_rag_rag_service_generator_build_prompt",
+      "services_rag_rag_service_generator_completionmodel",
+      "services_rag_rag_service_generator_completionmodel_call",
+      "services_rag_rag_service_generator_get_generator",
+      "services_rag_rag_service_generator_llamagenerator",
+      "services_rag_rag_service_generator_llamagenerator_generate",
+      "services_rag_rag_service_generator_llamagenerator_init",
+      "services_rag_rag_service_generator_load",
+      "services_rag_rag_service_generator_py_any",
+      "services_rag_rag_service_generator_py_protocol",
+      "services_rag_rag_service_generator_rationale_1",
+      "services_rag_rag_service_generator_rationale_40",
+      "services_rag_rag_service_generator_rationale_67",
+      "services_rag_rag_service_generator_rationale_92",
+      "services_rag_rag_service_generator_system_prompt",
+      "services_rag_rag_service_vector_rag",
+      "services_rag_rag_service_vector_rag_build_retriever",
+      "services_rag_rag_service_vector_rag_chroma_path",
+      "services_rag_rag_service_vector_rag_chromaretriever",
+      "services_rag_rag_service_vector_rag_chromaretriever_init",
+      "services_rag_rag_service_vector_rag_chromaretriever_search",
+      "services_rag_rag_service_vector_rag_embedder",
+      "services_rag_rag_service_vector_rag_embedder_encode",
+      "services_rag_rag_service_vector_rag_embedding_model_matches",
+      "services_rag_rag_service_vector_rag_excerpt",
+      "services_rag_rag_service_vector_rag_get_vector_retriever",
+      "services_rag_rag_service_vector_rag_py_any",
+      "services_rag_rag_service_vector_rag_py_path",
+      "services_rag_rag_service_vector_rag_py_protocol",
+      "services_rag_rag_service_vector_rag_rationale_1",
+      "services_rag_rag_service_vector_rag_rationale_110",
+      "services_rag_rag_service_vector_rag_rationale_119",
+      "services_rag_rag_service_vector_rag_rationale_43",
+      "services_rag_rag_service_vector_rag_rationale_58",
+      "services_rag_rag_service_vector_rag_rationale_96",
+      "services_rag_rag_service_vector_rag_vectorhit"
+    ],
+    "5": [
+      "services_rag_corpus_incidents_orders_api_deploy_incident",
+      "services_rag_corpus_incidents_orders_api_deploy_incident_resolution",
+      "services_rag_corpus_incidents_orders_api_deploy_incident_reuse_guidance",
+      "services_rag_corpus_incidents_orders_api_deploy_incident_root_cause",
+      "services_rag_corpus_incidents_orders_api_deploy_incident_summary",
+      "services_rag_corpus_incidents_orders_api_deploy_incident_timeline",
+      "services_rag_corpus_incidents_postgres_pool_exhaustion_incident",
+      "services_rag_corpus_incidents_postgres_pool_exhaustion_incident_resolution",
+      "services_rag_corpus_incidents_postgres_pool_exhaustion_incident_reuse_guidance",
+      "services_rag_corpus_incidents_postgres_pool_exhaustion_incident_root_cause",
+      "services_rag_corpus_incidents_postgres_pool_exhaustion_incident_summary",
+      "services_rag_corpus_incidents_postgres_pool_exhaustion_incident_timeline",
+      "services_rag_corpus_incidents_redis_cache_degradation_incident",
+      "services_rag_corpus_incidents_redis_cache_degradation_incident_resolution",
+      "services_rag_corpus_incidents_redis_cache_degradation_incident_reuse_guidance",
+      "services_rag_corpus_incidents_redis_cache_degradation_incident_root_cause",
+      "services_rag_corpus_incidents_redis_cache_degradation_incident_summary",
+      "services_rag_corpus_incidents_redis_cache_degradation_incident_timeline",
+      "services_rag_corpus_runbooks_database_connectivity",
+      "services_rag_corpus_runbooks_database_connectivity_escalation",
+      "services_rag_corpus_runbooks_database_connectivity_investigation_steps_read_only",
+      "services_rag_corpus_runbooks_database_connectivity_remediation",
+      "services_rag_corpus_runbooks_database_connectivity_triage_decision_tree",
+      "services_rag_corpus_runbooks_database_connectivity_verification",
+      "services_rag_corpus_runbooks_deployment_rollback",
+      "services_rag_corpus_runbooks_deployment_rollback_escalation",
+      "services_rag_corpus_runbooks_deployment_rollback_investigation_steps_read_only",
+      "services_rag_corpus_runbooks_deployment_rollback_remediation",
+      "services_rag_corpus_runbooks_deployment_rollback_triage_decision_tree",
+      "services_rag_corpus_runbooks_deployment_rollback_verification",
+      "services_rag_corpus_runbooks_orders_api_error_spike",
+      "services_rag_corpus_runbooks_orders_api_error_spike_escalation",
+      "services_rag_corpus_runbooks_orders_api_error_spike_investigation_steps_read_only",
+      "services_rag_corpus_runbooks_orders_api_error_spike_remediation",
+      "services_rag_corpus_runbooks_orders_api_error_spike_triage_decision_tree",
+      "services_rag_corpus_runbooks_orders_api_error_spike_verification",
+      "services_rag_corpus_runbooks_redis_cache_degradation",
+      "services_rag_corpus_runbooks_redis_cache_degradation_escalation",
+      "services_rag_corpus_runbooks_redis_cache_degradation_investigation_steps_read_only",
+      "services_rag_corpus_runbooks_redis_cache_degradation_remediation",
+      "services_rag_corpus_runbooks_redis_cache_degradation_triage_decision_tree",
+      "services_rag_corpus_runbooks_redis_cache_degradation_verification"
+    ],
+    "6": [
+      "services_tools_api_tools_api_notification_dispatch",
+      "services_tools_api_tools_api_notification_dispatch_allowlist_count",
+      "services_tools_api_tools_api_notification_dispatch_aws_region",
+      "services_tools_api_tools_api_notification_dispatch_boto3_client",
+      "services_tools_api_tools_api_notification_dispatch_check_sms_account_ready",
+      "services_tools_api_tools_api_notification_dispatch_check_sms_account_ready_cached",
+      "services_tools_api_tools_api_notification_dispatch_check_sms_topic_route",
+      "services_tools_api_tools_api_notification_dispatch_check_sms_voice_v2_ready",
+      "services_tools_api_tools_api_notification_dispatch_confirmed_sms_subscriptions",
+      "services_tools_api_tools_api_notification_dispatch_dispatch_email",
+      "services_tools_api_tools_api_notification_dispatch_dispatch_live",
+      "services_tools_api_tools_api_notification_dispatch_dispatch_live_safe",
+      "services_tools_api_tools_api_notification_dispatch_dispatch_sms",
+      "services_tools_api_tools_api_notification_dispatch_dispatch_sms_voice_v2",
+      "services_tools_api_tools_api_notification_dispatch_dispatch_whatsapp",
+      "services_tools_api_tools_api_notification_dispatch_dispatch_whatsapp_callmebot",
+      "services_tools_api_tools_api_notification_dispatch_dispatch_whatsapp_cloud",
+      "services_tools_api_tools_api_notification_dispatch_email_configured",
+      "services_tools_api_tools_api_notification_dispatch_http_json",
+      "services_tools_api_tools_api_notification_dispatch_live_dispatch_enabled",
+      "services_tools_api_tools_api_notification_dispatch_notificationdispatcherror",
+      "services_tools_api_tools_api_notification_dispatch_notificationdispatcherror_init",
+      "services_tools_api_tools_api_notification_dispatch_pinpoint_not_enabled",
+      "services_tools_api_tools_api_notification_dispatch_py_exception",
+      "services_tools_api_tools_api_notification_dispatch_rationale_1",
+      "services_tools_api_tools_api_notification_dispatch_rationale_156",
+      "services_tools_api_tools_api_notification_dispatch_rationale_208",
+      "services_tools_api_tools_api_notification_dispatch_rationale_220",
+      "services_tools_api_tools_api_notification_dispatch_rationale_286",
+      "services_tools_api_tools_api_notification_dispatch_rationale_33",
+      "services_tools_api_tools_api_notification_dispatch_rationale_412",
+      "services_tools_api_tools_api_notification_dispatch_rationale_756",
+      "services_tools_api_tools_api_notification_dispatch_rationale_96",
+      "services_tools_api_tools_api_notification_dispatch_sms_configured",
+      "services_tools_api_tools_api_notification_dispatch_sms_message_attributes",
+      "services_tools_api_tools_api_notification_dispatch_sms_preflight_enabled",
+      "services_tools_api_tools_api_notification_dispatch_sms_publish_route",
+      "services_tools_api_tools_api_notification_dispatch_sms_use_topic",
+      "services_tools_api_tools_api_notification_dispatch_sms_use_voice_v2",
+      "services_tools_api_tools_api_notification_dispatch_whatsapp_configured",
+      "services_tools_api_tools_api_notification_dispatch_whatsapp_provider"
+    ],
+    "7": [
+      "docs_adr_0004_guardrail_and_predictor_contracts_adr_0004",
+      "jsonresponse",
+      "requestvalidationerror",
+      "services_predictor_predictor_service_app",
+      "services_predictor_predictor_service_app_analyse",
+      "services_predictor_predictor_service_app_analyserequest",
+      "services_predictor_predictor_service_app_analyseresponse",
+      "services_predictor_predictor_service_app_healthz",
+      "services_predictor_predictor_service_app_py_any",
+      "services_predictor_predictor_service_app_py_basemodel",
+      "services_predictor_predictor_service_app_py_request",
+      "services_predictor_predictor_service_app_rationale_1",
+      "services_predictor_predictor_service_app_rationale_83",
+      "services_predictor_predictor_service_app_rationale_96",
+      "services_predictor_predictor_service_app_request_validation_error",
+      "services_predictor_predictor_service_app_run_classifier",
+      "services_predictor_predictor_service_auth",
+      "services_predictor_predictor_service_auth_py_httpauthorizationcredentials",
+      "services_predictor_predictor_service_auth_rationale_1",
+      "services_predictor_predictor_service_auth_require_bearer_token",
+      "services_predictor_predictor_service_category",
+      "services_predictor_predictor_service_category_classification_context",
+      "services_predictor_predictor_service_category_rationale_1",
+      "services_predictor_predictor_service_category_rationale_14",
+      "services_predictor_predictor_service_classifier",
+      "services_predictor_predictor_service_classifier_match_context",
+      "services_predictor_predictor_service_classifier_predict",
+      "services_predictor_predictor_service_classifier_rationale_1",
+      "services_predictor_predictor_service_classifier_rationale_46",
+      "services_predictor_predictor_service_classifier_rationale_57",
+      "services_predictor_predictor_service_ewma",
+      "services_predictor_predictor_service_ewma_rationale_1",
+      "services_predictor_predictor_service_ewma_rationale_38",
+      "services_predictor_predictor_service_ewma_rationale_75",
+      "services_predictor_predictor_service_ewma_score",
+      "services_predictor_predictor_service_ewma_severity_band",
+      "services_predictor_predictor_service_fixtures",
+      "services_predictor_predictor_service_fixtures_fixture_window",
+      "services_predictor_predictor_service_fixtures_rationale_1",
+      "services_predictor_predictor_service_fixtures_rationale_24"
+    ],
     "8": [
-      "services_tools_api_tools_api_app_rationale_178",
-      "services_tools_api_tools_api_app_teams",
-      "services_tools_api_tools_api_data_access",
-      "services_tools_api_tools_api_data_access_dataaccesserror",
-      "services_tools_api_tools_api_data_access_default_data_dir",
-      "services_tools_api_tools_api_data_access_get_pandas",
-      "services_tools_api_tools_api_data_access_load_business_impact",
-      "services_tools_api_tools_api_data_access_load_escalation_policies",
-      "services_tools_api_tools_api_data_access_load_on_call_schedule",
-      "services_tools_api_tools_api_data_access_load_past_incidents",
-      "services_tools_api_tools_api_data_access_load_priority_matrix",
-      "services_tools_api_tools_api_data_access_load_runbooks_manifest",
-      "services_tools_api_tools_api_data_access_load_service_owners",
-      "services_tools_api_tools_api_data_access_load_source_alert_stream",
-      "services_tools_api_tools_api_data_access_load_source_alerts",
-      "services_tools_api_tools_api_data_access_load_source_deploys",
-      "services_tools_api_tools_api_data_access_pandas_available",
-      "services_tools_api_tools_api_data_access_py_any",
-      "services_tools_api_tools_api_data_access_py_path",
-      "services_tools_api_tools_api_data_access_py_runtimeerror",
-      "services_tools_api_tools_api_data_access_rationale_1",
-      "services_tools_api_tools_api_data_access_rationale_107",
-      "services_tools_api_tools_api_data_access_rationale_113",
-      "services_tools_api_tools_api_data_access_rationale_127",
-      "services_tools_api_tools_api_data_access_rationale_132",
-      "services_tools_api_tools_api_data_access_rationale_196",
-      "services_tools_api_tools_api_data_access_rationale_201",
-      "services_tools_api_tools_api_data_access_rationale_287",
-      "services_tools_api_tools_api_data_access_rationale_92",
-      "services_tools_api_tools_api_data_access_read_csv_rows",
-      "services_tools_api_tools_api_data_access_read_csv_stdlib",
-      "services_tools_api_tools_api_data_access_read_json",
-      "services_tools_api_tools_api_data_access_reset_data_cache",
-      "services_tools_api_tools_api_data_access_resolve_alert",
-      "services_tools_api_tools_api_data_access_source_data_dir"
-    ],
-    "9": [
-      "module",
-      "random",
-      "services_predictor_predictor_service_torch_classifier",
-      "services_predictor_predictor_service_torch_classifier_build_model",
-      "services_predictor_predictor_service_torch_classifier_load_checkpoint",
-      "services_predictor_predictor_service_torch_classifier_load_classifier",
-      "services_predictor_predictor_service_torch_classifier_preprocess",
-      "services_predictor_predictor_service_torch_classifier_py_any",
-      "services_predictor_predictor_service_torch_classifier_rationale_1",
-      "services_predictor_predictor_service_torch_classifier_rationale_115",
-      "services_predictor_predictor_service_torch_classifier_rationale_142",
-      "services_predictor_predictor_service_torch_classifier_rationale_59",
-      "services_predictor_predictor_service_torch_classifier_rationale_95",
-      "services_predictor_predictor_service_torch_classifier_torchclassifier",
-      "services_predictor_predictor_service_torch_classifier_torchclassifier_init",
-      "services_predictor_predictor_service_torch_classifier_torchclassifier_predict",
-      "services_predictor_train",
-      "services_predictor_train_batch",
-      "services_predictor_train_build_dataset",
-      "services_predictor_train_evaluate",
-      "services_predictor_train_main",
-      "services_predictor_train_make_window",
-      "services_predictor_train_noise",
-      "services_predictor_train_pretrain_encoder",
-      "services_predictor_train_rationale_1",
-      "services_predictor_train_rationale_129",
-      "services_predictor_train_rationale_151",
-      "services_predictor_train_rationale_172",
-      "services_predictor_train_rationale_200",
-      "services_predictor_train_stratified_split",
-      "services_predictor_train_threshold_report",
-      "services_predictor_train_train_head",
-      "tensor"
-    ],
-    "10": [
-      "services_ingestion_ingestion_service_app",
-      "services_ingestion_ingestion_service_app_build_client",
-      "services_ingestion_ingestion_service_app_create_signal",
-      "services_ingestion_ingestion_service_app_forward_to_n8n",
-      "services_ingestion_ingestion_service_app_healthz",
-      "services_ingestion_ingestion_service_app_normalize_service_slug",
-      "services_ingestion_ingestion_service_app_py_any",
-      "services_ingestion_ingestion_service_app_py_asyncclient",
-      "services_ingestion_ingestion_service_app_py_signal",
-      "services_ingestion_ingestion_service_app_rationale_1",
-      "services_ingestion_ingestion_service_app_rationale_31",
-      "services_ingestion_ingestion_service_app_rationale_36",
-      "services_ingestion_ingestion_service_app_rationale_42",
-      "services_ingestion_ingestion_service_app_readyz",
-      "services_ingestion_ingestion_service_auth",
-      "services_ingestion_ingestion_service_auth_py_httpauthorizationcredentials",
-      "services_ingestion_ingestion_service_auth_rationale_1",
-      "services_ingestion_ingestion_service_auth_require_bearer_token",
-      "services_ingestion_ingestion_service_contracts",
-      "services_ingestion_ingestion_service_contracts_citation",
-      "services_ingestion_ingestion_service_contracts_deployref",
-      "services_ingestion_ingestion_service_contracts_guardrailresult",
-      "services_ingestion_ingestion_service_contracts_incident",
-      "services_ingestion_ingestion_service_contracts_incidentcontext",
-      "services_ingestion_ingestion_service_contracts_py_basemodel",
-      "services_ingestion_ingestion_service_contracts_rationale_1",
-      "services_ingestion_ingestion_service_contracts_rationale_16",
-      "services_ingestion_ingestion_service_contracts_rationale_41",
-      "services_ingestion_ingestion_service_contracts_rationale_50",
-      "services_ingestion_ingestion_service_contracts_rationale_66",
-      "services_ingestion_ingestion_service_contracts_rationale_82",
-      "services_ingestion_ingestion_service_contracts_signal",
-      "services_ingestion_ingestion_service_contracts_triagereport"
-    ],
-    "11": [
       "docs_audits_2026_07_10_end_to_end_audit",
       "docs_presentation_rubric_map",
       "evaluation_run_e2e",
@@ -524,37 +417,114 @@
       "services_fixture_llm_fixture_llm_app_tool_grounded_report",
       "services_fixture_llm_fixture_llm_app_tool_message_name"
     ],
-    "12": [
-      "services_tools_api_tools_api_environment_codes",
-      "services_tools_api_tools_api_environment_codes_normalize_environment",
-      "services_tools_api_tools_api_environment_codes_rationale_1",
-      "services_tools_api_tools_api_environment_codes_rationale_18",
-      "services_tools_api_tools_api_environment_codes_rationale_29",
-      "services_tools_api_tools_api_environment_codes_validate_environment",
-      "services_tools_api_tools_api_incident_analysis",
-      "services_tools_api_tools_api_incident_analysis_analyze_incident",
-      "services_tools_api_tools_api_incident_analysis_check_runbook_reference",
-      "services_tools_api_tools_api_incident_analysis_classify_priority",
-      "services_tools_api_tools_api_incident_analysis_compose_triage_narrative",
-      "services_tools_api_tools_api_incident_analysis_compose_triage_sections",
-      "services_tools_api_tools_api_incident_analysis_correlate_deployments",
-      "services_tools_api_tools_api_incident_analysis_find_similar_incidents",
-      "services_tools_api_tools_api_incident_analysis_normalize_alert",
-      "services_tools_api_tools_api_incident_analysis_normalize_priority_label",
-      "services_tools_api_tools_api_incident_analysis_parse_iso",
-      "services_tools_api_tools_api_incident_analysis_py_any",
-      "services_tools_api_tools_api_incident_analysis_py_path",
-      "services_tools_api_tools_api_incident_analysis_rationale_1",
-      "services_tools_api_tools_api_incident_analysis_rationale_285",
-      "services_tools_api_tools_api_incident_analysis_rationale_378",
-      "services_tools_api_tools_api_incident_analysis_rationale_394",
-      "services_tools_api_tools_api_incident_analysis_rationale_44",
-      "services_tools_api_tools_api_incident_analysis_rationale_466",
-      "services_tools_api_tools_api_incident_analysis_rationale_558",
-      "services_tools_api_tools_api_incident_analysis_resolve_escalation",
-      "services_tools_api_tools_api_incident_analysis_score_business_impact"
+    "9": [
+      "services_tools_api_tools_api_app_rationale_178",
+      "services_tools_api_tools_api_app_teams",
+      "services_tools_api_tools_api_data_access",
+      "services_tools_api_tools_api_data_access_dataaccesserror",
+      "services_tools_api_tools_api_data_access_default_data_dir",
+      "services_tools_api_tools_api_data_access_get_pandas",
+      "services_tools_api_tools_api_data_access_load_business_impact",
+      "services_tools_api_tools_api_data_access_load_escalation_policies",
+      "services_tools_api_tools_api_data_access_load_on_call_schedule",
+      "services_tools_api_tools_api_data_access_load_past_incidents",
+      "services_tools_api_tools_api_data_access_load_priority_matrix",
+      "services_tools_api_tools_api_data_access_load_runbooks_manifest",
+      "services_tools_api_tools_api_data_access_load_service_owners",
+      "services_tools_api_tools_api_data_access_load_source_alert_stream",
+      "services_tools_api_tools_api_data_access_load_source_alerts",
+      "services_tools_api_tools_api_data_access_load_source_deploys",
+      "services_tools_api_tools_api_data_access_pandas_available",
+      "services_tools_api_tools_api_data_access_py_any",
+      "services_tools_api_tools_api_data_access_py_path",
+      "services_tools_api_tools_api_data_access_py_runtimeerror",
+      "services_tools_api_tools_api_data_access_rationale_1",
+      "services_tools_api_tools_api_data_access_rationale_107",
+      "services_tools_api_tools_api_data_access_rationale_113",
+      "services_tools_api_tools_api_data_access_rationale_127",
+      "services_tools_api_tools_api_data_access_rationale_132",
+      "services_tools_api_tools_api_data_access_rationale_196",
+      "services_tools_api_tools_api_data_access_rationale_201",
+      "services_tools_api_tools_api_data_access_rationale_287",
+      "services_tools_api_tools_api_data_access_rationale_92",
+      "services_tools_api_tools_api_data_access_read_csv_rows",
+      "services_tools_api_tools_api_data_access_read_csv_stdlib",
+      "services_tools_api_tools_api_data_access_read_json",
+      "services_tools_api_tools_api_data_access_reset_data_cache",
+      "services_tools_api_tools_api_data_access_resolve_alert",
+      "services_tools_api_tools_api_data_access_source_data_dir"
     ],
-    "13": [
+    "10": [
+      "module",
+      "random",
+      "services_predictor_predictor_service_torch_classifier",
+      "services_predictor_predictor_service_torch_classifier_build_model",
+      "services_predictor_predictor_service_torch_classifier_load_checkpoint",
+      "services_predictor_predictor_service_torch_classifier_load_classifier",
+      "services_predictor_predictor_service_torch_classifier_preprocess",
+      "services_predictor_predictor_service_torch_classifier_py_any",
+      "services_predictor_predictor_service_torch_classifier_rationale_1",
+      "services_predictor_predictor_service_torch_classifier_rationale_115",
+      "services_predictor_predictor_service_torch_classifier_rationale_142",
+      "services_predictor_predictor_service_torch_classifier_rationale_59",
+      "services_predictor_predictor_service_torch_classifier_rationale_95",
+      "services_predictor_predictor_service_torch_classifier_torchclassifier",
+      "services_predictor_predictor_service_torch_classifier_torchclassifier_init",
+      "services_predictor_predictor_service_torch_classifier_torchclassifier_predict",
+      "services_predictor_train",
+      "services_predictor_train_batch",
+      "services_predictor_train_build_dataset",
+      "services_predictor_train_evaluate",
+      "services_predictor_train_main",
+      "services_predictor_train_make_window",
+      "services_predictor_train_noise",
+      "services_predictor_train_pretrain_encoder",
+      "services_predictor_train_rationale_1",
+      "services_predictor_train_rationale_129",
+      "services_predictor_train_rationale_151",
+      "services_predictor_train_rationale_172",
+      "services_predictor_train_rationale_200",
+      "services_predictor_train_stratified_split",
+      "services_predictor_train_threshold_report",
+      "services_predictor_train_train_head",
+      "tensor"
+    ],
+    "11": [
+      "services_ingestion_ingestion_service_app",
+      "services_ingestion_ingestion_service_app_build_client",
+      "services_ingestion_ingestion_service_app_create_signal",
+      "services_ingestion_ingestion_service_app_forward_to_n8n",
+      "services_ingestion_ingestion_service_app_healthz",
+      "services_ingestion_ingestion_service_app_normalize_service_slug",
+      "services_ingestion_ingestion_service_app_py_any",
+      "services_ingestion_ingestion_service_app_py_asyncclient",
+      "services_ingestion_ingestion_service_app_py_signal",
+      "services_ingestion_ingestion_service_app_rationale_1",
+      "services_ingestion_ingestion_service_app_rationale_31",
+      "services_ingestion_ingestion_service_app_rationale_36",
+      "services_ingestion_ingestion_service_app_rationale_42",
+      "services_ingestion_ingestion_service_app_readyz",
+      "services_ingestion_ingestion_service_auth",
+      "services_ingestion_ingestion_service_auth_py_httpauthorizationcredentials",
+      "services_ingestion_ingestion_service_auth_rationale_1",
+      "services_ingestion_ingestion_service_auth_require_bearer_token",
+      "services_ingestion_ingestion_service_contracts",
+      "services_ingestion_ingestion_service_contracts_citation",
+      "services_ingestion_ingestion_service_contracts_deployref",
+      "services_ingestion_ingestion_service_contracts_guardrailresult",
+      "services_ingestion_ingestion_service_contracts_incident",
+      "services_ingestion_ingestion_service_contracts_incidentcontext",
+      "services_ingestion_ingestion_service_contracts_py_basemodel",
+      "services_ingestion_ingestion_service_contracts_rationale_1",
+      "services_ingestion_ingestion_service_contracts_rationale_16",
+      "services_ingestion_ingestion_service_contracts_rationale_41",
+      "services_ingestion_ingestion_service_contracts_rationale_50",
+      "services_ingestion_ingestion_service_contracts_rationale_66",
+      "services_ingestion_ingestion_service_contracts_rationale_82",
+      "services_ingestion_ingestion_service_contracts_signal",
+      "services_ingestion_ingestion_service_contracts_triagereport"
+    ],
+    "12": [
       "image",
       "services_image_analyzer_image_analyzer_service_app",
       "services_image_analyzer_image_analyzer_service_app_analyze_image",
@@ -584,7 +554,7 @@
       "services_image_analyzer_image_analyzer_service_schemas_rationale_7",
       "services_image_analyzer_image_analyzer_service_schemas_roomclassification"
     ],
-    "14": [
+    "13": [
       "services_langgraph_agent_langgraph_agent_app",
       "services_langgraph_agent_langgraph_agent_app_agent_run",
       "services_langgraph_agent_langgraph_agent_app_agentrunrequest",
@@ -613,6 +583,36 @@
       "services_langgraph_agent_langgraph_agent_contracts_rationale_82",
       "services_langgraph_agent_langgraph_agent_contracts_signal",
       "services_langgraph_agent_langgraph_agent_contracts_triagereport"
+    ],
+    "14": [
+      "services_tools_api_tools_api_environment_codes",
+      "services_tools_api_tools_api_environment_codes_normalize_environment",
+      "services_tools_api_tools_api_environment_codes_rationale_1",
+      "services_tools_api_tools_api_environment_codes_rationale_18",
+      "services_tools_api_tools_api_environment_codes_rationale_29",
+      "services_tools_api_tools_api_environment_codes_validate_environment",
+      "services_tools_api_tools_api_incident_analysis",
+      "services_tools_api_tools_api_incident_analysis_analyze_incident",
+      "services_tools_api_tools_api_incident_analysis_check_runbook_reference",
+      "services_tools_api_tools_api_incident_analysis_classify_priority",
+      "services_tools_api_tools_api_incident_analysis_compose_triage_narrative",
+      "services_tools_api_tools_api_incident_analysis_compose_triage_sections",
+      "services_tools_api_tools_api_incident_analysis_correlate_deployments",
+      "services_tools_api_tools_api_incident_analysis_find_similar_incidents",
+      "services_tools_api_tools_api_incident_analysis_normalize_alert",
+      "services_tools_api_tools_api_incident_analysis_normalize_priority_label",
+      "services_tools_api_tools_api_incident_analysis_parse_iso",
+      "services_tools_api_tools_api_incident_analysis_py_any",
+      "services_tools_api_tools_api_incident_analysis_py_path",
+      "services_tools_api_tools_api_incident_analysis_rationale_1",
+      "services_tools_api_tools_api_incident_analysis_rationale_285",
+      "services_tools_api_tools_api_incident_analysis_rationale_378",
+      "services_tools_api_tools_api_incident_analysis_rationale_394",
+      "services_tools_api_tools_api_incident_analysis_rationale_44",
+      "services_tools_api_tools_api_incident_analysis_rationale_466",
+      "services_tools_api_tools_api_incident_analysis_rationale_558",
+      "services_tools_api_tools_api_incident_analysis_resolve_escalation",
+      "services_tools_api_tools_api_incident_analysis_score_business_impact"
     ],
     "15": [
       "services_tools_api_tools_api_text_utils",
@@ -812,7 +812,7 @@
       "services_guardrails_guardrails_service_rules_scan_off_topic",
       "services_guardrails_guardrails_service_rules_scan_text"
     ],
-    "25": [
+    "24": [
       "services_rag_rag_service_contracts",
       "services_rag_rag_service_contracts_citation",
       "services_rag_rag_service_contracts_deployref",
@@ -829,7 +829,7 @@
       "services_rag_rag_service_contracts_signal",
       "services_rag_rag_service_contracts_triagereport"
     ],
-    "26": [
+    "25": [
       "services_tools_api_tools_api_contracts",
       "services_tools_api_tools_api_contracts_citation",
       "services_tools_api_tools_api_contracts_deployref",
@@ -846,7 +846,7 @@
       "services_tools_api_tools_api_contracts_signal",
       "services_tools_api_tools_api_contracts_triagereport"
     ],
-    "27": [
+    "26": [
       "basehttpmiddleware",
       "logrecord",
       "packages_peter_observability_observability",
@@ -862,7 +862,7 @@
       "packages_peter_observability_observability_rationale_1",
       "response"
     ],
-    "28": [
+    "27": [
       "services_guardrails_guardrails_service_app_checkinputrequest",
       "services_guardrails_guardrails_service_app_checkoutputrequest",
       "services_guardrails_guardrails_service_app_py_basemodel",
@@ -878,7 +878,7 @@
       "services_guardrails_guardrails_service_policy_engine_rationale_19",
       "services_guardrails_guardrails_service_policy_engine_rationale_31"
     ],
-    "29": [
+    "28": [
       "services_rag_rag_service_kb_corpus",
       "services_rag_rag_service_kb_corpus_document_text",
       "services_rag_rag_service_kb_corpus_iter_corpus_json_paths",
@@ -894,7 +894,7 @@
       "services_rag_rag_service_kb_manifest_kb_sections",
       "services_rag_rag_service_kb_manifest_rationale_1"
     ],
-    "30": [
+    "29": [
       "scripts_harden_stage_a_n8n",
       "scripts_harden_stage_a_n8n_api_base",
       "scripts_harden_stage_a_n8n_api_key",
@@ -909,7 +909,7 @@
       "scripts_harden_stage_a_n8n_scrub_for_export",
       "scripts_harden_stage_a_n8n_set_writer_system"
     ],
-    "31": [
+    "30": [
       "docs_contracts_contracts",
       "docs_contracts_contracts_deployref",
       "docs_contracts_contracts_guardrailresult",
@@ -923,7 +923,7 @@
       "docs_contracts_contracts_rationale_66",
       "docs_contracts_contracts_signal"
     ],
-    "32": [
+    "31": [
       "docs_contracts_contracts_citation",
       "services_rag_rag_service_app",
       "services_rag_rag_service_app_healthz",
@@ -937,7 +937,7 @@
       "services_rag_rag_service_app_require_bearer_token",
       "services_rag_rag_service_app_search"
     ],
-    "33": [
+    "32": [
       "services_rag_rag_service_errors",
       "services_rag_rag_service_errors_py_exception",
       "services_rag_rag_service_errors_queryvalidationerror",
@@ -951,7 +951,7 @@
       "services_rag_rag_service_validators_tokenize",
       "services_rag_rag_service_validators_validate_question"
     ],
-    "34": [
+    "33": [
       "services_guardrails_guardrails_service_app",
       "services_guardrails_guardrails_service_app_build_http_client",
       "services_guardrails_guardrails_service_app_get_http_client",
@@ -964,7 +964,7 @@
       "services_guardrails_guardrails_service_init",
       "services_guardrails_guardrails_service_init_rationale_1"
     ],
-    "35": [
+    "34": [
       "services_guardrails_guardrails_service_contracts",
       "services_guardrails_guardrails_service_contracts_citation",
       "services_guardrails_guardrails_service_contracts_deployref",
@@ -977,7 +977,7 @@
       "services_guardrails_guardrails_service_contracts_rationale_50",
       "services_guardrails_guardrails_service_contracts_rationale_66"
     ],
-    "36": [
+    "35": [
       "services_integration_stubs_integration_stubs_app",
       "services_integration_stubs_integration_stubs_app_check_delivery_auth",
       "services_integration_stubs_integration_stubs_app_clear_deliveries",
@@ -990,7 +990,7 @@
       "services_integration_stubs_integration_stubs_app_slack_stub",
       "services_integration_stubs_integration_stubs_app_team_webhook"
     ],
-    "37": [
+    "36": [
       "scripts_run_all_tests",
       "scripts_run_all_tests_has_pytest_suite",
       "scripts_run_all_tests_iter_suites",
@@ -1001,7 +1001,7 @@
       "scripts_run_all_tests_rationale_43",
       "scripts_run_all_tests_rationale_66"
     ],
-    "38": [
+    "37": [
       "guardrailresult",
       "services_guardrails_guardrails_service_app_bounded_reason",
       "services_guardrails_guardrails_service_app_check_input",
@@ -1011,7 +1011,7 @@
       "services_guardrails_guardrails_service_rules_rationale_188",
       "validationerror"
     ],
-    "39": [
+    "38": [
       "infra_aws_readme",
       "infra_aws_readme_deploy",
       "infra_aws_readme_peter_pan_aws_demo_deployment",
@@ -1020,7 +1020,7 @@
       "infra_aws_readme_teardown",
       "infra_aws_readme_validate_locally"
     ],
-    "40": [
+    "39": [
       "infra_aws_scripts_validate_cfn_fail",
       "infra_aws_scripts_validate_cfn_header",
       "infra_aws_scripts_validate_cfn_pass",
@@ -1028,7 +1028,7 @@
       "infra_aws_scripts_validate_cfn_sh_infra_aws_scripts_validate_cfn",
       "infra_aws_scripts_validate_cfn_warn"
     ],
-    "41": [
+    "40": [
       "services_guardrails_guardrails_service_owner_check",
       "services_guardrails_guardrails_service_owner_check_auth_headers",
       "services_guardrails_guardrails_service_owner_check_py_asyncclient",
@@ -1036,7 +1036,7 @@
       "services_guardrails_guardrails_service_owner_check_rationale_25",
       "services_guardrails_guardrails_service_owner_check_verify_owner_team"
     ],
-    "42": [
+    "41": [
       "services_rag_corpus_runbooks_ingress_5xx",
       "services_rag_corpus_runbooks_ingress_5xx_escalation",
       "services_rag_corpus_runbooks_ingress_5xx_investigation_steps_read_only",
@@ -1044,226 +1044,226 @@
       "services_rag_corpus_runbooks_ingress_5xx_triage_decision_tree",
       "services_rag_corpus_runbooks_ingress_5xx_verification"
     ],
-    "43": [
+    "42": [
       "docs_audits_2026_07_13_session_a_layer3_audit",
       "docs_audits_2026_07_13_session_a_layer3_audit_doc_discrepancies_noted_not_fixed_here",
       "docs_audits_2026_07_13_session_a_layer3_audit_gaps_vs_session_a_targets",
       "docs_audits_2026_07_13_session_a_layer3_audit_peter_pan_session_a_layer_3_audit_2026_07_13",
       "docs_audits_2026_07_13_session_a_layer3_audit_service_inventory"
     ],
-    "45": [
+    "43": [
       "infra_aws_scripts_validate_cfn_ps1_infra_aws_scripts_validate_cfn",
       "infra_aws_scripts_validate_cfn_write_fail",
       "infra_aws_scripts_validate_cfn_write_header",
       "infra_aws_scripts_validate_cfn_write_pass"
     ],
-    "46": [
+    "44": [
       "scripts_provision_ec2",
       "scripts_provision_ec2_log",
       "scripts_provision_ec2_msys_no_pathconv",
       "scripts_provision_ec2_sh__entry"
     ],
-    "47": [
+    "45": [
       "services_guardrails_guardrails_service_policy_engine_nooppolicyengine_check_input",
       "services_guardrails_guardrails_service_policy_engine_policyengine_check_input",
       "services_guardrails_guardrails_service_policy_engine_py_signal",
       "services_guardrails_guardrails_service_policy_engine_rationale_22"
     ],
-    "48": [
+    "46": [
       "services_guardrails_guardrails_service_policy_engine_nooppolicyengine_check_output",
       "services_guardrails_guardrails_service_policy_engine_policyengine_check_output",
       "services_guardrails_guardrails_service_policy_engine_py_triagereport",
       "services_guardrails_guardrails_service_policy_engine_rationale_26"
     ],
-    "49": [
+    "47": [
       "docs_contracts_export_json_schema",
       "docs_contracts_export_json_schema_main",
       "docs_contracts_export_json_schema_rationale_1"
     ],
-    "50": [
+    "48": [
       "scripts_deploy_ec2_log",
       "scripts_deploy_ec2_sh__entry",
       "scripts_deploy_ec2_sh_scripts_deploy_ec2"
     ],
-    "51": [
+    "49": [
       "scripts_enable_gguf_ec2",
       "scripts_enable_gguf_ec2_patch_env",
       "scripts_enable_gguf_ec2_sh__entry"
     ],
-    "52": [
+    "50": [
       "scripts_remote_deploy_ec2",
       "scripts_remote_deploy_ec2_gen",
       "scripts_remote_deploy_ec2_sh__entry"
     ],
-    "53": [
+    "51": [
       "services_ingestion_ingestion_service_init",
       "services_ingestion_ingestion_service_init_rationale_1"
     ],
-    "54": [
+    "52": [
       "services_langgraph_agent_langgraph_agent_init",
       "services_langgraph_agent_langgraph_agent_init_rationale_1"
     ],
-    "55": [
+    "53": [
       "services_predictor_predictor_service_init",
       "services_predictor_predictor_service_init_rationale_1"
     ],
-    "56": [
+    "54": [
       "services_rag_rag_service_init",
       "services_rag_rag_service_init_rationale_1"
     ],
-    "57": [
+    "55": [
       "services_tools_api_tools_api_init",
       "services_tools_api_tools_api_init_rationale_1"
     ],
-    "58": [
+    "56": [
       "agents_md"
     ],
-    "59": [
+    "57": [
       "claude_md"
     ],
-    "60": [
+    "58": [
       "docker_compose_ci_yml"
     ],
-    "61": [
+    "59": [
       "docker_compose_ec2_yml"
     ],
-    "62": [
+    "60": [
       "docker_compose_yml"
     ],
-    "63": [
+    "61": [
       "docs_adr_0002_model_memory_db_adr_0002"
     ],
-    "64": [
+    "62": [
       "docs_adr_0003_system_boundaries_adr_0003"
     ],
-    "66": [
+    "63": [
       "docs_agent_tooling_md"
     ],
-    "67": [
+    "64": [
       "docs_api_md"
     ],
-    "68": [
+    "65": [
       "docs_architecture_md"
     ],
-    "69": [
+    "66": [
       "docs_aws_deployment_md"
     ],
-    "70": [
+    "67": [
       "docs_build_plan_md"
     ],
-    "71": [
+    "68": [
       "docs_compliance_matrix_md"
     ],
-    "72": [
+    "69": [
       "docs_demo_guide_md"
     ],
-    "73": [
+    "70": [
       "docs_docs_reconciliation_md"
     ],
-    "74": [
+    "71": [
       "docs_implementation_checklist_md"
     ],
-    "75": [
+    "72": [
       "docs_layer_2_proposed_deletions_md"
     ],
-    "76": [
+    "73": [
       "docs_layer_2_validation_md"
     ],
-    "77": [
+    "74": [
       "docs_layer_local_validation_md"
     ],
-    "78": [
+    "75": [
       "docs_local_development_md"
     ],
-    "79": [
+    "76": [
       "docs_master_checklist_md"
     ],
-    "80": [
+    "77": [
       "docs_model_memory_db_rationale_md"
     ],
-    "81": [
+    "78": [
       "docs_n8n_workflow_n8n_workflow"
     ],
-    "82": [
+    "79": [
       "docs_peter_pan_project_master_doc_en_md"
     ],
-    "83": [
+    "80": [
       "docs_peter_pan_spec_crosswalk_md"
     ],
-    "84": [
+    "81": [
       "docs_pre_public_checklist_md"
     ],
-    "85": [
+    "82": [
       "docs_project_plan_md"
     ],
-    "86": [
+    "83": [
       "docs_prompt_log_prompts_surface_4_output_auditor"
     ],
-    "87": [
+    "84": [
       "docs_prompt_log_prompts_surface_4_topic_detection"
     ],
-    "88": [
+    "85": [
       "docs_security_security"
     ],
-    "89": [
+    "86": [
       "docs_setup_setup"
     ],
-    "90": [
+    "87": [
       "docs_testing_testing"
     ],
-    "91": [
+    "88": [
       "evaluation_run_e2e_py_any"
     ],
-    "92": [
+    "89": [
       "evaluation_run_e2e_py_client"
     ],
-    "93": [
+    "90": [
       "plan_md"
     ],
-    "94": [
+    "91": [
       "prompts_surface_3_rag"
     ],
-    "95": [
+    "92": [
       "readme_md"
     ],
-    "97": [
+    "93": [
       "scripts_deploy_ec2_ps1_scripts_deploy_ec2"
     ],
-    "98": [
+    "94": [
       "services_dashboard_generator_dashboard_generator_init"
     ],
-    "99": [
+    "95": [
       "services_fixture_llm_fixture_llm_init"
     ],
-    "100": [
+    "96": [
       "services_image_analyzer_image_analyzer_service_init"
     ],
-    "101": [
+    "97": [
       "services_integration_stubs_integration_stubs_init"
     ],
-    "102": [
+    "98": [
       "services_rag_rag_service_prompts_surface_3_rag_systemprompt"
     ],
-    "103": [
+    "99": [
       "services_tools_api_data"
     ]
   },
   "cohesion": {
     "0": 0.05844155844155844,
-    "1": 0.10253699788583509,
-    "2": 0.07610993657505286,
-    "3": 0.06976744186046512,
-    "4": 0.04878048780487805,
-    "5": 0.10609756097560975,
-    "6": 0.07051282051282051,
-    "7": 0.05152394775036284,
-    "8": 0.12436974789915967,
-    "9": 0.11553030303030302,
-    "10": 0.08333333333333333,
-    "11": 0.1411764705882353,
-    "12": 0.15079365079365079,
-    "13": 0.09259259259259259,
-    "14": 0.10052910052910052,
+    "1": 0.05152394775036284,
+    "2": 0.10253699788583509,
+    "3": 0.07610993657505286,
+    "4": 0.06976744186046512,
+    "5": 0.04878048780487805,
+    "6": 0.10609756097560975,
+    "7": 0.07051282051282051,
+    "8": 0.1411764705882353,
+    "9": 0.12436974789915967,
+    "10": 0.11553030303030302,
+    "11": 0.08333333333333333,
+    "12": 0.09259259259259259,
+    "13": 0.10052910052910052,
+    "14": 0.15079365079365079,
     "15": 0.12923076923076923,
     "16": 0.13333333333333333,
     "17": 0.08333333333333333,
@@ -1273,33 +1273,35 @@
     "21": 0.20833333333333334,
     "22": 0.21666666666666667,
     "23": 0.19047619047619047,
+    "24": 0.19047619047619047,
     "25": 0.19047619047619047,
-    "26": 0.19047619047619047,
-    "27": 0.15384615384615385,
-    "28": 0.26373626373626374,
-    "29": 0.21978021978021978,
-    "30": 0.2692307692307692,
-    "31": 0.22727272727272727,
-    "32": 0.24242424242424243,
-    "33": 0.19696969696969696,
-    "34": 0.21818181818181817,
-    "35": 0.2545454545454545,
-    "36": 0.34545454545454546,
-    "37": 0.3333333333333333,
-    "38": 0.35714285714285715,
-    "39": 0.2857142857142857,
-    "40": 0.6,
-    "41": 0.4,
-    "42": 0.3333333333333333,
-    "43": 0.4,
+    "26": 0.15384615384615385,
+    "27": 0.26373626373626374,
+    "28": 0.21978021978021978,
+    "29": 0.2692307692307692,
+    "30": 0.22727272727272727,
+    "31": 0.24242424242424243,
+    "32": 0.19696969696969696,
+    "33": 0.21818181818181817,
+    "34": 0.2545454545454545,
+    "35": 0.34545454545454546,
+    "36": 0.3333333333333333,
+    "37": 0.35714285714285715,
+    "38": 0.2857142857142857,
+    "39": 0.6,
+    "40": 0.4,
+    "41": 0.3333333333333333,
+    "42": 0.4,
+    "43": 0.5,
+    "44": 0.6666666666666666,
     "45": 0.5,
-    "46": 0.6666666666666666,
-    "47": 0.5,
-    "48": 0.5,
-    "49": 0.6666666666666666,
-    "50": 1.0,
+    "46": 0.5,
+    "47": 0.6666666666666666,
+    "48": 1.0,
+    "49": 1.0,
+    "50": 0.6666666666666666,
     "51": 1.0,
-    "52": 0.6666666666666666,
+    "52": 1.0,
     "53": 1.0,
     "54": 1.0,
     "55": 1.0,
@@ -1312,6 +1314,7 @@
     "62": 1.0,
     "63": 1.0,
     "64": 1.0,
+    "65": 1.0,
     "66": 1.0,
     "67": 1.0,
     "68": 1.0,
@@ -1342,13 +1345,10 @@
     "93": 1.0,
     "94": 1.0,
     "95": 1.0,
+    "96": 1.0,
     "97": 1.0,
     "98": 1.0,
-    "99": 1.0,
-    "100": 1.0,
-    "101": 1.0,
-    "102": 1.0,
-    "103": 1.0
+    "99": 1.0
   },
   "gods": [
     {
@@ -1412,7 +1412,7 @@
       ],
       "confidence": "INFERRED",
       "relation": "references",
-      "why": "inferred connection - not explicitly stated in source; crosses file types (doc ↔ code); connects across different repos/directories; peripheral node `PETER PAN Demo Script` unexpectedly reaches hub `PETER Flow (n8n)`"
+      "why": "inferred connection - not explicitly stated in source; crosses file types (doc \u2194 code); connects across different repos/directories; peripheral node `PETER PAN Demo Script` unexpectedly reaches hub `PETER Flow (n8n)`"
     },
     {
       "source": "Presentation Rubric Map",
@@ -1423,7 +1423,7 @@
       ],
       "confidence": "INFERRED",
       "relation": "references",
-      "why": "inferred connection - not explicitly stated in source; crosses file types (code ↔ doc); connects across different repos/directories"
+      "why": "inferred connection - not explicitly stated in source; crosses file types (code \u2194 doc); connects across different repos/directories"
     },
     {
       "source": "PETER Flow (n8n)",
@@ -1434,7 +1434,7 @@
       ],
       "confidence": "EXTRACTED",
       "relation": "references",
-      "why": "crosses file types (doc ↔ code); connects across different repos/directories; peripheral node `Extractor System Prompt` unexpectedly reaches hub `PETER Flow (n8n)`"
+      "why": "crosses file types (doc \u2194 code); connects across different repos/directories; peripheral node `Extractor System Prompt` unexpectedly reaches hub `PETER Flow (n8n)`"
     },
     {
       "source": "PETER Flow (n8n)",
@@ -1445,7 +1445,7 @@
       ],
       "confidence": "EXTRACTED",
       "relation": "references",
-      "why": "crosses file types (doc ↔ code); connects across different repos/directories; peripheral node `Agent System Message` unexpectedly reaches hub `PETER Flow (n8n)`"
+      "why": "crosses file types (doc \u2194 code); connects across different repos/directories; peripheral node `Agent System Message` unexpectedly reaches hub `PETER Flow (n8n)`"
     },
     {
       "source": "EscalationServiceError",
@@ -1459,41 +1459,8 @@
       "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
     }
   ],
-  "questions": [
-    {
-      "type": "bridge_node",
-      "question": "Why does `PETER Flow (n8n)` connect `n8n Bootstrap & Demo Assets` to `RAG Query API`, `Tools API Service`, `Guardrails Service`, `Predictor Service API`, `UI Library & Shared Contracts`, `Ingestion Service`, `LangGraph Agent Service`?",
-      "why": "High betweenness centrality (0.157) - this node is a cross-community bridge."
-    },
-    {
-      "type": "bridge_node",
-      "question": "Why does `DashboardValidationError` connect `Dashboard Generator Service` to `Escalation Service`?",
-      "why": "High betweenness centrality (0.060) - this node is a cross-community bridge."
-    },
-    {
-      "type": "isolated_nodes",
-      "question": "What connects `Service inventory`, `Gaps vs Session A targets`, `Doc discrepancies noted (not fixed here)` to the rest of the system?",
-      "why": "105 weakly-connected nodes found - possible documentation gaps or missing edges."
-    },
-    {
-      "type": "low_cohesion",
-      "question": "Should `Dashboard Generator Service` be split into smaller, more focused modules?",
-      "why": "Cohesion score 0.05844155844155844 - nodes in this community are weakly interconnected."
-    },
-    {
-      "type": "low_cohesion",
-      "question": "Should `Tools API Service` be split into smaller, more focused modules?",
-      "why": "Cohesion score 0.10253699788583509 - nodes in this community are weakly interconnected."
-    },
-    {
-      "type": "low_cohesion",
-      "question": "Should `Escalation Service` be split into smaller, more focused modules?",
-      "why": "Cohesion score 0.07610993657505286 - nodes in this community are weakly interconnected."
-    },
-    {
-      "type": "low_cohesion",
-      "question": "Should `RAG Retrieval & Generation` be split into smaller, more focused modules?",
-      "why": "Cohesion score 0.06976744186046512 - nodes in this community are weakly interconnected."
-    }
-  ]
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
 }

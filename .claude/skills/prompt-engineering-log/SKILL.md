@@ -46,6 +46,14 @@ The **narrative between versions** is what earns the 25% — "V1 hallucinated se
 ## Output
 Deliverable is a PDF/DOCX (`docs/prompt-log/`) that grows from Phase 2 onward. Each surface's frozen set and per-version results are reproducible from `/evaluation/`.
 
+## Entry mechanics (migrated from prompt-log-format)
+
+- One markdown file per surface under `docs/prompt-log/`, plus an index.
+- Prompts under test live in versioned files (not only inline in n8n/UI) so each V is
+  a real commit — git history is evidence.
+- Failure sentences must be specific ("invented a region when none was stated"), not
+  "improved accuracy". Same frozen suite every version — no moving goalposts.
+
 ## When editing here
 - Every prompt change to a surface → re-run its frozen set, record the new pass rate, add a version entry. Never edit a prompt without logging the result.
 - Keep the log and the running prompts in sync (hash check for n8n-embedded ones).

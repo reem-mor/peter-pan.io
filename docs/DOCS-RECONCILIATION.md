@@ -1,5 +1,9 @@
 # PETER PAN — Documentation Reconciliation & Fix Report
 
+> **Historical.** `_v2` plan/architecture deletes (D1–D3) are already applied.
+> Prefer live SoT: `ARCHITECTURE.md`, `BUILD_PLAN.md`, `PROJECT-PLAN.md`,
+> `PETER-PAN-SPEC-CROSSWALK.md`, `PRE-PUBLIC-CHECKLIST.md`. Kept as a decision log.
+
 A single, ranked list of every **conflict, fix, and deletion** across the project docs,
 checked against the teacher's guideline and the source-of-truth diagrams
 (`peter-pan-system.mmd`, `peter-pan-n8n-flow.mmd`). Work top-to-bottom; each item says
@@ -80,7 +84,7 @@ The single highest-risk item, because it can blow up live in a presentation.
 | `ARCHITECTURE_v2.md` | EC2 = **"Implemented (demo)… full n8n-path E2E passed 7/7 on EC2 2026-07-11"** |
 | `RUBRIC-MAP.md`, `DEMO-SCRIPT.md`, audit | EC2 deploy **"not yet claimable" / "remain planned"**; read-only AWS check found **no instance currently deployed** |
 
-**Likely truth:** you provisioned a demo EC2 (`18.234.123.139` appeared in your `settings.local.json`
+**Likely truth:** you provisioned a demo EC2 (`<demo-public-ip>` appeared in your `settings.local.json`
 `deploy_ec2.sh`/`run_e2e_ec2.sh`), passed 7/7 on it, then **stopped/tore it down** to cap cost
 (matching your "stop between sessions" scope). If so, every doc is half-right and collectively
 contradictory.

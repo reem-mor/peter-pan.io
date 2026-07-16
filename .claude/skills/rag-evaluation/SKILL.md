@@ -35,6 +35,16 @@ Do NOT mutate mid-iteration — it's the pass-rate baseline.
 
 Persist metric outputs (don't just print) so runs are comparable across iterations and the pgvector-vs-Chroma benchmark is evidence-backed.
 
+## Pipeline internals (migrated from rag-pipeline-internals)
+
+- One embedder for ingest + query (`all-MiniLM-L6-v2` default); collection metadata stores
+  the model name; refuse query on mismatch.
+- Chroma persistent client (`CHROMA_PATH`), collection `incidents`, top-3 with distance
+  threshold — never pad weak matches.
+- Pre-pop: `scripts/populate_vector_store.py` — seeded, idempotent, all 6 classes ≥3 each.
+- GGUF via `GGUF_MODEL_PATH` / llama-cpp-python; load once; low temperature; truncate docs
+  not the query on context overflow. CI mocks Llama; `scripts/smoke_rag.py` for live GGUF.
+
 ## When editing here
 - Never remove the "not in KB" refusal path to "improve" answer coverage — refusal *is* the feature.
 - Never weaken citation validation to raise pass rate. Report real failures.

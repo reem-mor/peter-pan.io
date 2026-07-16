@@ -98,6 +98,20 @@ Wiring: [`.cursor/rules/graphify.mdc`](../.cursor/rules/graphify.mdc) (`alwaysAp
 Skip `graphify hook install` here — it mutates git config for a merge driver; refresh
 manually with `graphify update .` after code changes.
 
+## FastAPI service conventions (no separate skill)
+
+Mirror an existing `services/<name>/` layout before adding routes. Contracts: vendored
+byte-identical `contracts.py` per deployment unit (identity-tested) — never a shared
+`services.*` import. Every endpoint returns a typed model; errors are structured; tests
+cover happy + malformed + contract shape; register new suites in `scripts/run_all_tests.py`.
+Demo perf budget: <2s on t3.large with fixtures; heavy clients load once at lifespan.
+
+## Caveman explainer (communication ladder)
+
+1. Caveman line (no jargon) → 2. Engineer line (real terms) → 3. Architecture detail.
+Hebrew for lecturer conversation (keep English technical terms); English for employer/README.
+Numbers beat adjectives. Do not start "why X?" from the technology — start from the ops problem.
+
 ## Project subagents
 
 | Subagent | Trigger |

@@ -151,7 +151,7 @@ floor is keyword-based; see limitations).
 - `docker-compose.ec2.yml` — RAG loopback
 - `docs/n8n-workflow.md` — name
 - `n8n/README.md` — webhook header + signal id
-- `.cursor/skills/n8n-flow-conventions/SKILL.md` — export path + responseMode
+- `.claude/skills/mcp-integration/SKILL.md` — n8n flow conventions (export path + responseMode)
 - `docs/LAYER-2-VALIDATION.md` — this report
 - Operator probes: `scripts/_ec2_layer2_*.sh` (temporary; safe to delete after use)
 

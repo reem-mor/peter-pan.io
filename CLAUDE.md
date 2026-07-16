@@ -26,20 +26,19 @@ PAN = the Panoramic view of your incidents (PITER connected Knowledge → RAG; P
 - Python 3.12 is the target (venv + CI).
 - **Out of scope — do not scaffold, even "for later":** Redis/caching, feedback-loop code (roadmap slide only), voice/bridge/live-call integration, PagerDuty/Opsgenie, Kubernetes, Terraform.
 
-## Skills (load the relevant one before working on its area)
+## Skills (canonical root: `.claude/skills/` — see `docs/AGENT-TOOLING.md`)
 | Area | Skill |
 |---|---|
-| Alerts, incidents, logs, metrics, enrichment, routing | observability-incidents-domain |
-| Any FastAPI service (incl. performance rules) | fastapi-service-conventions |
-| Predictor model, training, evaluation | pytorch-predictor |
-| Streamlit UI, UX, demo polish | streamlit-demo-ui |
-| n8n flow, nodes, expressions, merges, export | n8n-flow-conventions |
-| RAG internals: embeddings, vector store, GGUF, ingestion | rag-pipeline-internals |
-| Grafana JSON, Dashboard Generator | grafana-dashboard-json |
-| EC2, CloudFormation, deploy, security groups | aws-deployment |
-| Prompt Engineering Log (25% deliverable) | prompt-log-format |
-| Demo prep and recording (freeze window) | demo-script-guard |
-| Explanations for lecturer/employers/README | caveman-explainer |
+| Classification, severity, routing, TriageReport, Predictor ML | `.claude/skills/incident-triage/` |
+| Guardrails rails, regex floor, GuardrailResult | `.claude/skills/guardrails-testing/` |
+| RAG grounding, citations, embeddings, Chroma/GGUF | `.claude/skills/rag-evaluation/` |
+| Prompt Engineering Log (25% deliverable) | `.claude/skills/prompt-engineering-log/` |
+| Frozen eval / Stage A gates / demo freeze | `.claude/skills/peter-evaluation/` |
+| Streamlit UI + Grafana dashboard JSON | `.claude/skills/frontend-design/` |
+| MCP servers + n8n flow conventions | `.claude/skills/mcp-integration/` |
+| EC2 / CloudFormation / deploy | `.claude/skills/ec2-deploy/` |
+| Knowledge graph navigation | `.claude/skills/graphify/` |
+| FastAPI layout / caveman communication ladder | `docs/AGENT-TOOLING.md` (no separate skill) |
 
 ## Karpathy-inspired coding behavior
 
@@ -67,11 +66,12 @@ contracts, security rules, and required resilience paths always take precedence.
 - Never weaken tests, contracts, deterministic floors, or evaluation thresholds to make a change pass.
 
 ## Canonical project references
-- Architecture, ownership, endpoints, and implementation status: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Product story (PITER → PETER PAN, market): [docs/PRODUCT-STORY.md](docs/PRODUCT-STORY.md)
+- Architecture (four layers): [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Build sequence and milestone gates: [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md)
 - Frozen schemas: [docs/contracts/](docs/contracts/)
 - Rubric and prompt-engineering requirements: [docs/PROJECT-PLAN.md](docs/PROJECT-PLAN.md)
-- Course-spec crosswalk and deviations register: [docs/SPEC-CROSSWALK.md](docs/SPEC-CROSSWALK.md)
+- Course-spec crosswalk and deviations register: [docs/PETER-PAN-SPEC-CROSSWALK.md](docs/PETER-PAN-SPEC-CROSSWALK.md)
 - Agent tooling, MCP setup, and CI commands: [docs/AGENT-TOOLING.md](docs/AGENT-TOOLING.md)
 
 ## Verification and evidence
@@ -120,7 +120,7 @@ connected n8n Cloud account when the user has enabled the n8n MCP server.
 2. Time-series metric windows instead of images for the classifier (vision fallback implemented: `services/image-analyzer`).
 3. Guardrail schema `{passed, flags, reason}` instead of `{pass, reason, safe_text}`.
 4. Bedrock Claude alongside Gemini/GPT-4o; pgvector alongside ChromaDB — one-node swaps.
-Full register: docs/SPEC-CROSSWALK.md.
+Full register: docs/PETER-PAN-SPEC-CROSSWALK.md.
 
 ## Definition of done (per change)
 - Typed request/response schemas, error handling, fail-safe path.

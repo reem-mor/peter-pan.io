@@ -41,3 +41,11 @@ docker compose config --quiet
 - Store generated result artifacts under `evaluation/results/`; never overwrite frozen inputs.
 
 If the stack is unavailable, run the fast gate and report full E2E as unverified.
+
+## Demo freeze (migrated from demo-script-guard)
+
+Four required video segments (5–8 min): (1) E2E success with live dashboard, (2) input
+guardrail reject card, (3) output guardrail review path, (4) Ollama on-topic + off-topic
+refusal. From freeze day: every change states which segment it can break; fixtures green
+before and after; no new deps/schema/renames; `DEMO_MODE=1` for recording. Rehearse cold
+start + all four segments under 8 minutes.
