@@ -186,7 +186,7 @@ Operator guides: [`infra/aws/README.md`](../infra/aws/README.md) ·
 - Severity: P1–P4 only (no P5).
 - Predictor: exactly 6 `incident_class` values; routing category derived in n8n only.
 - Secrets: `.env` / Secrets Manager — never in git or MCP JSON literals.
-- Public-release gate: [`PRE-PUBLIC-CHECKLIST.md`](PRE-PUBLIC-CHECKLIST.md).
+- Public-release gate: [`archive/PRE-PUBLIC-CHECKLIST.md`](archive/PRE-PUBLIC-CHECKLIST.md).
 
 ---
 

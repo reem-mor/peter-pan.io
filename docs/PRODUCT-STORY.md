@@ -139,5 +139,5 @@ local compose node. Multi-region HA, Redis, K8s, and feedback-loop retrain are
 
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — layer contracts and inventory  
 - [`PETER-PAN-SPEC-CROSSWALK.md`](PETER-PAN-SPEC-CROSSWALK.md) — guideline deviations register  
-- [`PETER-PAN-PROJECT-MASTER-DOC-EN.md`](PETER-PAN-PROJECT-MASTER-DOC-EN.md) — lecturer-facing master narrative  
+- [`archive/PETER-PAN-PROJECT-MASTER-DOC-EN.md`](archive/PETER-PAN-PROJECT-MASTER-DOC-EN.md) — lecturer-facing master narrative  
 - [`presentation/DEMO-SCRIPT.md`](presentation/DEMO-SCRIPT.md) — recording script  

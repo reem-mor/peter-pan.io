@@ -61,7 +61,7 @@ No spine / CTX node stripping. Flow export changed only for Normalize null mappi
 | Host `.env` in shell | Loading full `.env` into the process can break unit tests that expect unset `PETER_SERVICES_TOKEN` / `PETER_TOOLS_URL`. Prefer isolated pytest (fixtures now clear the common offenders). |
 | Unknown catalog services | `api-gateway` (and similar) → output guardrails / review path (`202 flagged_for_review`), not a hard reject. Prefer catalog slugs (`orders-api`, `postgres-primary`, …). |
 | Stage A workflow on volume | Survives n8n restarts until archived; bootstrap now archives non-canonical `PETER*` flows. |
-| Cloud LLM / EC2 | Out of scope for this local DoD; see `docs/LAYER-2-VALIDATION.md` for EC2 Layer 2. |
+| Cloud LLM / EC2 | Out of scope for this local DoD; see `docs/archive/LAYER-2-VALIDATION.md` for EC2 Layer 2. |
 | n8n MCP Cloud | Authoring account is separate from local `:5678`; do not confuse Cloud WF IDs with local. |
 
 ---

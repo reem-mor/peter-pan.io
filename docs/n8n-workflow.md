@@ -71,7 +71,7 @@ Script: `scripts/bootstrap_n8n_local.py` — imports workflow, binds credentials
 .\.venv\Scripts\python.exe evaluation\run_e2e.py --entrypoint n8n --base-url http://localhost --token $env:PETER_SERVICES_TOKEN
 ```
 
-Full Layer 2 evidence (EC2 + decisions): [`docs/LAYER-2-VALIDATION.md`](LAYER-2-VALIDATION.md).
+Full Layer 2 evidence (EC2 + decisions): [`docs/archive/LAYER-2-VALIDATION.md`](archive/LAYER-2-VALIDATION.md).
 
 ## Re-export rule
 

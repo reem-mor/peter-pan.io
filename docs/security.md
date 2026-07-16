@@ -67,7 +67,7 @@ Dependabot enabled: `.github/dependabot.yml`
 
 ## Pre-public checklist
 
-See [`docs/PRE-PUBLIC-CHECKLIST.md`](PRE-PUBLIC-CHECKLIST.md)
+See [`docs/archive/PRE-PUBLIC-CHECKLIST.md`](archive/PRE-PUBLIC-CHECKLIST.md)
 
 ## Cursor rules
 
