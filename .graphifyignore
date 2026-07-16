@@ -1,0 +1,23 @@
+# Extra excludes beyond .gitignore (patterns are merged; this file only excludes more)
+.git/
+.venv/
+venv/
+node_modules/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.trash/
+incoming/
+.playwright-mcp/
+var/
+graphify-out/
+*.gguf
+*.faiss
+predictive/data/
+**/test-results/
+.env
+.env.*
+*.log
+*.pem
+*.key

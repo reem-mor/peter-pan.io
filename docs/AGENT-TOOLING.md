@@ -44,6 +44,7 @@ picks up User env vars, then retry `search_workflows`.
 |---|---|
 | `.claude/skills/ec2-deploy/` | EC2 provisioning, deployment, recovery, and live validation |
 | `.claude/skills/frontend-design/` | Building or refining the operator UI |
+| `.claude/skills/graphify/` | Building or querying the project knowledge graph (`/graphify`) |
 | `.claude/skills/guardrails-testing/` | Changing rails, deterministic floors, or frozen guardrail cases |
 | `.claude/skills/incident-triage/` | Changing classification, severity, routing, or `TriageReport` generation |
 | `.claude/skills/mcp-integration/` | Adding or troubleshooting project MCP servers |
@@ -59,6 +60,43 @@ or `.agents/skills/`: cross-root precedence is undocumented and duplicate copies
 
 References: [Cursor Agent Skills](https://cursor.com/docs/skills),
 [Claude Code Agent Skills](https://code.claude.com/docs/en/skills).
+
+## Graphify
+
+Knowledge graph for agent navigation ([Graphify](https://github.com/Graphify-Labs/graphify)).
+Output lives in `graphify-out/` (commit the map; local noise is gitignored).
+
+**Install (developer machine — not the repo `.venv`):**
+
+```powershell
+uv tool install graphifyy
+graphify install --project --platform cursor
+graphify install --project --platform claude
+```
+
+PyPI package is `graphifyy`; CLI command is `graphify`. Do not add Graphify to
+`requirements-dev.txt` or service venvs. Do not use `--platform agents` in this repo
+(skills stay under `.claude/skills/` only).
+
+**Build / refresh (AST-only, no API cost):**
+
+```powershell
+graphify update .
+```
+
+**Query:**
+
+```powershell
+graphify query "Where is GuardrailResult defined?"
+graphify path "GuardrailResult" "TriageReport"
+graphify explain "GuardrailResult"
+```
+
+Wiring: [`.cursor/rules/graphify.mdc`](../.cursor/rules/graphify.mdc) (`alwaysApply`),
+[`.claude/skills/graphify/`](../.claude/skills/graphify/), `.graphifyignore`,
+`.claudeignore` (`graphify-out/` so Claude prompt cache is not busted on rebuilds).
+Skip `graphify hook install` here — it mutates git config for a merge driver; refresh
+manually with `graphify update .` after code changes.
 
 ## Project subagents
 
