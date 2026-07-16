@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "graphify hook-guard search"
+            "command": "C:\\Users\\reemm\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\graphify.EXE hook-guard search"
           }
         ]
       },
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "graphify hook-guard read"
+            "command": "C:\\Users\\reemm\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\graphify.EXE hook-guard read"
           }
         ]
       }

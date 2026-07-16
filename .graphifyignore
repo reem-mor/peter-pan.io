@@ -35,6 +35,10 @@ predictive/data/
 .agents/
 .github/
 
+# Dependency pin lists — LLM extractor consistently returns no nodes for these,
+# so they re-dispatch on every run and churn the graph. No architecture value.
+**/*requirements*.txt
+
 # Generated / evidence artifacts (inflate viz without helping navigation)
 evaluation/results/
 docs/presentation/evidence/
