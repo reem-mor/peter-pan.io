@@ -1,0 +1,13 @@
+# Force LF on checkout for all text files, on every platform.
+#
+# Why: prompt-surface tests (n8n/tests/test_prompt_surfaces.py) compare the
+# versioned prompt files byte-for-byte against strings inside the n8n flow
+# export, which stores \n. A fresh Windows clone with the default
+# core.autocrlf=true checked the .txt files out as CRLF and broke the
+# comparison. Pinning eol=lf makes clones reproducible everywhere.
+* text=auto eol=lf
+
+# Binary — never touch line endings.
+*.png binary
+*.pth binary
+*.bin binary
