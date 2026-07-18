@@ -17,13 +17,26 @@ Playwright is the only default project server. The AWS deployment plugin enabled
 ### Optional n8n MCP
 
 n8n provides an instance-level MCP server. It is intentionally opt-in because it can
-discover, edit, and execute workflows. Enable it only on a trusted development instance,
-then merge [`.cursor/mcp.n8n.json.example`](../.cursor/mcp.n8n.json.example) into the
-gitignored `.cursor/mcp.json` and set `N8N_MCP_URL` and `N8N_MCP_TOKEN` as user
+discover, edit, publish, execute, and test workflows. Enable it on a trusted
+development or n8n Cloud instance, then merge **one** entry from
+[`.cursor/mcp.n8n.json.example`](../.cursor/mcp.n8n.json.example) into the
+gitignored `.cursor/mcp.json` and set `N8N_MCP_URL` / `N8N_MCP_TOKEN` as user
 environment variables.
 
-Before using n8n MCP, invoke `n8n-flow-guardian`. Never use `test_workflow` on the
-live PETER webhook flow, and re-export every approved change to `n8n/peter-flow.json`.
+Prefer the `n8n-mcp` **stdio** entry (`npx mcp-remote` → `…/mcp-server/http`). Cursor’s
+direct Streamable HTTP transport can fail with `Failed to open SSE stream` against
+n8n Cloud even when a manual `initialize` POST returns HTTP 200. Use the
+`n8n-mcp-http` block only if HTTP is stable in your Cursor build; `n8n-supergateway`
+is a second stdio fallback. Do not point Cursor at an MCP Server Trigger URL
+(`/mcp/...`); instance-level MCP is `/mcp-server/http` only.
+
+Before using n8n MCP, invoke `n8n-flow-guardian`. Prefer `execute_workflow` for full
+runs and `test_workflow` for pin-data isolation. On an *active* webhook/Telegram flow,
+unpublish before `test_workflow` (or use `execute_workflow`) so the production webhook
+is not deregistered. Re-export every approved PETER change to `n8n/peter-flow.json`.
+
+If the server shows discovery errors after a config change, fully restart Cursor so it
+picks up User env vars, then retry `search_workflows`.
 
 ## Project skills
 
@@ -31,6 +44,7 @@ live PETER webhook flow, and re-export every approved change to `n8n/peter-flow.
 |---|---|
 | `.claude/skills/ec2-deploy/` | EC2 provisioning, deployment, recovery, and live validation |
 | `.claude/skills/frontend-design/` | Building or refining the operator UI |
+| `.claude/skills/graphify/` | Building or querying the project knowledge graph (`/graphify`) |
 | `.claude/skills/guardrails-testing/` | Changing rails, deterministic floors, or frozen guardrail cases |
 | `.claude/skills/incident-triage/` | Changing classification, severity, routing, or `TriageReport` generation |
 | `.claude/skills/mcp-integration/` | Adding or troubleshooting project MCP servers |
@@ -46,6 +60,57 @@ or `.agents/skills/`: cross-root precedence is undocumented and duplicate copies
 
 References: [Cursor Agent Skills](https://cursor.com/docs/skills),
 [Claude Code Agent Skills](https://code.claude.com/docs/en/skills).
+
+## Graphify
+
+Knowledge graph for agent navigation ([Graphify](https://github.com/Graphify-Labs/graphify)).
+Output lives in `graphify-out/` (commit the map; local noise is gitignored).
+
+**Install (developer machine — not the repo `.venv`):**
+
+```powershell
+uv tool install graphifyy
+graphify install --project --platform cursor
+graphify install --project --platform claude
+```
+
+PyPI package is `graphifyy`; CLI command is `graphify`. Do not add Graphify to
+`requirements-dev.txt` or service venvs. Do not use `--platform agents` in this repo
+(skills stay under `.claude/skills/` only).
+
+**Build / refresh (AST-only, no API cost):**
+
+```powershell
+graphify update .
+```
+
+**Query:**
+
+```powershell
+graphify query "Where is GuardrailResult defined?"
+graphify path "GuardrailResult" "TriageReport"
+graphify explain "GuardrailResult"
+```
+
+Wiring: [`.cursor/rules/graphify.mdc`](../.cursor/rules/graphify.mdc) (`alwaysApply`),
+[`.claude/skills/graphify/`](../.claude/skills/graphify/), `.graphifyignore`,
+`.claudeignore` (`graphify-out/` so Claude prompt cache is not busted on rebuilds).
+Skip `graphify hook install` here — it mutates git config for a merge driver; refresh
+manually with `graphify update .` after code changes.
+
+## FastAPI service conventions (no separate skill)
+
+Mirror an existing `services/<name>/` layout before adding routes. Contracts: vendored
+byte-identical `contracts.py` per deployment unit (identity-tested) — never a shared
+`services.*` import. Every endpoint returns a typed model; errors are structured; tests
+cover happy + malformed + contract shape; register new suites in `scripts/run_all_tests.py`.
+Demo perf budget: <2s on t3.large with fixtures; heavy clients load once at lifespan.
+
+## Caveman explainer (communication ladder)
+
+1. Caveman line (no jargon) → 2. Engineer line (real terms) → 3. Architecture detail.
+Hebrew for lecturer conversation (keep English technical terms); English for employer/README.
+Numbers beat adjectives. Do not start "why X?" from the technology — start from the ops problem.
 
 ## Project subagents
 

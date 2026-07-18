@@ -1,15 +1,39 @@
 {
-  "_comment": "Optional: merge this server into gitignored .cursor/mcp.json. Enable n8n instance-level MCP and set both environment variables first.",
+  "_comment": "Optional: merge ONE of these into gitignored .cursor/mcp.json. Enable n8n instance-level MCP first. Prefer env interpolation; never commit real tokens. If Cursor HTTP transport fails with 'Failed to open SSE stream', use n8n-mcp (mcp-remote stdio) instead of the direct HTTP block.",
   "mcpServers": {
-    "n8n": {
+    "n8n-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "${env:N8N_MCP_URL}",
+        "--header",
+        "Authorization: Bearer ${env:N8N_MCP_TOKEN}"
+      ],
+      "env": {
+        "N8N_MCP_TOKEN": "${env:N8N_MCP_TOKEN}",
+        "N8N_MCP_URL": "${env:N8N_MCP_URL}"
+      },
+      "timeout": 120000
+    },
+    "n8n-mcp-http": {
+      "_comment": "Direct Streamable HTTP. Prefer only if Cursor reliably holds the SSE stream.",
+      "type": "http",
+      "url": "${env:N8N_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${env:N8N_MCP_TOKEN}"
+      }
+    },
+    "n8n-supergateway": {
+      "_comment": "Alternate stdio bridge if mcp-remote misbehaves.",
       "command": "npx",
       "args": [
         "-y",
         "supergateway",
         "--streamableHttp",
-        "${N8N_MCP_URL}",
+        "${env:N8N_MCP_URL}",
         "--header",
-        "Authorization:Bearer ${N8N_MCP_TOKEN}"
+        "Authorization:Bearer ${env:N8N_MCP_TOKEN}"
       ],
       "timeout": 120000
     }

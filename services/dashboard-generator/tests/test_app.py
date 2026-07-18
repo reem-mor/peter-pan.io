@@ -18,6 +18,9 @@ client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def _fixture_grafana(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Host shells that load .env leave PETER_SERVICES_TOKEN set; clear it so
+    # fixture-path POSTs stay unauthenticated unless a test opts in.
+    monkeypatch.delenv("PETER_SERVICES_TOKEN", raising=False)
     gc_mod.reset_client_cache()
     monkeypatch.setattr(gc_mod, "get_grafana_client", lambda: FixtureGrafanaClient())
 

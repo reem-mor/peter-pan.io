@@ -5,7 +5,7 @@ Diagram: [`docs/peter-pan-n8n-flow.mmd`](peter-pan-n8n-flow.mmd)
 
 ## Flow name
 
-**PETER PAN — PETER Flow (Stage A)**
+**PETER PAN — Observability Triage**
 
 ## 8-node spine (course §3.1 crosswalk)
 
@@ -55,7 +55,7 @@ docker compose --profile bootstrap up n8n-bootstrap
 
 Script: `scripts/bootstrap_n8n_local.py` — imports workflow, binds credentials, publishes webhook.
 
-**Safety:** Never call `test_workflow` on a live webhook-triggered flow in production — it deregisters the webhook.
+**Safety:** `test_workflow` on an *active* webhook-triggered flow can deregister the webhook. Prefer `execute_workflow`, or unpublish → test → republish.
 
 ## Stage A vs Stage C
 
@@ -70,6 +70,8 @@ Script: `scripts/bootstrap_n8n_local.py` — imports workflow, binds credentials
 .\.venv\Scripts\python.exe -m pytest n8n/tests -q
 .\.venv\Scripts\python.exe evaluation\run_e2e.py --entrypoint n8n --base-url http://localhost --token $env:PETER_SERVICES_TOKEN
 ```
+
+Full Layer 2 evidence (EC2 + decisions): [`docs/archive/LAYER-2-VALIDATION.md`](archive/LAYER-2-VALIDATION.md).
 
 ## Re-export rule
 

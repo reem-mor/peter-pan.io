@@ -61,13 +61,13 @@ Dependabot enabled: `.github/dependabot.yml`
 
 ## n8n MCP safety
 
-- Never `test_workflow` on production webhook flows
+- On active webhook flows: prefer `execute_workflow`, or unpublish before `test_workflow` (bare `test_workflow` can deregister the webhook)
 - Use `update_workflow` with `operations` array for modifications
 - Credential bindings do not inherit — set explicitly
 
 ## Pre-public checklist
 
-See [`docs/PRE-PUBLIC-CHECKLIST.md`](PRE-PUBLIC-CHECKLIST.md)
+See [`docs/archive/PRE-PUBLIC-CHECKLIST.md`](archive/PRE-PUBLIC-CHECKLIST.md)
 
 ## Cursor rules
 

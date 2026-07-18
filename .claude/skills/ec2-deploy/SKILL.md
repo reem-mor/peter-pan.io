@@ -58,3 +58,16 @@ explicit user approval per repo golden rules.
   `MSYS_NO_PATHCONV=1`.
 - Teardown (`terminate-instances`, `down -v`) is destructive — requires explicit
   user approval first.
+
+## Audit-first AWS CLI (migrated from aws-deployment)
+
+Before any mutating command (`create-*`, `run-instances`, `terminate-*`, `update-stack`):
+
+1. Run the corresponding `describe-*` and show current state.
+2. State the exact change and blast radius in one sentence.
+3. Wait for approval. Destructive ops require the instance-id/stack-name echoed back.
+
+Stack shape: CloudFormation only (`infra/aws/template.yaml`) — one EC2 t3.large + SG.
+Never `0.0.0.0/0`. Tags: `project=peter-pan`, `env=demo`. Operator SoT:
+[`infra/aws/README.md`](../../../infra/aws/README.md). Stop the demo instance when idle
+(EBS-only cost). Never put live public IPs or instance IDs into tracked docs.

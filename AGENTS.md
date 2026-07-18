@@ -18,7 +18,10 @@ WebUI (Layer 1).
 
 Production-minded ops code — observability, grounded/cited RAG, deterministic guardrail
 floors, preview-first escalation. Models propose; unit-tested code and schemas decide.
+Course real-estate guideline = capability map only; product domain is AIOps.
 
+Product story (PITER → PETER PAN): [docs/PRODUCT-STORY.md](docs/PRODUCT-STORY.md).
+Four layers: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Model/memory/storage: [ADR 0002](docs/adr/0002-model-memory-db.md). Service boundaries: [ADR 0003](docs/adr/0003-system-boundaries.md). MCP tools and CI commands: [docs/AGENT-TOOLING.md](docs/AGENT-TOOLING.md).
 
 ## Imported Claude Cowork project instructions

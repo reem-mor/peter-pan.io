@@ -1,4 +1,6 @@
-# n8n — Layer 2 orchestration (the PETER flow)
+# Layer 2 — Orchestration (n8n · the PETER flow)
+
+Architecture context: [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) §4.
 
 `peter-flow.json` is the versioned export of the Stage A workflow. **Re-export it on every
 flow change** (BUILD_PLAN §3) — the n8n instance is not the source of record, this repo is.
@@ -49,8 +51,9 @@ Environment variables, set in the n8n instance:
 | `PETER_GITHUB_API` / `PETER_GITHUB_REPO` | Deploy context stub (`integration-stubs` in local compose) |
 
 Credentials, created in the n8n UI (the export carries **no** secrets). Local compose
-creates them via `scripts/bootstrap_n8n_local.py` from `${PETER_SERVICES_TOKEN}` and
-`${PETER_FIXTURE_LLM_URL}` — see `n8n/bootstrap-credentials.example.json` for shape only.
+creates them via `scripts/bootstrap_n8n_local.py` from `${PETER_SERVICES_TOKEN}`,
+`${PETER_WEBHOOK_SECRET}`, and `${PETER_FIXTURE_LLM_URL}` — see
+`n8n/bootstrap-credentials.example.json` for shape only.
 
 - **PETER Services Bearer** (`httpBearerAuth`) — shared secret for all service HTTP calls.
 - **PETER Mock LLM (OpenAI-compatible)** (`openAiApi`) — base URL pointing at the Stage A
@@ -58,6 +61,12 @@ creates them via `scripts/bootstrap_n8n_local.py` from `${PETER_SERVICES_TOKEN}`
   before running the flow. Stage C swaps this same credential to real providers
   (Gemini 2.5 Flash for extraction, Bedrock Claude Sonnet for agent/synthesis —
   [ADR 0002](../docs/adr/0002-model-memory-db.md)); the nodes never change.
+- **PETER Webhook Header** (`httpHeaderAuth`) — header **name** must be exactly
+  `X-Peter-Webhook-Secret` (the credential's header-name field, not the n8n account display
+  name). Value = `${PETER_WEBHOOK_SECRET}`.
+
+Signal `id` must match `^sig-[a-z0-9-]{8,}$` (at least 8 chars after `sig-`). Shorter ids
+are rejected by input guardrails as `schema_invalid` before any LLM call.
 
 ## Flow ↔ diagram mapping
 

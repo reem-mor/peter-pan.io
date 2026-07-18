@@ -24,7 +24,9 @@ async def _verify(handler, owner_team: str, tools_url: str | None) -> bool:
         return await verify_owner_team(owner_team, client=client, tools_url=tools_url)
 
 
-def test_returns_false_when_tools_url_missing() -> None:
+def test_returns_false_when_tools_url_missing(monkeypatch) -> None:
+    monkeypatch.delenv("PETER_TOOLS_URL", raising=False)
+
     def handler(request: httpx.Request) -> httpx.Response:  # pragma: no cover
         raise AssertionError("should not call the Tools API without a URL")
 

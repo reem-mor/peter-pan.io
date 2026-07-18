@@ -27,6 +27,8 @@ from lib import (  # noqa: E402 — after sys.path fixup
     SubmissionResult,
     check_health,
     chat_sync,
+    classify_webhook_body,
+    extract_triage_report,
     is_off_topic,
     new_sig_id,
     submit_signal,
@@ -57,7 +59,13 @@ def _mock_response(status_code: int = 200, text: str = '{"ok":true}') -> MagicMo
     r = MagicMock()
     r.status_code = status_code
     r.text = text
-    r.json.return_value = {"ok": True}
+
+    def _json():
+        import json
+
+        return json.loads(text)
+
+    r.json.side_effect = _json
     return r
 
 
@@ -172,24 +180,53 @@ class TestSubmitSignal:
     def test_no_webhook_url_returns_not_ok(self) -> None:
         result = submit_signal(_make_signal(), webhook_url="")
         assert result.ok is False
+        assert result.kind == "misconfigured"
         assert "not configured" in result.detail
 
     def test_successful_submission(self) -> None:
-        with patch("lib.httpx.post", return_value=_mock_response(200)) as mock_post:
+        report = (
+            '{"incident_id":"inc-1","category":"application","p_level":"P2",'
+            '"summary":"orders-api errors","probable_cause":"deploy",'
+            '"citations":[{"source_id":"rb-1","source_type":"runbook","quote":"x"}],'
+            '"owner_team":"App Platform","confidence":0.8}'
+        )
+        with patch(
+            "lib.httpx.post", return_value=_mock_response(200, report)
+        ) as mock_post:
             sig = _make_signal()
             result = submit_signal(sig, webhook_url="http://n8n.test/webhook/peter")
 
         assert result.ok is True
+        assert result.kind == "triage_report"
         assert result.status_code == 200
         assert result.signal_id == sig.id
+        assert result.body is not None
+        assert result.body["category"] == "application"
         mock_post.assert_called_once()
 
+    def test_rejected_guardrail_is_handled_ok(self) -> None:
+        body = (
+            '{"status":"rejected","passed":false,'
+            '"flags":["destructive_data_action"],"reason":"DROP blocked"}'
+        )
+        with patch("lib.httpx.post", return_value=_mock_response(200, body)):
+            result = submit_signal(_make_signal(), webhook_url="http://n8n.test/webhook")
+
+        assert result.ok is True
+        assert result.kind == "rejected"
+        assert result.body is not None
+        assert "destructive_data_action" in result.body["flags"]
+
     def test_4xx_returns_not_ok(self) -> None:
-        with patch("lib.httpx.post", return_value=_mock_response(400, "bad request")):
+        with patch(
+            "lib.httpx.post",
+            return_value=_mock_response(400, '{"detail":"bad request"}'),
+        ):
             result = submit_signal(_make_signal(), webhook_url="http://n8n.test/webhook")
 
         assert result.ok is False
         assert result.status_code == 400
+        assert result.kind == "error"
 
     def test_secret_header_sent(self) -> None:
         captured: dict = {}
@@ -226,6 +263,7 @@ class TestSubmitSignal:
             result = submit_signal(_make_signal(), webhook_url="http://n8n.test/webhook")
 
         assert result.ok is False
+        assert result.kind == "unreachable"
         assert "refused" in result.detail
 
     def test_payload_is_valid_signal_json(self) -> None:
@@ -234,7 +272,10 @@ class TestSubmitSignal:
 
         def _fake_post(url, *, json, headers, timeout):
             captured_body.append(json)
-            return _mock_response(200)
+            return _mock_response(
+                200,
+                '{"incident_id":"inc-1","category":"application","summary":"x"}',
+            )
 
         with patch("lib.httpx.post", side_effect=_fake_post):
             sig = _make_signal(service="orders-api", environment="production")
@@ -242,6 +283,31 @@ class TestSubmitSignal:
 
         assert len(captured_body) == 1
         Signal.model_validate(captured_body[0])  # must not raise
+
+
+class TestClassifyWebhookBody:
+    def test_triage_report_root(self) -> None:
+        kind, ok = classify_webhook_body(
+            200, {"incident_id": "inc-1", "category": "infra", "summary": "cpu"}
+        )
+        assert kind == "triage_report" and ok is True
+
+    def test_flagged_wrap(self) -> None:
+        kind, ok = classify_webhook_body(
+            202,
+            {
+                "status": "flagged_for_review",
+                "report": {"incident_id": "inc-1", "summary": "x"},
+            },
+        )
+        assert kind == "flagged_for_review" and ok is True
+
+    def test_extract_nested_report(self) -> None:
+        report = extract_triage_report(
+            {"status": "flagged_for_review", "report": {"incident_id": "inc-9"}}
+        )
+        assert report is not None
+        assert report["incident_id"] == "inc-9"
 
 
 # ===========================================================================
@@ -314,7 +380,7 @@ class TestChatSync:
 
         call_count = {"n": 0}
 
-        def _fake_post(url, *, json, timeout):
+        def _fake_post(url, *, json, timeout, headers=None, **_kwargs):
             call_count["n"] += 1
             if "fixture" in url:
                 raise httpx.ConnectError("refused")

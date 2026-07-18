@@ -1,0 +1,49 @@
+# Extra excludes beyond .gitignore (merged; this file only excludes more)
+.git/
+.venv/
+venv/
+node_modules/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.trash/
+incoming/
+.playwright-mcp/
+var/
+graphify-out/
+*.gguf
+*.faiss
+predictive/data/
+**/test-results/
+.env
+.env.*
+*.log
+*.pem
+*.key
+
+# Keep tests in the repo — exclude them from the knowledge graph only.
+# Tests were ~37% of nodes and create the visual "hairball".
+**/tests/**
+**/test_*.py
+**/*_test.py
+**/conftest.py
+
+# Agent-tooling noise (not product architecture)
+.claude/
+.cursor/
+.agents/
+.github/
+
+# Dependency pin lists — LLM extractor consistently returns no nodes for these,
+# so they re-dispatch on every run and churn the graph. No architecture value.
+**/*requirements*.txt
+
+# Generated / evidence artifacts (inflate viz without helping navigation)
+evaluation/results/
+docs/presentation/evidence/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif

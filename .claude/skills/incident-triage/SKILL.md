@@ -83,6 +83,24 @@ duplicate RAG retrieval in the same incident (use idempotent keys or skip direct
 Duplicate signals (same signature within a window) must not dispatch twice. Dedup on signal key
 before routing. P1 escalation must be idempotent — re-processing one P1 produces one dispatch.
 
+## Domain truth (migrated from observability-incidents-domain)
+
+- Synthetic data only. Log lines carry `timestamp`, `service`, `level`, `message`,
+  `correlation_id`. Metric names come only from `fixtures/dashboards/metrics_catalog.json`.
+- Enrichment: alert → RAG (cited) → Predictor `{incident_class, confidence}` → brief.
+  Below-threshold confidence → `uncertain` → human-review branch, never forced class.
+- Out of scope (do not scaffold): Redis/caching, feedback-loop retrain code, PagerDuty/
+  Opsgenie, voice/bridge, real production Prometheus scrape targets.
+
+## Predictor ML rules (migrated from pytorch-predictor)
+
+- 6 output classes from `contracts.py` only; transfer-learning backbone + fine-tuned head.
+- Softmax max below named threshold → `uncertain`, never a forced class.
+- Training: seeded script, stratified split, `metrics.json` with real test accuracy
+  (target >75%), per-class precision/recall. Report honest accuracy; note if synthetic
+  data makes the task trivially easy.
+- Serve: load once at startup, `eval` + `torch.no_grad()`, CPU-fine on t3.large.
+
 ## When editing here
 - Changing class/severity/routing logic -> edit the deterministic policy module, not a prompt.
 - Touching `TriageReport` shape -> STOP; it's frozen. Confirm with the human first.

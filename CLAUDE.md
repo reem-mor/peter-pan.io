@@ -26,20 +26,19 @@ PAN = the Panoramic view of your incidents (PITER connected Knowledge → RAG; P
 - Python 3.12 is the target (venv + CI).
 - **Out of scope — do not scaffold, even "for later":** Redis/caching, feedback-loop code (roadmap slide only), voice/bridge/live-call integration, PagerDuty/Opsgenie, Kubernetes, Terraform.
 
-## Skills (load the relevant one before working on its area)
+## Skills (canonical root: `.claude/skills/` — see `docs/AGENT-TOOLING.md`)
 | Area | Skill |
 |---|---|
-| Alerts, incidents, logs, metrics, enrichment, routing | observability-incidents-domain |
-| Any FastAPI service (incl. performance rules) | fastapi-service-conventions |
-| Predictor model, training, evaluation | pytorch-predictor |
-| Streamlit UI, UX, demo polish | streamlit-demo-ui |
-| n8n flow, nodes, expressions, merges, export | n8n-flow-conventions |
-| RAG internals: embeddings, vector store, GGUF, ingestion | rag-pipeline-internals |
-| Grafana JSON, Dashboard Generator | grafana-dashboard-json |
-| EC2, CloudFormation, deploy, security groups | aws-deployment |
-| Prompt Engineering Log (25% deliverable) | prompt-log-format |
-| Demo prep and recording (freeze window) | demo-script-guard |
-| Explanations for lecturer/employers/README | caveman-explainer |
+| Classification, severity, routing, TriageReport, Predictor ML | `.claude/skills/incident-triage/` |
+| Guardrails rails, regex floor, GuardrailResult | `.claude/skills/guardrails-testing/` |
+| RAG grounding, citations, embeddings, Chroma/GGUF | `.claude/skills/rag-evaluation/` |
+| Prompt Engineering Log (25% deliverable) | `.claude/skills/prompt-engineering-log/` |
+| Frozen eval / Stage A gates / demo freeze | `.claude/skills/peter-evaluation/` |
+| Streamlit UI + Grafana dashboard JSON | `.claude/skills/frontend-design/` |
+| MCP servers + n8n flow conventions | `.claude/skills/mcp-integration/` |
+| EC2 / CloudFormation / deploy | `.claude/skills/ec2-deploy/` |
+| Knowledge graph navigation | `.claude/skills/graphify/` |
+| FastAPI layout / caveman communication ladder | `docs/AGENT-TOOLING.md` (no separate skill) |
 
 ## Karpathy-inspired coding behavior
 
@@ -67,11 +66,12 @@ contracts, security rules, and required resilience paths always take precedence.
 - Never weaken tests, contracts, deterministic floors, or evaluation thresholds to make a change pass.
 
 ## Canonical project references
-- Architecture, ownership, endpoints, and implementation status: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Product story (PITER → PETER PAN, market): [docs/PRODUCT-STORY.md](docs/PRODUCT-STORY.md)
+- Architecture (four layers): [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Build sequence and milestone gates: [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md)
 - Frozen schemas: [docs/contracts/](docs/contracts/)
 - Rubric and prompt-engineering requirements: [docs/PROJECT-PLAN.md](docs/PROJECT-PLAN.md)
-- Course-spec crosswalk and deviations register: [docs/SPEC-CROSSWALK.md](docs/SPEC-CROSSWALK.md)
+- Course-spec crosswalk and deviations register: [docs/PETER-PAN-SPEC-CROSSWALK.md](docs/PETER-PAN-SPEC-CROSSWALK.md)
 - Agent tooling, MCP setup, and CI commands: [docs/AGENT-TOOLING.md](docs/AGENT-TOOLING.md)
 
 ## Verification and evidence
@@ -87,8 +87,18 @@ three golden signals on 2026-07-11. It requires the compose stack and explicit n
 bootstrap profile. The Stage A writer has a deterministic contract-valid fallback for
 local parser incompatibility; do not describe that fallback as a real-provider result.
 
-## n8n MCP safety (hard rules — violating these breaks production)
-- **Never** call `test_workflow` on a live webhook/Telegram-triggered flow — it deregisters the production webhook.
+## n8n MCP (cloud account — full control when connected)
+Create, update, publish, unpublish, execute, and pin-data test are all allowed on the
+connected n8n Cloud account when the user has enabled the n8n MCP server.
+
+- Prefer `execute_workflow` with `executionMode: "manual"` to exercise draft/node logic.
+- Prefer `execute_workflow` with `executionMode: "production"` after `publish_workflow`.
+- Prefer `test_workflow` + `prepare_test_pin_data` for isolated node/path tests that should
+  not hit live credentials/HTTP.
+- **Webhook caveat:** `test_workflow` on an *active* webhook/Telegram-triggered flow can
+  deregister the production webhook. For those flows: unpublish → test → republish, or use
+  `execute_workflow` (`manual`/`production`) instead. Do not refuse a user-requested test —
+  use the safer path first and state which path you took.
 - Use `update_workflow` with an `operations` array as the safe modification path.
 - Credential bindings do **not** inherit — set explicitly via `setNodeCredential`.
 - `create_workflow_from_code` cooks escape sequences in template literals — use `String.fromCharCode()` / `\uXXXX` for any Hebrew in Code nodes.
@@ -96,6 +106,7 @@ local parser incompatibility; do not describe that fallback as a real-provider r
 - Perplexity node v2 needs an explicit `operation` discriminator alongside `resource: "search"`.
 - Project-scope credential mismatch is the most common `publish_workflow` failure — check scope first.
 - `get_execution` needs both `executionId` and `workflowId`; use `includeData: true` with filtered `nodeNames` to avoid response-size limits.
+- If the n8n MCP server status is `error` / tools unavailable, call `mcp_auth` then retry.
 
 ## Deployment safety (portfolio / demo)
 - Canonical deployment constraints and procedures: [infra/aws/README.md](infra/aws/README.md).
@@ -109,7 +120,7 @@ local parser incompatibility; do not describe that fallback as a real-provider r
 2. Time-series metric windows instead of images for the classifier (vision fallback implemented: `services/image-analyzer`).
 3. Guardrail schema `{passed, flags, reason}` instead of `{pass, reason, safe_text}`.
 4. Bedrock Claude alongside Gemini/GPT-4o; pgvector alongside ChromaDB — one-node swaps.
-Full register: docs/SPEC-CROSSWALK.md.
+Full register: docs/PETER-PAN-SPEC-CROSSWALK.md.
 
 ## Definition of done (per change)
 - Typed request/response schemas, error handling, fail-safe path.
@@ -119,3 +130,13 @@ Full register: docs/SPEC-CROSSWALK.md.
 
 ## Language
 Author switches Hebrew/English naturally; mirror whichever is used, keeping English technical terms inline in Hebrew. Prefer human-sounding, warm phrasing over formal/AI-sounding output.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

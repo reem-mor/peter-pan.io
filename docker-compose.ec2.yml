@@ -9,7 +9,9 @@ services:
   predictor:
     ports: !override ["8002:8000"]
   rag:
-    ports: !override ["8003:8000"]
+    # Keep RAG loopback-only on EC2 (embeddings + corpus). n8n reaches it via
+    # compose DNS (http://rag:8000). Public health checks use SSH.
+    ports: !override ["127.0.0.1:8003:8000"]
     volumes: !override
       - rag-chroma:/data/chroma
       - /home/ubuntu/models:/models:ro

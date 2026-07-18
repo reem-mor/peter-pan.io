@@ -1,0 +1,2 @@
+# Avoid prompt-cache invalidation when graphify rewrites its output
+graphify-out/

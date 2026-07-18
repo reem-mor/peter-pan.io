@@ -40,3 +40,22 @@ Interpret creatively and make unexpected choices that feel genuinely designed fo
 **IMPORTANT**: Match implementation complexity to the aesthetic vision. Maximalist designs need elaborate code with extensive animations and effects. Minimalist or refined designs need restraint, precision, and careful attention to spacing, typography, and subtle details. Elegance comes from executing the vision well.
 
 Remember: Claude is capable of extraordinary creative work. Don't hold back, show what can truly be created when thinking outside the box and committing fully to a distinctive vision.
+
+## PETER PAN Streamlit UI (migrated from streamlit-demo-ui)
+
+Two tabs: **Assistant** (Ollama / fixture chat, streamed) and **Submit Alert** (POST → n8n
+webhook → structured TriageReport). Non-negotiable:
+
+- Every network call has spinner/status + timeout; never raw traceback on screen.
+- Demo path never depends on a live LLM; subtle "demo data" badge when fixtures active.
+- Render severity/class/confidence as metrics; citations in expander; Grafana link button;
+  collapsed raw JSON for technical audience.
+- Input/output guardrail failures are first-class cards showing `{passed, flags, reason}`.
+- URLs from env only (`PETER_UI_N8N_WEBHOOK_URL`, Grafana URL). `DEMO_MODE=1` forces fixtures.
+- Visual: calm Grafana-adjacent dark theme; no emoji noise; English UI copy.
+
+## Grafana dashboard JSON (migrated from grafana-dashboard-json)
+
+- Never invent schema fields; fixture-first under `fixtures/dashboards/`; validate before POST.
+- Required shape: `dashboard` + `folderUid` + `overwrite` + panels with non-overlapping
+  `gridPos` and a real datasource uid. Empty panels after a 200 from Grafana still fail the demo.

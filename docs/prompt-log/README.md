@@ -1,7 +1,7 @@
 # Prompt Engineering Log — PETER PAN
 
 The 25% deliverable. Five surfaces, versioned prompts, real iteration evidence.
-Format contract: `.cursor/skills/prompt-log-format/SKILL.md`.
+Format contract: `.claude/skills/prompt-engineering-log/SKILL.md`.
 
 ## Layout
 
