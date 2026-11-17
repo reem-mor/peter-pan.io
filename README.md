@@ -1,3 +1,7 @@
+> **Historical implementation - superseded by [PETER PAN](https://github.com/reem-mor/peter-pan).** This repository documents an earlier architecture and learning iteration. The maintained flagship and recruiter-facing technical evidence are in `reem-mor/peter-pan`. This repository is retained for engineering history and is not the recommended starting point for new contributions.
+
+---
+
 # PETER PAN — Agentic incident-response platform
 
 Predictive, guarded, agentic incident response — n8n-orchestrated microservices with
